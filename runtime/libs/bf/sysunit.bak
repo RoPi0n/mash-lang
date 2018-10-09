@@ -1,0 +1,176 @@
+library SysUNIT;
+
+uses SysUtils,Classes;
+
+{$I stack.inc}
+
+{FUNCTIONS}
+procedure DOUT(Stack:PStack); stdcall;
+var s:string;
+begin
+ s:=(Stack^.pop);
+ if isstr(s) then
+  write(ExtractStr(s))
+ else write(s);
+end;
+
+procedure DOUTLN(Stack:PStack); stdcall;
+var s:string;
+begin
+ s:=(Stack^.pop);
+ if isstr(s) then
+  writeln(ExtractStr(s))
+ else writeln(s);
+end;
+
+procedure DRead(Stack:PStack); STDCALL;
+var s:string;
+begin
+ read(s);
+ Stack^.push('"'+s+'"');
+end;
+
+procedure DReadLn(Stack:PStack); STDCALL;
+var s:string;
+begin
+ readln(s);
+ Stack^.push('"'+s+'"');
+end;
+
+procedure DHalt(Stack:PStack); STDCALL;
+begin
+ halt;
+end;
+
+procedure DStrLen(Stack:PStack); STDCALL;
+var s:string;
+begin
+ s:=Stack^.pop;
+ if isstr(s) then s:=extractstr(s) else
+ error('@StrLen, type not string');
+ Stack^.push(length(s));
+end;
+
+procedure DStrCharAt(Stack:PStack); STDCALL;
+var s:string;i:integer;
+begin
+ i:=Stack^.pop;
+ s:=Stack^.pop;
+ if isstr(s) then s:=extractstr(s) else
+ error('@StrCharAt, type not string');
+ Stack^.push(s[i]);
+end;
+
+procedure DChr(Stack:PStack); STDCALL;
+var s:integer;
+begin
+ s:=Stack^.pop;
+ Stack^.push(chr(s));
+end;
+
+procedure DStrToInt(Stack:PStack); STDCALL;
+var s:string;
+begin
+ s:=Stack^.pop;
+ if isstr(s) then s:=extractstr(s) else
+ error('@StrToInt, type not string');
+ Stack^.push(strtoint(s));
+end;
+
+procedure DStrToFloat(Stack:PStack); STDCALL;
+var s:string;
+begin
+ s:=Stack^.pop;
+ if isstr(s) then s:=extractstr(s) else
+ error('@StrToFloat, type not string');
+ Stack^.push(strtofloat(s));
+end;
+
+procedure DOrd(Stack:PStack); STDCALL;
+var s:char;
+begin
+ s:=Stack^.pop;
+ Stack^.push(ord(s));
+end;
+
+procedure DCHRUpper(Stack:PStack); STDCALL;
+var s:char;
+begin
+ s:=Stack^.pop;
+ Stack^.push(upcase(s));
+end;
+
+procedure DChrLower(Stack:PStack); STDCALL;
+var s:char;
+begin
+ s:=Stack^.pop;
+ Stack^.push(ord(s));
+end;
+
+procedure DStrUpper(Stack:PStack); STDCALL;
+var s:string;
+begin
+ s:=Stack^.pop;
+ if isstr(s) then s:=extractstr(s) else
+ error('@StrLen, type not string');
+ Stack^.push(uppercase('"'+s+'"'));
+end;
+
+procedure DStrLower(Stack:PStack); STDCALL;
+var s:string;
+begin
+ s:=Stack^.pop;
+ if isstr(s) then s:=extractstr(s) else
+ error('@StrLen, type not string');
+ Stack^.push(lowercase('"'+s+'"'));
+end;
+
+procedure DIntToStr(Stack:PStack); STDCALL;
+var s:longint;
+begin
+ s:=Stack^.pop;
+ Stack^.push('"'+inttostr(s)+'"');
+end;
+
+procedure DFloatToStr(Stack:PStack); STDCALL;
+var s:double;
+begin
+ s:=Stack^.pop;
+ Stack^.push('"'+floattostr(s)+'"');
+end;
+
+procedure DSleep(Stack:PStack); STDCALL;
+begin
+ sleep(Stack^.pop);
+end;
+
+//DateTime
+procedure DNow(Stack:PStack); STDCALL;
+begin
+ Stack^.push(now);
+end;
+
+
+{EXPORTS DB}
+exports DOUT                name 'COUT';
+exports DOUTLN              name 'COUTLN';
+exports DREAD               name 'CREAD';
+exports DREADLN             name 'CREADLN';
+exports DINTTOSTR           name 'INTTOSTR';
+exports DFLOATTOSTR         name 'FLOATTOSTR';
+exports DSTRTOINT           name 'STRTOINT';
+exports DSTRTOFLOAT         name 'STRTOFLOAT';
+exports DSTRLEN             name 'STRLEN';
+exports DSTRCHARAT          name 'STRCHARAT';
+exports DORD                name 'CHRTOORD';
+exports DCHR                name 'ORDTOCHR';
+exports DHALT               name 'EXITPROCESS';
+exports DSLEEP              name 'SLEEP';
+exports DSTRUPPER           name 'STRUPPER';
+exports DSTRLOWER           name 'STRLOWER';
+exports DCHRUPPER           name 'CHRUPPER';
+exports DCHRLOWER           name 'CHRLOWER';
+exports DNOW                name 'CURRENTDATETIME';
+
+begin
+end.

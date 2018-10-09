@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="10"/>
+    <BuildModes Active="Default"/>
+    <Units Count="3">
+      <Unit0>
+        <Filename Value="crcrt.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="20"/>
+        <CursorPos X="11" Y="29"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="C:\lazarus182_32\fpc\3.0.4\source\packages\rtl-console\src\win\crt.pp"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="140"/>
+        <CursorPos X="24" Y="142"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="C:\lazarus182_32\fpc\3.0.4\source\packages\rtl-console\src\inc\crth.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="62"/>
+        <CursorPos X="3" Y="71"/>
+        <UsageCount Value="10"/>
+      </Unit2>
+    </Units>
+    <JumpHistory Count="4" HistoryIndex="3">
+      <Position1>
+        <Filename Value="crcrt.lpr"/>
+        <Caret Line="30" Column="14" TopLine="25"/>
+      </Position1>
+      <Position2>
+        <Filename Value="C:\lazarus182_32\fpc\3.0.4\source\packages\rtl-console\src\win\crt.pp"/>
+        <Caret Line="22" Column="17" TopLine="16"/>
+      </Position2>
+      <Position3>
+        <Filename Value="C:\lazarus182_32\fpc\3.0.4\source\packages\rtl-console\src\win\crt.pp"/>
+        <Caret Line="142" Column="24" TopLine="137"/>
+      </Position3>
+      <Position4>
+        <Filename Value="crcrt.lpr"/>
+        <Caret Line="30" Column="14" TopLine="196"/>
+      </Position4>
+    </JumpHistory>
+  </ProjectSession>
+</CONFIG>

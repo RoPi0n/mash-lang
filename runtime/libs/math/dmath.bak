@@ -1,0 +1,66 @@
+library dmath;
+
+uses SysUtils,Math;
+
+{$I DTypes.inc}
+
+{FUNCTIONS}
+
+procedure DSin(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(sin(eng^.popst));
+end;
+procedure DCos(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(cos(eng^.popst));
+end;
+procedure DTg(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(tan(eng^.popst));
+end;
+procedure DCtg(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(cotan(eng^.popst));
+end;
+procedure DArcSin(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(ArcSin(eng^.popst));
+end;
+procedure DArcCos(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(ArcCos(eng^.popst));
+end;
+procedure DLog10(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(Log10(eng^.popst));
+end;
+procedure DLog2(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(Log2(eng^.popst));
+end;
+procedure DLogN(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(LogN(eng^.popst,eng^.popst));
+end;
+procedure Dlnxp1(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(lnxp1(eng^.popst));
+end;
+procedure DExp(Eng:PDASMEngine); STDCALL;
+begin
+ eng^.pushst(Exp(eng^.popst));
+end;
+{EXPORTS DB}
+exports DSIN                name 'SIN';
+exports DCOS                name 'COS';
+exports DTG                 name 'TG';
+exports DCTG                name 'CTG';
+exports DARCSIN             name 'ARCSIN';
+exports DARCCOS             name 'ARCCOS';
+exports DLOG10              name 'LOG10';
+exports DLOG2               name 'LOG2';
+exports DLOGN               name 'LOGN';
+exports DLNXP1              name 'LNXP1';
+
+begin
+end.

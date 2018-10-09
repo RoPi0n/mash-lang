@@ -1,0 +1,291 @@
+library filesunit;
+
+uses SysUtils,Classes,fpMasks,Windows;
+
+{$I DTypes.inc}
+
+function MatchesMask(s,m:string):boolean;
+var b,mm:string;
+begin
+ MatchesMask:=false;
+ repeat
+  if pos('.',m)<>0 then
+   begin
+    mm:=copy(m,1,pos('.',m)-1);
+	delete(m,1,pos('.'));
+   end
+  else
+  begin
+   mm:=m;
+   m:='';
+  end;
+  
+  if pos('.',s)<>0 then
+   begin
+    b:=copy(s,1,pos('.',s)-1);
+	delete(s,1,pos('.'));
+   end
+  else
+  begin
+   b:=s;
+   s:='';
+  end;
+ 
+  if not ((mm=b)or(mm='*')) then exit;
+ until (length(m)=0)or(length(s)=0);
+ MatchesMask:=true;
+end;
+
+function FileSetReadOnly(const FileName: ansistring; ReadOnly: Boolean): Boolean;
+{$IFDEF MSWINDOWS}
+var
+  Flags: Integer;
+begin
+  FileSetReadOnly := False;
+  Flags := GetFileAttributes(PChar(FileName));
+  if Flags = -1 then Exit;
+  if ReadOnly then
+    Flags := Flags or faReadOnly
+  else
+    Flags := Flags and not faReadOnly;
+  FileSetReadOnly := SetFileAttributes(PChar(FileName), Flags);
+end;
+{$ENDIF}
+{$IFDEF LINUX}
+var
+  st: TStatBuf;
+  Flags: Integer;
+begin
+  FileSetReadOnly := False;
+  if stat(PChar(FileName), st) <> 0 then Exit;
+  if ReadOnly then
+    Flags := st.st_mode and not (S_IWUSR or S_IWGRP or S_IWOTH)
+  else
+    Flags := st.st_mode or (S_IWUSR or S_IWGRP or S_IWOTH);
+  FileSetReadOnly := chmod(PChar(FileName), Flags) = 0;
+end;
+{$ENDIF}
+
+
+
+{FUNCTIONS}
+procedure _FileExists(Eng:PDASMEngine); stdcall;
+begin
+ Eng^.pushst(Fileexists(ExtractStr(Eng^.popst)));
+end;
+
+procedure _CreateFile(Eng:PDASMEngine); stdcall;
+var F:File;
+begin
+   Assign(F,ExtractStr(Eng^.popst));
+   Rewrite(F);
+   Close(F);
+end;
+
+procedure _CreateDir(Eng:PDASMEngine); stdcall;
+begin
+   ForceDirectories(ExtractStr(Eng^.popst));
+end;
+
+procedure _DeleteFile(Eng:PDASMEngine); stdcall;
+var s:ansistring;
+begin
+  s:=ExtractStr(Eng^.popst);
+  DeleteFile(PChar(s));
+end;
+
+
+
+
+
+function KillDir (Dir: AnsiString; all: boolean): boolean;
+var
+  Sr: SysUtils.TSearchRec;
+begin
+{$I-}
+  if (Dir <> '') and (Dir[length(Dir)] = '\') then
+    Delete(Dir, length(dir), 1);
+  if FindFirst(Dir + '\*.*',  faAnyFile, Sr) = 0 then
+    repeat
+      if (Sr.Name = '.') or (Sr.Name = '..') then
+        continue;
+      if (Sr.Attr and faDirectory <> faDirectory) then
+   begin
+
+        FileSetReadOnly(Dir + '\' + sr.Name, False);
+        DeleteFile(PChar(Dir + '\' + sr.Name));
+
+   end
+      else
+        if all then KillDir(Dir + '\' + sr.Name, all);
+    until FindNext(sr) <> 0;
+  //FindClose(sr);
+//  RemoveDir(Dir);
+  KillDir := (FileGetAttr(Dir) = -1);
+end;
+
+procedure _DeleteDir(Eng:PDASMEngine); stdcall;
+begin
+   if Eng^.popst=false then
+    KillDir(ExtractStr(Eng^.popst),false)
+   else
+    KillDir(ExtractStr(Eng^.popst),true);
+end;
+
+procedure _RemoveDir(Eng:PDASMEngine); stdcall;
+begin
+   RemoveDir(ExtractStr(Eng^.popst));
+end;
+
+
+procedure _RenameFile(Eng:PDASMEngine); stdcall;
+begin
+   RenameFile(ExtractStr(Eng^.popst), ExtractStr(Eng^.popst));
+end;
+
+procedure _MoveFile(Eng:PDASMEngine); stdcall;
+var p1,p2:ansistring;
+begin
+   p1:=ExtractStr(Eng^.popst);
+   p2:=ExtractStr(Eng^.popst);
+   MoveFile(PChar(p1), PChar(p2));
+end;
+
+procedure _FileSize(Eng:PDASMEngine); stdcall;
+var F:File of byte;
+begin
+  Assign(F,ExtractStr(Eng^.popst));
+    Reset(f);
+    Eng^.pushst(filesize(F));
+    Close(f);
+end;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Dir scanner
+procedure FindFiles(StartFolder, Mask: string; List: TStrings;ScanSubFolders: Boolean);
+  var
+     SearchRec: TSearchRec;
+     FindResult: Integer;
+
+     begin
+          List.BeginUpdate;
+          StartFolder := IncludeTrailingPathDelimiter(StartFolder);
+          FindResult := FindFirst(StartFolder + '*.*', faAnyFile, SearchRec);
+          while FindResult = 0 do
+          with SearchRec do
+
+               begin
+                    if (Attr and faDirectory) <> 0 then
+                         begin
+                              if ScanSubFolders and (Name <> '.') and (Name <> '..') then
+                              FindFiles(StartFolder + Name, Mask, List, ScanSubFolders);
+                         end
+                    else
+                              begin
+                                   if MatchesMask(Name, Mask) then
+                                   List.Add(StartFolder + Name);
+                              end;
+                    FindResult := FindNext(SearchRec);
+               end;
+                    //FindClose(SearchRec);
+                         List.EndUpdate;
+end;
+
+procedure _ScanMD(Eng:PDASMEngine); stdcall;
+var Lst:TStringList;
+begin
+  Lst:=TStringList.Create;
+   FindFiles(ExtractStr(Eng^.popst),ExtractStr(Eng^.popst),Lst,true);
+  Eng^.pushst(Lst.Text);
+end;
+
+procedure _FScanMD(Eng:PDASMEngine); stdcall;
+var SR:TSearchRec; Lst:TStringList;
+begin
+  if FindFirst(ExtractStr(Eng^.popst), faAnyFile, sr)=0  then
+   repeat
+     Lst.Add(sr.Name);
+   until FindNext(sr)<>0;
+   //FindClose(sr);
+  Eng^.pushst(Lst.Text);
+end;
+
+procedure _DScanMD(Eng:PDASMEngine); stdcall;
+var SR:TSearchRec;Lst:TStringList;
+begin
+  if FindFirst(ExtractStr(Eng^.popst), faDirectory, sr)=0  then
+   repeat
+     Lst.Add(sr.Name);
+   until FindNext(sr)<>0;
+   //FindClose(sr);
+  Eng^.pushst(Lst.Text);
+end;
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+//I/O procedures
+procedure _RewriteFile(Eng:PDASMEngine); stdcall;
+var F:textfile;
+begin
+ Assign(F,ExtractStr(Eng^.popst));
+ Rewrite(F);
+ Close(F);
+end;
+
+procedure _WriteFile(Eng:PDASMEngine); stdcall;
+var F:textfile;S:string;
+begin
+ Assign(F,ExtractStr(Eng^.popst));
+ Rewrite(F);
+ S:=Eng^.popst;
+ if isStr(s) then s:=ExtractStr(s);
+ Write(F,s);
+ Close(F);
+end;
+
+procedure _AppendFile(Eng:PDASMEngine); stdcall;
+var F:textfile;S:string;
+begin
+ Assign(F,ExtractStr(Eng^.popst));
+ Append(F);
+ S:=Eng^.popst;
+ if isStr(s) then s:=ExtractStr(s);
+ Write(F,Eng^.popst);
+ Close(F);
+end;
+
+procedure _ReadFile(Eng:PDASMEngine); stdcall;
+var F:textfile;
+    C:char;
+	R:string;
+begin
+ R:='';
+ Assign(F,ExtractStr(Eng^.popst));
+ Reset(F);
+ repeat
+  Read(F,C);
+  R:=R+C;
+ until Eof(F);
+ Eng^.pushst('"'+R+'"');
+end;
+
+{EXPORTS DB}
+exports _AppendFile                name 'APPENDFILE';
+exports _ReadFile                  name 'READFILE';
+exports _RewriteFile               name 'REWRITEFILE';
+exports _WriteFile                 name 'WRITEFILE';
+
+exports _FileExists                name 'FILEEXISTS';
+exports _CreateDir                 name 'CREATEDIR';
+exports _CreateFile                name 'CREATEFILE';
+exports _DScanMD                   name 'DSCANMD';
+exports _FScanMD                   name 'FSCANMD';
+exports _ScanMD                    name 'SCANMD';
+exports _DeleteDir                 name 'DELETEDIR';
+exports _DeleteFile                name 'DELETEFILE';
+exports _FileSize                  name 'FILESIZE';
+exports _MoveFile                  name 'MOVEFILE';
+exports _RemoveDir                 name 'REMOVEDIR';
+exports _RenameFile                name 'RENAMEFILE';
+
+
+begin
+end.

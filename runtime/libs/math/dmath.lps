@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="10"/>
+    <BuildModes Active="Default"/>
+    <Units Count="1">
+      <Unit0>
+        <Filename Value="dmath.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <CursorPos X="107" Y="9"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit0>
+    </Units>
+    <JumpHistory Count="3" HistoryIndex="2">
+      <Position1>
+        <Filename Value="dmath.pas"/>
+        <Caret Line="11" Column="13"/>
+      </Position1>
+      <Position2>
+        <Filename Value="dmath.pas"/>
+        <Caret Line="5" Column="16"/>
+      </Position2>
+      <Position3>
+        <Filename Value="dmath.pas"/>
+        <Caret Line="9" Column="26"/>
+      </Position3>
+    </JumpHistory>
+  </ProjectSession>
+</CONFIG>
