@@ -1,0 +1,21 @@
+uses <bf.mash>
+uses <crt.mash>
+
+proc Err():
+  raise "Error"
+end
+
+proc main():
+  PrintLn("Start")
+  try:
+    PrintLn("Trying to do something.")
+    Err()
+  catch:
+    var e = getError()
+    PrintLn($e)
+  finally:
+    PrintLn("Finally")
+  end
+  PrintLn("End")
+  InputLn()
+end
