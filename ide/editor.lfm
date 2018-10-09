@@ -594,7 +594,7 @@ object EditorFrame: TEditorFrame
     MouseTextActions = <>
     MouseSelActions = <>
     Lines.Strings = (
-      'uses <bf.asm>'
+      'uses <bf.mash>'
       ''
       'proc main():'
       '  // write your code here.'
