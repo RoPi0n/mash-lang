@@ -4,7 +4,7 @@
 // [1] -  next node exists (true/false)
 // [2] - *next node
 
-uses <bf.asm>
+uses <bf.mash>
 
 proc vstack.getval($.hn):
   push $.hn[0]

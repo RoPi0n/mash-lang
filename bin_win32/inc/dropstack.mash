@@ -2,7 +2,7 @@
 //
 // store <var> & load <var> operations.
 
-uses <vstack.asm>
+uses <vstack.mash>
 
 var __DropStack
 

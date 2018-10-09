@@ -1,6 +1,6 @@
 // threads
-uses <bf.asm>
-uses <vector.asm>
+uses <bf.mash>
+uses <vector.mash>
 
 proc __fthread_caller():
   super thread

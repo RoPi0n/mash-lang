@@ -20,7 +20,7 @@ import TickCnt      "bf.lib" "TICKCNT"
 int  true  -1
 int  false  0
 
-uses <dropstack.asm>
+uses <dropstack.mash>
 
 func BoolToStr($.b):
   if $.b == true:

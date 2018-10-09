@@ -1,4 +1,4 @@
-uses <bf.asm>
+uses <bf.mash>
 
 // stream:
 //  [0] int - size
