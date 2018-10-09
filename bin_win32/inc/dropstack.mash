@@ -1,0 +1,50 @@
+// DropStack.
+//
+// store <var> & load <var> operations.
+
+uses <vstack.asm>
+
+var __DropStack
+
+proc __InitDropStack():
+  push 3
+  push 1
+  newa
+  pop  $__DropStack
+  push !false
+  peek $__DropStack[1]
+end
+
+proc __FreeDropStack():
+  __FreeDropStack.Lp:
+    vstack.nextexist($__DropStack)
+    jz   !__FreeDropStack.Fn
+    vstack.getlast($__DropStack)
+    vstack.getval()
+    rem
+    vstack.dellast($__DropStack)
+    jump !__FreeDropStack.Lp
+  __FreeDropStack.Fn:
+  rem  $__DropStack[1]
+  push $__DropStack
+  gpa
+  pop
+  gc
+end
+
+proc store($.val):
+var .m
+  new  $.m
+  mov  $.m, $.val
+  vstack.addnode($__DropStack, $.m)
+end
+
+proc load($.val):
+var .m
+  vstack.getlast($__DropStack)
+  vstack.getval()
+  pop  $.m
+  mov  $.val, $.m
+  rem  $.m
+  vstack.dellast($__DropStack)
+end

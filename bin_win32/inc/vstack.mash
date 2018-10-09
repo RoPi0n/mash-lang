@@ -1,0 +1,79 @@
+// Virtual stack.
+//
+// [0] - *value
+// [1] -  next node exists (true/false)
+// [2] - *next node
+
+uses <bf.asm>
+
+proc vstack.getval($.hn):
+  push $.hn[0]
+end
+
+proc vstack.nextexist($.hn):
+  eq $.hn[1], !true
+  jn !vstack.nextexist.if_true
+  push !false
+  jump !vstack.nextexist.exit
+  vstack.nextexist.if_true:
+    push !true
+  vstack.nextexist.exit:
+end
+
+proc vstack.getlast($.hn):
+var .r
+  vstack.getlast.lp:
+    vstack.nextexist($.hn)
+    pop  $.r
+    eq   $.r, !true
+    rem  $.r
+    jz   !vstack.getlast.lp_exit
+    movl $.hn, $.hn[2]
+    jump !vstack.getlast.lp
+  vstack.getlast.lp_exit:
+  push $.hn
+end
+
+proc vstack.dellast($.hn):
+var .r, .phn
+  vstack.dellast.lp:
+    vstack.nextexist($.hn)
+    pop  $.r
+    eq   $.r, !true
+    rem  $.r
+    jz   !vstack.dellast.lp_exit
+    movl $.phn, $.hn
+    movl $.hn, $.hn[2]
+    jump !vstack.dellast.lp
+  vstack.dellast.lp_exit:
+  push $.hn
+  gpa
+  pop
+  gpm  $.hn[1]
+  mov  $.phn[1], !false
+end
+
+proc vstack.addnode($.hn, $.val):
+var .r
+  vstack.addnode.lp:
+    vstack.nextexist($.hn)
+    pop  $.r
+    eq   $.r, !true
+    rem  $.r
+    jz   !vstack.addnode.lp_exit
+    movl $.hn, $.hn[2]
+    jump !vstack.addnode.lp
+  vstack.addnode.lp_exit:
+  push 3
+  gpm
+  push 1
+  gpm
+  newa
+  peek $.hn[2]
+  mov  $.hn[1], !true
+  movl $.hn, $.hn[2]
+  push $.val
+  peek $.hn[0]
+  push !false
+  peek $.hn[1]
+end

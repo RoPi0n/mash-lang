@@ -1,0 +1,36 @@
+uses <bf.asm>
+
+// stream:
+//  [0] int - size
+//  [1] int - caret pos
+//  [2] *data
+
+proc stream.create():
+var .s
+  push 3
+  gpm
+  push 1
+  gpm
+  newa
+  pop  $.s
+  push 0
+  peek $.s[0]
+  push 0
+  peek $.s[1]
+  push 0
+  gpm
+  allc
+  peek $.s[2]
+end
+
+proc stream.free($.s):
+  push $.s[2]
+  push $.s[0]
+  disp
+  rem $.s[0]
+  rem $.s[1]
+end
+
+proc stream.seek($.s, $.v):
+  mov $.s[1], $.v
+end

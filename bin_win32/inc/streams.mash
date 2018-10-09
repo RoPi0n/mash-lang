@@ -1,0 +1,42 @@
+import Stream.Create                 "streams.lib" "_Stream_Create"
+import Stream.Seek                   "streams.lib" "_Stream_Seek"
+import Stream.GetCaretPos            "streams.lib" "_Stream_GetCaretPos"
+import Stream.WriteFromMemoryStream  "streams.lib" "_Stream_WriteFromStream"
+import Stream.ReadFromMemoryStream   "streams.lib" "_Stream_ReadFromStream"
+import Stream.CopyFromStream         "streams.lib" "_Stream_CopyFromStream"
+import Stream.WriteByte              "streams.lib" "_Stream_WriteByte"
+import Stream.WriteWord              "streams.lib" "_Stream_WriteWord"
+import Stream.WriteInt               "streams.lib" "_Stream_WriteInt"
+import Stream.WriteFloat             "streams.lib" "_Stream_WriteFloat"
+import Stream.WriteStr               "streams.lib" "_Stream_WriteStr"
+import Stream.ReadByte               "streams.lib" "_Stream_ReadByte"
+import Stream.ReadWord               "streams.lib" "_Stream_ReadWord"
+import Stream.ReadInt                "streams.lib" "_Stream_ReadInt"
+import Stream.ReadFloat              "streams.lib" "_Stream_ReadFloat"
+import Stream.ReadStr                "streams.lib" "_Stream_ReadStr"
+import Stream.GetSize                "streams.lib" "_Stream_GetSize"
+import Stream.Clear                  "streams.lib" "_Stream_Clear"
+import Stream.Free                   "streams.lib" "_Stream_Free"
+import MemoryStream.Create           "streams.lib" "_MemoryStream_Create"
+import MemoryStream.Free             "streams.lib" "_MemoryStream_Free"
+import MemoryStream.LoadFromStream   "streams.lib" "_MemoryStream_LoadFromStream"
+import MemoryStream.StoreToStream    "streams.lib" "_MemoryStream_StoreToStream"
+import MemoryStream.LoadFromFile     "streams.lib" "_MemoryStream_LoadFromFile"
+import MemoryStream.SaveToFile       "streams.lib" "_MemoryStream_SaveToFile"
+import FileStream.Create             "streams.lib" "_FileStream_Create"
+import FileStream.Free               "streams.lib" "_FileStream_Free"
+
+word SO_Start         0
+word SO_Current       1
+word SO_End           2
+
+word FM_Create         0xFF00
+word FM_OpenRead       0x0000
+word FM_OpenWrite      0x0001
+word FM_OpenReadWrite  0x0002
+
+word FM_ShareCompat    0x0000
+word FM_ShareExclusive 0x0010
+word FM_ShareDenyWrite 0x0020
+word FM_ShareDenyRead  0x0030
+word FM_ShareDenyNone  0x0040

@@ -1,0 +1,94 @@
+// Base functions & SVMEXE Initialization.
+
+import IntToStr     "bf.lib" "INTTOSTR"
+import FloatToStr   "bf.lib" "FLOATTOSTR"
+import StrToInt     "bf.lib" "STRTOINT"
+import StrToFloat   "bf.lib" "STRTOFLOAT"
+import Halt         "bf.lib" "HALT"
+import Sleep        "bf.lib" "SLEEP"
+import StrUpper     "bf.lib" "STRUPPER"
+import StrLower     "bf.lib" "STRLOWER"
+import ChrUpper     "bf.lib" "CHRUPPER"
+import ChrLower     "bf.lib" "CHRLOWER"
+import Now          "bf.lib" "CURRENTDATETIME"
+import Randomize    "bf.lib" "RANDOMIZE"
+import Random       "bf.lib" "RANDOM"
+import RandomB      "bf.lib" "RANDOMB"
+import TickCnt      "bf.lib" "TICKCNT"
+
+// Global values
+int  true  -1
+int  false  0
+
+uses <dropstack.asm>
+
+func BoolToStr($.b):
+  if $.b == true:
+    return "true"
+  else:
+    return "false"
+  end
+end
+
+proc ExitThread():
+  threxit
+end
+
+func new($.value):
+  push $.value
+  copy
+  pop $.value
+  return $.value
+end
+
+func copy($.value):
+  push $.value
+  copy
+  gpm
+  pop $.value
+  return $.value
+end
+
+func arrlen($.array):
+  push $.array
+  alen
+  var $.len
+  pop $.len
+  return $.len
+end
+
+proc getError():
+  //err already in stack
+end
+
+proc Exit():
+  jr
+end
+
+proc super.Exit():
+  jr
+end
+
+proc super.thread():
+  super QuickThread
+  __InitDropStack()
+end
+
+proc super.QuickThread():
+  push !__addrtsz
+  gpm
+  msz
+  pop
+end
+
+proc super.ExitThread():
+  __FreeDropStack()
+  jump !__haltpoint
+end
+
+proc __EntryPoint():
+  __InitDropStack()
+  Main()
+  __FreeDropStack()
+  gc
+end
