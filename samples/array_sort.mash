@@ -1,0 +1,41 @@
+uses <bf.mash>
+uses <crt.mash>
+
+proc BSort($.array):
+  var $.size, $.tmp, $.i, $.j
+  $.size ?= arrlen($.array)
+  $.tmp ?= 0
+  for($.i ?= 0; $.i < ($.size - 1); inc $.i):
+
+    for($.j ?= 0; $.j < ($.size - 1); inc $.j):
+      if $.array[$.j + 1] < $.array[$.j]:
+        $.tmp = $.array[$.j + 1]
+        $.array[$.j + 1] = $.array[$.j]
+        $.array[$.j] = $.tmp
+      end
+    end
+  end
+end
+
+proc PrintArray($.array):
+  var $.i
+  for ($.i ?= 0; $.i < arrlen($.array); inc $.i):
+    Print($.array[$.i])
+    Print(" ")
+  end
+  PrintLn(" ")
+end
+
+proc main():
+  var $arr = new[10]
+
+  for (var $i = 9; $i >= 0; dec $i):
+    $arr[9-$i] ?= new($i)
+  end
+
+  PrintArray($arr)
+  BSort($arr)
+  PrintArray($arr)
+
+  InputLn()
+end
