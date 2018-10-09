@@ -1,0 +1,6 @@
+import PrintLn "crt.lib" "PRINTLN"
+import InputLn "crt.lib" "INPUTLN"
+
+__EntryPoint:
+  PrintLn("Hello world!")
+  InputLn()
