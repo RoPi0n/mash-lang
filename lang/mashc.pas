@@ -64,10 +64,10 @@ begin
   FreePreprocessor;
   code.Text := 'word __addrtsz ' + IntToStr(varmgr.DefinedVars.Count) +
     sLineBreak + 'pushc __addrtsz' + sLineBreak + 'gpm' + sLineBreak +
-    'msz' + sLineBreak + 'gc' + sLineBreak + 'pushc __entrypoint' +
+    'msz' + sLineBreak + 'gc' + sLineBreak + InitCode.Text + sLineBreak + 'pushc __entrypoint' +
     slinebreak + 'gpm' + slinebreak + 'jc' + sLineBreak + 'pushc __haltpoint' +
-    sLineBreak + 'gpm' + sLineBreak + 'jp' + sLineBreak + code.Text +
-    sLineBreak + '__haltpoint:' + sLineBreak + 'gc';
+    sLineBreak + 'gpm' + sLineBreak + 'jp' + sLineBreak + code.Text + sLineBreak +
+    '__haltpoint:' + sLineBreak + 'gc';
   code.SaveToFile('buf.tmp');
   code.LoadFromFile('buf.tmp');
   DeleteFile('buf.tmp');

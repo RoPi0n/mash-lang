@@ -52,6 +52,8 @@ procedure PrpWarn(m: string);
 procedure InitPreprocessor;
 procedure FreePreprocessor;
 
+var InitCode: TStringList;
+
 implementation
 
 procedure PrpError(m: string);
@@ -2234,6 +2236,11 @@ begin
     Delete(s, 1, length('var'));
     s := Trim(s);
     Result := PreprocessVarDefines(s, varmgr);
+    if GetCurrentMethodName = 'global code' then
+     begin
+       InitCode.Add(Result);
+       Result := '';
+     end;
   end
   else
   {** Proc/Func **}
@@ -3305,6 +3312,7 @@ begin
   ProcList := TStringList.Create;
   BlockStack := TList.Create;
   ConstDefs := TStringList.Create;
+  InitCode := TStringList.Create;
   //VarDefs := TStringList.Create;
 end;
 
@@ -3323,6 +3331,7 @@ begin
 
   FreeAndNil(BlockStack);
   FreeAndNil(ConstDefs);
+  //FreeAndNil(InitCode);
   //FreeAndNil(VarDefs);
 end;
 
