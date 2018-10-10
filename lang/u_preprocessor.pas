@@ -411,8 +411,8 @@ var
 begin
   Result := '';
   lvl := GetArrLvl(arrexpr);
-  c := 0;
-  while c <= lvl do
+  c := lvl;
+  while c > 0 do
   begin
     s := GetArrLvlVal(arrexpr, c);
     if IsArr(s) then
@@ -452,11 +452,16 @@ begin
     end{
     else
       PrpError('Error in operation with [<index>] -> "' + s + '".')};
-    Inc(c);
+    Dec(c);
   end;
-  for c := 0 to lvl - 1 do
-    Result := Result + sLineBreak + 'push ' + GetVar(GetArrName(arrexpr), varmgr) +
-      sLineBreak + action;
+  Result := Result + sLineBreak + 'push ' + GetVar(GetArrName(arrexpr), varmgr);
+  c := 1;
+  while c < lvl do
+   begin
+     Result := Result + sLineBreak + 'pushai';
+     Inc(c);
+   end;
+  Result := Result + sLineBreak + action;
 end;
 
 
@@ -1781,11 +1786,11 @@ begin
   Inc(ForBlCounter);
   Result := PreprocessStr(Defs, varmgr) + sLineBreak + 'pushc ' +
     ForNum + '_expression_check' + sLineBreak + 'gpm' + sLineBreak +
-    'gpm' + sLineBreak + 'jp' + sLineBreak + ForNum + ':';
+    'jp' + sLineBreak + ForNum + ':';
   BlockStack.Add(TCodeBlock.Create(btFor, '', PreprocessStr(Ops, varmgr) +
     sLineBreak + ForNum + '_expression_check:' + sLineBreak + 'pushc ' +
     ForNum + sLineBreak + 'gpm' + sLineBreak + PreprocessExpression(Expr, varmgr) +
-    sLineBreak + 'jn' + sLineBreak + ForNum + '_end:', ForNum + '_end'));
+    sLineBreak + 'jn' + sLineBreak + 'pop' + sLineBreak + ForNum + '_end:', ForNum + '_end'));
 end;
 
 function IsWhile(s: string): boolean;
