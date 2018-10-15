@@ -18,9 +18,10 @@ var
 
 procedure FilterWaste(Lines:TStringList);
 var
-  i:longint;
+  i,k:longint;
   j:integer;
   s:string;
+  IsWaste:boolean;
 begin
   i := 0;
   while i < Lines.Count do
@@ -30,9 +31,27 @@ begin
       begin
         Delete(s, 1, 5);
         s := Trim(s);
-        j := Waste.IndexOf(s);
-        if j <> -1 then
-         Waste.Delete(j);
+
+        IsWaste := False;
+        k := i + 1;
+        while k < Lines.Count do
+         begin
+           if Lines[k] = s + ':' then
+            break;
+           if Lines[k] = '__gen_' + s + '_method_end:' then
+            begin
+              IsWaste := True;
+              break;
+            end;
+           inc(k);
+         end;
+
+        if not IsWaste then
+         begin
+           j := Waste.IndexOf(s);
+           if j <> -1 then
+            Waste.Delete(j);
+         end;
       end;
      inc(i);
    end;
