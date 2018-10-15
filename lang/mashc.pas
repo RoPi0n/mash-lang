@@ -6,7 +6,7 @@ program mashc;
 
 uses
   SysUtils, Classes, u_imports, u_global, u_consts, u_variables,
-  u_globalvars, u_codesect, u_preprocessor, u_optimizator;
+  u_globalvars, u_codesect, u_preprocessor, u_optimizator, unit1;
 
   {** Main **}
 
@@ -20,9 +20,11 @@ var
   AppMode: string = '/cns';
   Tm, Tm2: TDateTime;
 begin
+  writeln('Mash lang!');
+  writeln('Version: 1.2, Pavel Shiryaev (c) from 2018.');
+  writeln('See more at: https://github.com/RoPi0n/mash-lang');
   if ParamCount = 0 then
   begin
-    writeln('Assembler for SVM.');
     writeln('Use: ', ExtractFileName(ParamStr(0)), ' <file> [mode]');
     writeln('Mode''s:');
     writeln(' /cns  - make console program (default).');
@@ -44,7 +46,7 @@ begin
   ])='' then code.delete(c);}
   varmgr := TVarManager.Create;
   Constants := TConstantManager.Create(Code);
-  WriteLn('Code analyzing...');
+  //WriteLn('Code analyzing...');
   InitPreprocessor;
   c := 0;
   while c < Code.Count do
@@ -116,7 +118,7 @@ begin
     CodeSection := TCodeSection.Create(Code, Constants);
     CodeSection.ParseSection;
     Constants.GenerateCode(Output);
-    writeln('Constants defined: ', Constants.Constants.Count, '.');
+    //writeln('Constants defined: ', Constants.Constants.Count, '.');
     CodeSection.GenerateCode(Output);
     writeln('Success.');
     Tm2 := Now;

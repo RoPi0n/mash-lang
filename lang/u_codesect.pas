@@ -229,7 +229,7 @@ var
   p1, p2: cardinal;
   s: string;
 begin
-  writeln('Executable code generation...');
+  //writeln('Executable code generation...');
   p1 := 0;
   p2 := 0;
   while p2 < Lines.Count do

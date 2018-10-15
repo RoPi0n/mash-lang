@@ -184,7 +184,7 @@ end;
 
 procedure OptimizeCode(Lines:TStringList);
 begin
-  writeln('Optimization...');
+  //writeln('Optimization...');
 
   //***   waste code blocks optimization
   Waste := TStringList.Create;

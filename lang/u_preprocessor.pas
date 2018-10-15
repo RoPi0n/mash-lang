@@ -86,7 +86,7 @@ var
   TryBlCounter: cardinal = 0;
   BlockStack: TList;
   ConstDefs: TStringList;
-  //VarDefs: TStringList;
+  VarDefs: TStringList;
 
 function IsVar(s: string): boolean;
 begin
@@ -94,37 +94,30 @@ begin
   if length(s) > 0 then
   begin
     if s[1] = '$' then
-    begin
-      Delete(s, 1, 1);
-      if s[1] = '.' then
-        s := LocalVarPref + s;
-      Result := CheckName(s);
-    end
-    else
-    begin
-      if s[1] = '.' then
-        s := LocalVarPref + s;
+     Delete(s, 1, 1);
 
-      Result := CheckName(s) and (ConstDefs.IndexOf(s) = -1);//VarDefs.IndexOf(s) <> -1;
-    end;
+    if s[1] = '.' then
+     begin
+       Delete(s,1,1);
+       s := LocalVarPref + s;
+     end;
+    Result := (CheckName(s) or (VarDefs.IndexOf(s) <> -1)) and (ConstDefs.IndexOf(s) = -1);
   end;
 end;
 
 function GetVar(s: string; varmgr: TVarManager): string;
 begin
-  if s[2] = '.' then
-  begin
-    Delete(s, 1, 2);
-    s := '$' + LocalVarPref + s;
-  end
-  else
+  if s[1] = '$' then
+     Delete(s, 1, 1);
+
   if s[1] = '.' then
   begin
-    s := '$' + LocalVarPref + s;
+    Delete(s,1,1);
+    s := {'$' + }LocalVarPref + s;
   end;
+
   if IsVar(s) then
   begin
-    Delete(s, 1, 1);
     Result := IntToStr(varmgr.Get(s));
   end
   else
@@ -466,6 +459,17 @@ begin
   Result := Result + sLineBreak + action;
 end;
 
+function GetFullVarName(s:string):string;
+begin
+  if copy(s, 1, 1) = '$' then
+   Delete(s, 1, 1);
+  if copy(s, 1, 1) = '.' then
+   begin
+     Delete(s,1,1);
+     s := LocalVarPref + s;
+   end;
+  Result := s;
+end;
 
 function PreprocessVarDefine(s: string; varmgr: TVarManager): string;
 var
@@ -485,7 +489,7 @@ begin
   if pos('=', s) > 0 then
   begin
     v := Trim(copy(s, 1, pos('=', s) - 1));
-    //VarDefs.Add(v);
+    VarDefs.Add(v);
     Delete(s, 1, pos('=', s));
     s := Trim(s);
     if IsOpNew(s) then
@@ -533,7 +537,11 @@ begin
       sLineBreak + 'pop';
   end
   else
-    varmgr.DefVar(s);
+   begin
+     //writeln(GetFullVarName(s));
+     VarDefs.Add(s);
+     varmgr.DefVar(s);
+   end;
 end;
 
 function PreprocessVarDefines(s: string; varmgr: TVarManager): string;
@@ -603,22 +611,24 @@ begin
     end;
     if IsVar(bf) then
     begin
-      if bf[2] <> '.' then
+      if bf[1] = '$' then
+       Delete(bf,1,1);
+      if bf[1] <> '.' then
         AsmWarn('Receiving control of global variable "' + bf +
           '" in proc "' + pn + '".');
       if varmgr.DefinedVars.IndexOf(bf) = -1 then
       begin
-        if bf[2] <> '.' then
+        if bf[1] <> '.' then
         begin
           Delete(bf, 1, 1);
           varmgr.DefVar(bf);
-          bf := '$' + bf;
+          //bf := '$' + bf;
         end
         else
         begin
-          Delete(bf, 1, 2);
+          Delete(bf, 1, 1);
           varmgr.DefVar(LocalVarPref + bf);
-          bf := '$' + LocalVarPref + bf;
+          bf := {'$' + }LocalVarPref + bf;
         end;
       end;
       Result := Result + sLineBreak + PreprocessVarAction(bf, 'peek', varmgr) +
@@ -1464,15 +1474,19 @@ end;
 
 function ParseIf(s: string; varmgr: TVarManager): string;
 var
-  IfNum: string;
+  IfNum, ExprCode: string;
 begin
   Delete(s, 1, 2);
   Delete(s, Length(s), 1);
   s := Trim(s);
   IfNum := '__gen_if_' + IntToStr(IfBlCounter);
   Inc(IfBlCounter);
+  if IsExpr(s) then
+   ExprCode := PreprocessExpression(s, varmgr)
+  else
+   ExprCode := PushIt(s, varmgr);
   Result := 'pushc ' + IfNum + '_end' + sLineBreak + 'gpm' + sLineBreak +
-    PreprocessExpression(s, varmgr) + sLineBreak +
+    ExprCode + sLineBreak +
     'jz' + sLineBreak + 'pop';
   BlockStack.Add(TCodeBlock.Create(btIf, '-', IfNum + '_else_end', IfNum + '_end'));
 end;
@@ -1523,10 +1537,14 @@ begin
     case CB.bType of
       btProc:
       begin
+        if pos('.', LocalVarPref) > 0 then
+         Delete(LocalVarPref, 1, pos('.', LocalVarPref));
         Result := CB.bEndCode + ':' + sLineBreak + 'jr';
       end;
       btFunc:
       begin
+        if pos('.', LocalVarPref) > 0 then
+         Delete(LocalVarPref, 1, pos('.', LocalVarPref));
         Result := CB.bEndCode + ':' + sLineBreak + 'jr';
         if CB.bMeta <> '+' then
           PrpError('Declarate function without return.');
@@ -1782,7 +1800,13 @@ begin
   Delete(s, 1, 1);         // (
   Delete(s, Length(s), 1); // )
   Defs := Trim(CutNextForArg(s));
+
   Expr := Trim(CutNextForArg(s));
+  if IsExpr(Expr) then
+   Expr := PreprocessExpression(Expr, varmgr)
+  else
+   Expr := PushIt(Expr, varmgr);
+
   Ops := Trim(CutNextForArg(s));
   ForNum := '__gen_for_' + IntToStr(ForBlCounter);
   Inc(ForBlCounter);
@@ -1791,7 +1815,7 @@ begin
     'jp' + sLineBreak + ForNum + ':';
   BlockStack.Add(TCodeBlock.Create(btFor, '', PreprocessStr(Ops, varmgr) +
     sLineBreak + ForNum + '_expression_check:' + sLineBreak + 'pushc ' +
-    ForNum + sLineBreak + 'gpm' + sLineBreak + PreprocessExpression(Expr, varmgr) +
+    ForNum + sLineBreak + 'gpm' + sLineBreak + Expr +
     sLineBreak + 'jn' + sLineBreak + 'pop' + sLineBreak + ForNum + '_end:', ForNum + '_end'));
 end;
 
@@ -1809,15 +1833,19 @@ end;
 
 function ParseWhile(s: string; varmgr: TVarManager): string;
 var
-  WhileNum: string;
+  WhileNum, ExprCode: string;
 begin
   Delete(s, 1, 5);
   Delete(s, Length(s), 1);
   s := Trim(s);
   WhileNum := '__gen_while_' + IntToStr(WhileBlCounter);
   Inc(WhileBlCounter);
+  if IsExpr(s) then
+   ExprCode := PreprocessExpression(s, varmgr)
+  else
+   ExprCode := PushIt(s, varmgr);
   Result := WhileNum + ':' + sLineBreak + 'pushc ' + WhileNum + '_end' +
-    sLineBreak + 'gpm' + sLineBreak + PreprocessExpression(s, varmgr) +
+    sLineBreak + 'gpm' + sLineBreak + ExprCode +
     sLineBreak + 'jz' + sLineBreak + 'pop';
   BlockStack.Add(TCodeBlock.Create(btWhile, '', 'pushc ' + WhileNum +
     sLineBreak + 'gpm' + sLineBreak + 'jp' + sLineBreak + WhileNum +
@@ -1838,7 +1866,7 @@ end;
 
 function ParseUntil(s: string; varmgr: TVarManager): string;
 var
-  UntilNum: string;
+  UntilNum, ExprCode: string;
 begin
   Delete(s, 1, 5);
   Delete(s, Length(s), 1);
@@ -1846,8 +1874,12 @@ begin
   UntilNum := '__gen_until_' + IntToStr(UntilBlCounter);
   Inc(UntilBlCounter);
   Result := UntilNum + ':';
+  if IsExpr(s) then
+   ExprCode := PreprocessExpression(s, varmgr)
+  else
+   ExprCode := PushIt(s, varmgr);
   BlockStack.Add(TCodeBlock.Create(btUntil, '', 'pushc ' + UntilNum +
-    sLineBreak + 'gpm' + sLineBreak + PreprocessExpression(s, varmgr) +
+    sLineBreak + 'gpm' + sLineBreak + ExprCode +
     sLineBreak + 'jz' + sLineBreak + 'pop' + sLineBreak + UntilNum +
     '_end:', UntilNum + '_end'));
 end;
@@ -2307,14 +2339,8 @@ begin
   if Tk(s, 1) = 'endp' then
   begin
     Delete(s, 1, length('endp'));
-    s := ProcEnterList[ProcEnterList.Count - 1] + '.';
-    if ProcEnterList.Count > 0 then
-    begin
-      if Pos(s, LocalVarPref) > 0 then
-        Delete(LocalVarPref, Pos(s, LocalVarPref), Length(s));
-    end
-    else
-      PrpError('Invalid endp ...');
+    if pos('.', LocalVarPref) > 0 then
+     Delete(LocalVarPref, 1, pos('.', LocalVarPref));
     Result := 'jr';
   end
   else
@@ -3313,7 +3339,7 @@ begin
   BlockStack := TList.Create;
   ConstDefs := TStringList.Create;
   InitCode := TStringList.Create;
-  //VarDefs := TStringList.Create;
+  VarDefs := TStringList.Create;
 end;
 
 procedure FreePreprocessor;
@@ -3332,7 +3358,7 @@ begin
   FreeAndNil(BlockStack);
   FreeAndNil(ConstDefs);
   //FreeAndNil(InitCode);
-  //FreeAndNil(VarDefs);
+  FreeAndNil(VarDefs);
 end;
 
 end.
