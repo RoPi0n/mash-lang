@@ -57,6 +57,10 @@ func arrlen($.array):
   return $.len
 end
 
+func temp():
+  return 0
+end
+
 proc getError():
   //err already in stack
 end
@@ -78,7 +82,6 @@ proc super.QuickThread():
   push !__addrtsz
   gpm
   msz
-  pop
 end
 
 proc super.ExitThread():
