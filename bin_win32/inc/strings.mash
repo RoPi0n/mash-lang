@@ -1,0 +1,15 @@
+// str utils
+
+proc s_at(.s, .index):
+  push .index
+  push .s
+  stchatp
+  gpm
+end
+
+proc s_set(.s, .index, .char):
+  push .index
+  push .char
+  push .s
+  stchatk
+end

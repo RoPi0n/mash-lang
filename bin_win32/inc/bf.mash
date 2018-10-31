@@ -1,9 +1,9 @@
 // Base functions & SVMEXE Initialization.
 
-import IntToStr     "bf.lib" "INTTOSTR"
-import FloatToStr   "bf.lib" "FLOATTOSTR"
-import StrToInt     "bf.lib" "STRTOINT"
-import StrToFloat   "bf.lib" "STRTOFLOAT"
+import I2S          "bf.lib" "INTTOSTR"
+import F2S          "bf.lib" "FLOATTOSTR"
+import S2I          "bf.lib" "STRTOINT"
+import S2F          "bf.lib" "STRTOFLOAT"
 import Halt         "bf.lib" "HALT"
 import Sleep        "bf.lib" "SLEEP"
 import StrUpper     "bf.lib" "STRUPPER"
@@ -20,7 +20,7 @@ import TickCnt      "bf.lib" "TICKCNT"
 int  true  -1
 int  false  0
 
-uses <dropstack.mash>
+var null
 
 func BoolToStr($.b):
   if $.b == true:
@@ -34,27 +34,43 @@ proc ExitThread():
   threxit
 end
 
-func new($.value):
-  push $.value
-  copy
-  pop $.value
-  return $.value
+func new(.value):
+  var .v = new
+  .v = .value
+  return .v
 end
 
-func copy($.value):
-  push $.value
+func copy(.value):
+  push .value
   copy
   gpm
-  pop $.value
-  return $.value
+  pop .value
+  return .value
 end
 
-func arrlen($.array):
-  push $.array
+func arrlen(.array):
+  push .array
   alen
-  var $.len
-  pop $.len
-  return $.len
+  var .len
+  pop .len
+  return .len
+end
+
+proc setarrlen(.array, .newlen):
+  push .array
+  push .newlen
+  salen
+end
+
+func in(.v, .array):
+  var .i, .len
+  .len ?= arrlen(.array) - 1
+  for (.i ?= 0; .i < .len; inc .i):
+    if .array[.i] == .v:
+      return true
+    end
+  end
+  return false
 end
 
 func temp():
@@ -73,25 +89,11 @@ proc super.Exit():
   jr
 end
 
-proc super.thread():
-  super QuickThread
-  __InitDropStack()
-end
-
-proc super.QuickThread():
-  push !__addrtsz
-  gpm
-  msz
-end
-
 proc super.ExitThread():
-  __FreeDropStack()
   jump !__haltpoint
 end
 
 proc __EntryPoint():
-  __InitDropStack()
   Main()
-  __FreeDropStack()
   gc
 end

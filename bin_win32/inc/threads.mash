@@ -1,72 +1,36 @@
 // threads
 uses <bf.mash>
-uses <vector.mash>
 
-proc __fthread_caller():
-  super thread
-  var method
-  pop $method
-  call $method()
-end
-
-func fthread($.method):
-  push $.method
-  push !__fthread_caller
+func fthread(.method):
+  pushc  .method
   gpm
   cthr
   var .r
-  pop $.r
-  return $.r
+  pop .r
+  return .r
 end
 
-func async($.method):
-  push $.method
-  push !__thread_caller
+func async(.method):
+  pushc  .method
   gpm
   cthr
   var .r
-  peek $.r
+  peek .r
   rthr
-  return $.r
+  return .r
 end
 
-proc __thread_caller():
-  super thread
-  var vect
-  pop $vect
-  var method = vector.popback($vect)
-  while vector.count() > 0:
-    vector.popback($vect)
-  end
-  call $method()
-end
-
-func thread($.method, $.argc):
-  var .vect = vector.create()
-  while $.argc > 0:
-    vector.pushback($.vect)
-  end
-  vector.pushback($.vect, $.method)
-  push $.vect
-  push !__thread_caller
-  gpm
-  cthr
-  var .r
-  pop $.r
-  return $.r
-end
-
-proc resume($.thread):
-  push $.thread
+proc thr_resume(.thread):
+  push .thread
   rthr
 end
 
-proc suspend($.thread):
-  push $.thread
+proc thr_suspend(.thread):
+  push .thread
   sthr
 end
 
-proc terminate($.thread):
-  push $.thread
+proc thr_terminate(.thread):
+  push .thread
   tthr
 end

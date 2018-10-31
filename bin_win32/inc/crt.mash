@@ -78,7 +78,7 @@ end
 
 proc Crt.TextBackground($.color):
 var .buf = 0xf0
-  store $.color
+  store($.color)
   and  $.buf,          $.color
   shl  $.color,        4
   and  $.color,        $.buf
@@ -87,7 +87,7 @@ var .buf = 0xf0
   and  $.buf,          $Crt.TextAttr
   or   $.color,        $.buf
   mov  $Crt.TextAttr, $.color
-  load $.color
+  load($.color)
 end
 
 proc Crt.NormVideo():
