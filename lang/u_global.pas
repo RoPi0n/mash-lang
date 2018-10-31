@@ -66,9 +66,9 @@ begin
     else
     begin
       if s[1] = '/' then
-       if Length(s) > 1 then
-        if s[2] = '/' then
-         break;
+        if Length(s) > 1 then
+          if s[2] = '/' then
+            break;
       Result := Result + LowerCase(s[1]);
       Delete(s, 1, 1);
     end;

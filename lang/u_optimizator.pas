@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, u_global;
 
-procedure OptimizeCode(Lines:TStringList);
+procedure OptimizeCode(Lines: TStringList);
 
 implementation
 
@@ -16,192 +16,194 @@ var
 
 {*** Common methods ***}
 
-procedure FilterWaste(Lines:TStringList);
+procedure FilterWaste(Lines: TStringList);
 var
-  i,k:longint;
-  j:integer;
-  s:string;
-  IsWaste:boolean;
+  i, k: longint;
+  j: integer;
+  s: string;
+  IsWaste: boolean;
 begin
   i := 0;
   while i < Lines.Count do
-   begin
-     s := Lines[i];
-     if Copy(s, 1, 5) = 'pushc' then
+  begin
+    s := Lines[i];
+    if Copy(s, 1, 5) = 'pushc' then
+    begin
+      Delete(s, 1, 5);
+      s := Trim(s);
+
+      IsWaste := False;
+      k := i + 1;
+      while k < Lines.Count do
       begin
-        Delete(s, 1, 5);
-        s := Trim(s);
-
-        IsWaste := False;
-        k := i + 1;
-        while k < Lines.Count do
-         begin
-           if Lines[k] = s + ':' then
-            break;
-           if Lines[k] = '__gen_' + s + '_method_end:' then
-            begin
-              IsWaste := True;
-              break;
-            end;
-           inc(k);
-         end;
-
-        if not IsWaste then
-         begin
-           j := Waste.IndexOf(s);
-           if j <> -1 then
-            Waste.Delete(j);
-         end;
+        if Lines[k] = s + ':' then
+          break;
+        if Lines[k] = '__gen_' + s + '_method_end:' then
+        begin
+          IsWaste := True;
+          break;
+        end;
+        Inc(k);
       end;
-     inc(i);
-   end;
+
+      if not IsWaste then
+      begin
+        j := Waste.IndexOf(s);
+        if j <> -1 then
+          Waste.Delete(j);
+      end;
+    end;
+    Inc(i);
+  end;
 end;
 
 {*** waste code blocks ***}
 
-procedure FindAllMethods(Lines:TStringList);
+procedure FindAllMethods(Lines: TStringList);
 var
-  i:longint;
-  s:string;
+  i: longint;
+  s: string;
 begin
   i := 0;
   while i < Lines.Count do
-   begin
-     s := Lines[i];
-     if Length(s) > 0 then
+  begin
+    s := Lines[i];
+    if Length(s) > 0 then
+    begin
+      if s[Length(s)] = ':' then
       begin
-        if s[Length(s)] = ':' then
-         begin
-           Delete(s, Length(s), 1);
-           if Lines.IndexOf('__gen_'+s+'_method_end:') > i then
-            Waste.Add(s);
-         end;
+        Delete(s, Length(s), 1);
+        if Lines.IndexOf('__gen_' + s + '_method_end:') > i then
+          Waste.Add(s);
       end;
-     inc(i);
-   end;
+    end;
+    Inc(i);
+  end;
 end;
 
-procedure RemoveMethod(name:string; Lines:TStringList);
+procedure RemoveMethod(Name: string; Lines: TStringList);
 var
-  i:longint;
+  i: longint;
 begin
-  i := Lines.IndexOf(name+':');
+  i := Lines.IndexOf(Name + ':');
   if i <> -1 then
-   begin
-     while (Lines[i] <> '__gen_'+name+'_method_end:') and (Lines.Count > i) do
+  begin
+    while (Lines[i] <> '__gen_' + Name + '_method_end:') and (Lines.Count > i) do
       Lines.Delete(i);
-     if Lines.Count > i then
-      if Lines[i] = '__gen_'+name+'_method_end:' then
-       begin
-         Lines.Delete(i);
-         if Lines.Count > i then
+    if Lines.Count > i then
+      if Lines[i] = '__gen_' + Name + '_method_end:' then
+      begin
+        Lines.Delete(i);
+        if Lines.Count > i then
           if Lines[i] = 'jr' then
-           Lines.Delete(i);
-         //AsmInfo('Method "'+name+'" declared but not used.');
-       end;
-   end;
+            Lines.Delete(i);
+        //AsmInfo('Method "'+name+'" declared but not used.');
+      end;
+  end;
 end;
 
-procedure DelWasteMethods(Lines:TStringList);
+procedure DelWasteMethods(Lines: TStringList);
 begin
   while Waste.Count > 0 do
-   begin
-     RemoveMethod(Waste[0], Lines);
-     Waste.Delete(0);
-   end;
+  begin
+    RemoveMethod(Waste[0], Lines);
+    Waste.Delete(0);
+  end;
 end;
 
 {*** waste imports ***}
 
-procedure FindAllImports(Lines:TStringList);
+procedure FindAllImports(Lines: TStringList);
 var
-  i:longint;
-  s:string;
+  i: longint;
+  s: string;
 begin
   i := 0;
   while i < Lines.Count do
-   begin
-     s := Lines[i];
-     if Length(s) > 0 then
-      begin
-        if tk(s, 1) = 'import' then
-         Waste.Add(tk(s, 2));
-      end;
-     inc(i);
-   end;
+  begin
+    s := Lines[i];
+    if Length(s) > 0 then
+    begin
+      if tk(s, 1) = 'import' then
+        Waste.Add(tk(s, 2));
+    end;
+    Inc(i);
+  end;
 end;
 
-procedure RemoveWasteImports(Lines:TStringList);
+procedure RemoveWasteImports(Lines: TStringList);
 var
-  i:longint;
-  s:string;
+  i: longint;
+  s: string;
 begin
   i := 0;
   while (i < Lines.Count) and (Waste.Count > 0) do
-   begin
-     s := Lines[i];
-     if Length(s) > 0 then
-      begin
-        if tk(s, 1) = 'import' then
-         if Waste.IndexOf(tk(s, 2)) <> -1 then
-          begin
-            Lines.Delete(i);
-            dec(i);
-            //AsmInfo('Imported method "'+tk(s, 2)+'" declared but not used.');
-          end;
-      end;
-     inc(i);
-   end;
+  begin
+    s := Lines[i];
+    if Length(s) > 0 then
+    begin
+      if tk(s, 1) = 'import' then
+        if Waste.IndexOf(tk(s, 2)) <> -1 then
+        begin
+          Lines.Delete(i);
+          Dec(i);
+          //AsmInfo('Imported method "'+tk(s, 2)+'" declared but not used.');
+        end;
+    end;
+    Inc(i);
+  end;
 end;
 
 {*** waste constants ***}
 
-procedure FindAllConsts(Lines:TStringList);
+procedure FindAllConsts(Lines: TStringList);
 var
-  i:longint;
-  s, bf:string;
+  i: longint;
+  s, bf: string;
 begin
   i := 0;
   while i < Lines.Count do
-   begin
-     s := Lines[i];
-     if Length(s) > 0 then
-      begin
-        bf := tk(s, 1);
-        if (bf = 'int') or (bf = 'word') or (bf = 'real') or (bf = 'str') or (bf = 'stream') then
-         Waste.Add(tk(s, 2));
-      end;
-     inc(i);
-   end;
+  begin
+    s := Lines[i];
+    if Length(s) > 0 then
+    begin
+      bf := tk(s, 1);
+      if (bf = 'int') or (bf = 'word') or (bf = 'real') or (bf = 'str') or
+        (bf = 'stream') then
+        Waste.Add(tk(s, 2));
+    end;
+    Inc(i);
+  end;
 end;
 
-procedure RemoveWasteConsts(Lines:TStringList);
+procedure RemoveWasteConsts(Lines: TStringList);
 var
-  i:longint;
-  s, bf:string;
+  i: longint;
+  s, bf: string;
 begin
   i := 0;
   while (i < Lines.Count) and (Waste.Count > 0) do
-   begin
-     s := Lines[i];
-     if Length(s) > 0 then
-      begin
-        bf := tk(s, 1);
-        if (bf = 'int') or (bf = 'word') or (bf = 'real') or (bf = 'str') or (bf = 'stream') then
-         if Waste.IndexOf(tk(s, 2)) <> -1 then
-          begin
-            Lines.Delete(i);
-            dec(i);
-            //AsmInfo('Constant "'+tk(s, 2)+'" declared but not used.');
-          end;
-      end;
-     inc(i);
-   end;
+  begin
+    s := Lines[i];
+    if Length(s) > 0 then
+    begin
+      bf := tk(s, 1);
+      if (bf = 'int') or (bf = 'word') or (bf = 'real') or (bf = 'str') or
+        (bf = 'stream') then
+        if Waste.IndexOf(tk(s, 2)) <> -1 then
+        begin
+          Lines.Delete(i);
+          Dec(i);
+          //AsmInfo('Constant "'+tk(s, 2)+'" declared but not used.');
+        end;
+    end;
+    Inc(i);
+  end;
 end;
 
 {*** Main method ***}
 
-procedure OptimizeCode(Lines:TStringList);
+procedure OptimizeCode(Lines: TStringList);
 begin
   //writeln('Optimization...');
 
@@ -210,11 +212,11 @@ begin
   FindAllMethods(Lines);
   FilterWaste(Lines);
   while Waste.Count > 0 do
-   begin
-     DelWasteMethods(Lines);
-     FindAllMethods(Lines);
-     FilterWaste(Lines);
-   end;
+  begin
+    DelWasteMethods(Lines);
+    FindAllMethods(Lines);
+    FilterWaste(Lines);
+  end;
 
   //*** waste imports
   FindAllImports(Lines);

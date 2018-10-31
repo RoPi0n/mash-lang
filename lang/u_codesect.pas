@@ -82,7 +82,7 @@ type
 
     bcMV,     // [top]^ = [top-1]^
     bcMVBP,   // [top]^^ = [top-1]^
-	bcGVBP,   // [top]^ = [top-1]^^
+    bcGVBP,   // [top]^ = [top-1]^^
     bcMVP,    // [top]^ = [top-1]
 
     {** memory operation's **}

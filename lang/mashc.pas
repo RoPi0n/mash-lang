@@ -5,10 +5,32 @@ program mashc;
 {$H+}
 
 uses
-  SysUtils, Classes, u_imports, u_global, u_consts, u_variables,
-  u_globalvars, u_codesect, u_preprocessor, u_optimizator, unit1;
+  SysUtils,
+  Classes,
+  u_imports,
+  u_global,
+  u_consts,
+  u_variables,
+  u_globalvars,
+  u_codesect,
+  u_preprocessor,
+  u_optimizator,
+  u_classes,
+  u_prep_global,
+  u_prep_codeblock,
+  u_prep_methods,
+  u_prep_expressions,
+  u_prep_array,
+  u_prep_enums,
+  u_prep_vardefs,
+  u_prep_c_methods,
+  u_prep_c_ifelse,
+  u_prep_c_global,
+  u_prep_c_try,
+  u_prep_c_loops,
+  u_prep_c_classes;
 
-  {** Main **}
+{** Main **}
 
 var
   Code: TStringList;
@@ -19,17 +41,22 @@ var
   CodeSection: TCodeSection;
   AppMode: string = '/cns';
   Tm, Tm2: TDateTime;
+  OutFilePath, s: string;
+  EnableOptimization: boolean = True;
 begin
   writeln('Mash lang!');
   writeln('Version: 1.2, Pavel Shiryaev (c) from 2018.');
   writeln('See more at: https://github.com/RoPi0n/mash-lang');
   if ParamCount = 0 then
   begin
-    writeln('Use: ', ExtractFileName(ParamStr(0)), ' <file> [mode]');
-    writeln('Mode''s:');
-    writeln(' /cns  - make console program (default).');
-    writeln(' /gui  - make GUI program.');
-    writeln(' /bin  - make program without SVMEXE header.');
+    writeln('Use: ', ExtractFileName(ParamStr(0)), ' <input file> [arguments]');
+    writeln('Arguments:');
+    writeln(' /cns        - make console program (default).');
+    writeln(' /gui        - make GUI program.');
+    writeln(' /bin        - make program without header.');
+    writeln(' /o-         - build without optimisation.');
+    writeln(' /o+         - build with optimization (default).');
+    writeln(' /out <file> - write output in <file> (default - change extension to "*.vmc").');
     halt;
   end;
   Tm := Now;
@@ -52,7 +79,7 @@ begin
   while c < Code.Count do
   begin
     if Trim(Code[c]) <> '' then
-      PreprocessDefinitions(Code[c]);
+      PreprocessDefinitions(Code[c], varmgr);
     Inc(c);
   end;
   IncludedFiles.Clear;
@@ -66,19 +93,40 @@ begin
   FreePreprocessor;
   code.Text := 'word __addrtsz ' + IntToStr(varmgr.DefinedVars.Count) +
     sLineBreak + 'pushc __addrtsz' + sLineBreak + 'gpm' + sLineBreak +
-    'msz' + sLineBreak + 'gc' + sLineBreak + InitCode.Text + sLineBreak + 'pushc __entrypoint' +
-    slinebreak + 'gpm' + slinebreak + 'jc' + sLineBreak + 'pushc __haltpoint' +
-    sLineBreak + 'gpm' + sLineBreak + 'jp' + sLineBreak + code.Text + sLineBreak +
-    '__haltpoint:' + sLineBreak + 'gc';
+    'msz' + sLineBreak + 'gc' + sLineBreak + InitCode.Text + sLineBreak +
+    'pushc __entrypoint' + slinebreak + 'gpm' + slinebreak + 'jc' +
+    sLineBreak + 'pushc __haltpoint' + sLineBreak + 'gpm' + sLineBreak +
+    'jp' + sLineBreak + code.Text + sLineBreak + '__haltpoint:' + sLineBreak + 'gc';
   code.SaveToFile('buf.tmp');
   code.LoadFromFile('buf.tmp');
   DeleteFile('buf.tmp');
   if Code.Count > 0 then
   begin
+    OutFilePath := ChangeFileExt(ParamStr(1), '.vmc');
     Output := TMemoryStream.Create;
 
-    if ParamCount >= 2 then
-      AppMode := LowerCase(ParamStr(2));
+    c := 2;
+    while c <= ParamCount do
+    begin
+      s := Trim(LowerCase(ParamStr(c)));
+
+      if (s = '/bin') or (s = '/gui') or (s = '/cns') then
+        AppMode := s;
+
+      if s = '/o+' then
+        EnableOptimization := True;
+
+      if s = '/o-' then
+        EnableOptimization := False;
+
+      if s = '/out' then
+      begin
+        OutFilePath := ParamStr(c + 1);
+        Inc(c);
+      end;
+
+      Inc(c);
+    end;
 
     if AppMode <> '/bin' then
     begin
@@ -94,24 +142,27 @@ begin
         Output.WriteByte(Ord('G'));
         Output.WriteByte(Ord('U'));
         Output.WriteByte(Ord('I'));
-        writeln('Header: SVMEXE / GUI program.');
+        writeln('Header: SVM - Executable GUI program.');
       end
       else
       begin
         Output.WriteByte(Ord('C'));
         Output.WriteByte(Ord('N'));
         Output.WriteByte(Ord('S'));
-        writeln('Header: SVMEXE / Console program.');
+        writeln('Header: SVM - Executable console program.');
       end;
     end
     else
-      writeln('Header: SVM / Object file.');
-    OptimizeCode(Code);
+      writeln('Header: SVM - Executable object file.');
+
+    if EnableOptimization then
+      OptimizeCode(Code);
+
     Imports := TImportSection.Create(Code);
     Imports.ParseSection;
     Imports.GenerateCode(Output);
-    Constants.ParseSection;
     Constants.AppendImports(Imports);
+    Constants.ParseSection;
     for c := code.Count - 1 downto 0 do
       if trim(code[c]) = '' then
         code.Delete(c);
@@ -128,7 +179,7 @@ begin
     FreeAndNil(Imports);
     FreeAndNil(Constants);
     FreeAndNil(CodeSection);
-    Output.SaveToFile(ChangeFileExt(ParamStr(1), '.vmc'));
+    Output.SaveToFile(OutFilePath);
     FreeAndNil(Output);
   end;
   FreeAndNil(Code);
