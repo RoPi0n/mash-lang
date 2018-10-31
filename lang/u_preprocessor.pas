@@ -10,7 +10,9 @@ uses
   u_global,
   u_globalvars,
   u_variables,
+  u_consts,
   u_classes,
+  u_writers,
   u_prep_global,
   u_prep_codeblock,
   u_prep_methods,
@@ -28,10 +30,7 @@ uses
 procedure PreprocessDefinitions(s: string; varmgr: TVarManager);
 function PreprocessStr(s: string; varmgr: TVarManager): string;
 procedure InitPreprocessor;
-procedure FreePreprocessor;
-
-var
-  InitCode: TStringList;
+procedure FreePreprocessor(varmgr: TVarManager);
 
 implementation
 
@@ -121,8 +120,6 @@ begin
 end;
 
 procedure PreprocessDefinitions(s: string; varmgr: TVarManager);
-
-
 var
   sl: TStringList;
   c: cardinal;
@@ -186,18 +183,6 @@ begin
       else
         PrpError('Invalid construction: "uses ' + s + '".');
     end;
-  end
-  else
-  {** Class preprocessing **}
-  if IsInClassBlock then
-  begin
-    PreprocessClassPart(s, varmgr);
-  end
-  else
-  {** Class def **}
-  if IsClassDefine(s) then
-  begin
-    PreprocessClassDefine(s);
   end
   else
   if IsProc(s) then
@@ -302,6 +287,18 @@ begin
       else
         PrpError('Invalid construction: "uses ' + s + '".');
     end;
+  end
+  else
+  {** Class preprocessing **}
+  if IsInClassBlock then
+  begin
+    PreprocessClassPart(s, varmgr);
+  end
+  else
+  {** Class def **}
+  if IsClassDefine(s) then
+  begin
+    PreprocessClassDefine(s);
   end
   else
   {** RegAPI **}
@@ -1355,7 +1352,9 @@ begin
   //VarDefs := TStringList.Create;
 end;
 
-procedure FreePreprocessor;
+procedure FreePreprocessor(varmgr: TVarManager);
+var
+  c: cardinal;
 begin
   FreeAndNil(ImportsLst);
   FreeAndNil(ProcEnterList);
@@ -1371,6 +1370,7 @@ begin
 
   while ClassStack.Count > 0 do
   begin
+    //InitCode.Add(TMashClass(ClassStack[0]).GenAllocator(varmgr));
     TMashClass(ClassStack[0]).Free;
     ClassStack.Delete(0);
   end;

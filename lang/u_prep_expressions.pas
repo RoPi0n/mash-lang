@@ -965,7 +965,7 @@ begin
   if s = 'new' then
     Result := True
   else
-  if (Copy(s, 1, 3) = 'new') and (Copy(s, 4, 4)[1] in [' ', '[', ',']) then
+  if (Copy(s, 1, 3) = 'new') and (Copy(s, 4, 4)[1] in [' ', '[']) then
     Result := True;
 end;
 
@@ -999,22 +999,9 @@ begin
         sLineBreak + 'newa';
     end
     else
-    if s[1] = ',' then
-    begin
-      // $x = new, <value>
-      Delete(s, 1, 1);
-      s := Trim(s);
-      Result := Result + sLineBreak + 'new' + sLineBreak + 'pcopy';
-      if IsExpr(s) then
-        Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
-      else
-        Result := Result + sLineBreak + PushIt(s, varmgr);
-      Result := Result + sLineBreak + 'swp' + sLineBreak + 'mov';
-      writeln(Result);
-    end
-    else
     begin //for classes...
-
+      Result := Result + PushIt(IntToStr(FindClassRec(s).AllocSize), varmgr) +
+        sLineBreak + PushIt('1', varmgr) + sLineBreak + 'newa';
     end;
   end;
 end;

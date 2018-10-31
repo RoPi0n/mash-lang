@@ -5,7 +5,8 @@ unit u_prep_enums;
 interface
 
 uses
-  Classes, SysUtils, u_prep_global, u_global, u_globalvars, u_consts;
+  Classes, SysUtils, u_prep_global, u_global, u_globalvars, u_consts,
+  u_writers;
 
 function IsEnumVals(s: string): boolean;
 function CountEnumItems(s: string): cardinal;

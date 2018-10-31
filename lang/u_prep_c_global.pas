@@ -6,8 +6,7 @@ interface
 
 uses
   Classes, SysUtils, u_global, u_globalvars, u_variables, u_prep_global,
-  u_prep_expressions,
-  u_prep_codeblock;
+  u_prep_expressions, u_classes, u_prep_codeblock, u_consts, u_writers;
 
 function GenEnd: string;
 function GenBreak: string;
@@ -20,6 +19,9 @@ implementation
 function GenEnd: string;
 var
   CB: TCodeBlock;
+  MC: TMashClass;
+  CN: TConstant;
+  c: cardinal;
 begin
   Result := '';
   if BlockStack.Count > 0 then
@@ -75,7 +77,26 @@ begin
       btClass:
       begin
         Result := '';
-        writeln('class ended!');
+        c := ClassTable.Count;
+        MC := TMashClass(ClassStack[ClassStack.Count - 1]);
+        MC.FillTable;
+        while MC.Table.Count > 0 do
+        begin
+          if ClassTable.IndexOf(MC.Table[0]) = -1 then
+            ClassTable.Add(Trim(MC.Table[0]));
+          MC.Table.Delete(0);
+        end;
+        MC.AllocSize := ClassTable.Count;
+        while c < ClassTable.Count do
+        begin
+          CN := TConstant.Create;
+          CN.c_names.Add(ClassChildPref + ClassTable[c]);
+          CN.c_type := ctUnsigned64;
+          St_WriteCardinal(CN.c_value, c);
+          Constants.Add(CN);
+          ConstDefs.Add(ClassChildPref + ClassTable[c]);
+          Inc(c);
+        end;
       end
       else
         PrpError('Using operator "end" for not supported block.');

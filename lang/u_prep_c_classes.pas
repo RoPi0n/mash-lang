@@ -12,13 +12,9 @@ uses
 function IsClassDefine(s: string): boolean;
 function PreprocessClassDefine(s: string): string;
 function IsInClassBlock: boolean;
-procedure PreprocessClassVarDefine(s: string; varmgr: TVarManager; MClass: TMashClass);
-function PreprocessClassVarDefines(s: string; varmgr: TVarManager;
-  MClass: TMashClass): string;
+//procedure PreprocessClassVarDefine(s: string; varmgr: TVarManager; MClass: TMashClass);
+procedure PreprocessClassVarDefines(s: string; varmgr: TVarManager; MClass: TMashClass);
 function PreprocessClassPart(s: string; varmgr: TVarManager): string;
-
-const
-  ClassChildPref = '__class__child_';
 
 implementation
 
@@ -53,7 +49,7 @@ begin
     Result := TCodeBlock(BlockStack[BlockStack.Count - 1]).bType = btClass;
 end;
 
-procedure PreprocessClassVarDefine(s: string; varmgr: TVarManager; MClass: TMashClass);
+(*procedure PreprocessClassVarDefine(s: string; varmgr: TVarManager; MClass: TMashClass);
 var
   v, def: string;
   vr: TMashClassVariableDefine;
@@ -118,14 +114,17 @@ begin
     vr := TMashClassVariableDefine.Create(v, False, '');
     MClass.VarDefs.Add(vr);
   end;
-end;
+end;*)
 
-function PreprocessClassVarDefines(s: string; varmgr: TVarManager;
-  MClass: TMashClass): string;
+procedure PreprocessClassVarDefines(s: string; varmgr: TVarManager; MClass: TMashClass);
 begin
-  Result := '';
   while Length(s) > 0 do
-    PreprocessClassVarDefine(CutNextArg(s), varmgr, MClass);
+  begin
+    MClass.VarDefs.Add(TMashClassVariableDefine.Create(Trim(CutNextArg(s)), False, ''));
+    //PreprocessClassVarDefine(CutNextArg(s), varmgr, MClass);
+  end;
+
+
 end;
 
 

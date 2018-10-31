@@ -5,7 +5,7 @@ unit u_codesect;
 interface
 
 uses
-  Classes, SysUtils, u_global, u_consts;
+  Classes, SysUtils, u_global, u_consts, u_writers;
 
 type
 

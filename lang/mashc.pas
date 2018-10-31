@@ -28,7 +28,8 @@ uses
   u_prep_c_global,
   u_prep_c_try,
   u_prep_c_loops,
-  u_prep_c_classes;
+  u_prep_c_classes,
+  u_writers;
 
 {** Main **}
 
@@ -67,7 +68,7 @@ begin
   Code.LoadFromFile(ParamStr(1));
   if Code.Count > 0 then
     for c := 0 to Code.Count - 1 do
-      Code[c] := TrimCodeStr(Code[c]);
+      Code[c] := PreprocessClassCalls(TrimCodeStr(Code[c]));
  {for c:=code.count-1 downto 0 do
   if trim(code[c
   ])='' then code.delete(c);}
@@ -90,7 +91,7 @@ begin
       Code[c] := Trim(PreprocessStr(Code[c], varmgr));
     Inc(c);
   end;
-  FreePreprocessor;
+  FreePreprocessor(varmgr);
   code.Text := 'word __addrtsz ' + IntToStr(varmgr.DefinedVars.Count) +
     sLineBreak + 'pushc __addrtsz' + sLineBreak + 'gpm' + sLineBreak +
     'msz' + sLineBreak + 'gc' + sLineBreak + InitCode.Text + sLineBreak +

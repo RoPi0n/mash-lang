@@ -5,7 +5,7 @@ unit u_imports;
 interface
 
 uses
-  Classes, SysUtils, u_global;
+  Classes, SysUtils, u_writers, u_global;
 
 type
   TImportLibrary = class(TObject)

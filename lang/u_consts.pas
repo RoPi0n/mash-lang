@@ -5,7 +5,7 @@ unit u_consts;
 interface
 
 uses
-  Classes, SysUtils, u_imports, u_global;
+  Classes, SysUtils, u_imports, u_writers, u_global;
 
 type
   TConstantType = (

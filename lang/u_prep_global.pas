@@ -6,24 +6,26 @@ interface
 
 uses
   Classes, SysUtils, u_global, u_globalvars, u_variables, u_consts,
-  u_prep_codeblock;
+  u_prep_codeblock, u_classes, u_writers;
 
-function TkPos(tk, s: string): cardinal;
-procedure PrpError(m: string);
-procedure PrpWarn(m: string);
-function IsVar(s: string; varmgr: TVarManager): boolean;
-function GetVar(s: string; varmgr: TVarManager): string;
 function IsWord(var s: string): boolean;
 function IsInt(s: string): boolean;
 function IsFloat(s: string): boolean;
 function IsStr(s: string): boolean;
 function IsConst(var s: string): boolean;
 function GetConst(s: string): string;
+function TkPos(tk, s: string): cardinal;
+procedure PrpError(m: string);
+procedure PrpWarn(m: string);
+function IsVar(s: string; varmgr: TVarManager): boolean;
+function GetVar(s: string; varmgr: TVarManager): string;
 function PreprocessVarAction(varexpr, action: string; varmgr: TVarManager): string;
 function GetFullVarName(s: string): string;
 function GetCurrentMethodName: string;
 function CutNextArg(var s: string): string;
 function GetArrName(s: string): string;
+function IsClass(s: string): boolean;
+function FindClassRec(s: string): TMashClass;
 
 var
   IfBlCounter: cardinal = 0;
@@ -37,6 +39,7 @@ var
   ClassStack: TList;
   ClassTable: TStringList;
   CntConstAutoDefs: cardinal = 0;
+  InitCode: TStringList;
 
 const
   AutoDefConstPref = '__defc_gen_';
@@ -118,6 +121,125 @@ begin
   end
   else
     PrpError('Invalid variable call "' + s + '".');
+end;
+
+function PreprocessVarAction(varexpr, action: string; varmgr: TVarManager): string;
+begin
+  Result := action + ' ' + GetVar(varexpr, varmgr);
+end;
+
+function GetFullVarName(s: string): string;
+begin
+  if copy(s, 1, 1) = '$' then
+    Delete(s, 1, 1);
+  if copy(s, 1, 1) = '.' then
+  begin
+    Delete(s, 1, 1);
+    s := LocalVarPref + s;
+  end;
+  Result := s;
+end;
+
+function GetCurrentMethodName: string;
+var
+  CB: TCodeBlock;
+  i: integer;
+begin
+  i := 1;
+  Result := 'global code';
+  if BlockStack.Count > 0 then
+    repeat
+      CB := TCodeBlock(BlockStack[BlockStack.Count - i]);
+      if CB.bType in [btFunc, btProc] then
+      begin
+        Result := CB.mName;
+        break;
+      end;
+      Inc(i);
+    until BlockStack.Count - i = 0;
+end;
+
+function CutNextArg(var s: string): string;
+var
+  in_str: boolean;
+  in_br, in_rbr: integer;
+begin
+  Result := '';
+  in_str := False;
+  in_br := 0;
+  in_rbr := 0;
+  while Length(s) > 0 do
+  begin
+    if s[1] = '"' then
+      in_str := not in_str;
+
+    if not in_str then
+    begin
+      if s[1] = '(' then
+        Inc(in_br);
+      if s[1] = ')' then
+        Dec(in_br);
+      if s[1] = '[' then
+        Inc(in_rbr);
+      if s[1] = ']' then
+        Dec(in_rbr);
+    end;
+
+    if (not in_str) and (in_br <= 0) and (in_rbr <= 0) then
+    begin
+      if s[1] = ',' then
+      begin
+        Delete(s, 1, 1);
+        break;
+      end;
+    end;
+
+    Result := Result + s[1];
+    Delete(s, 1, 1);
+  end;
+end;
+
+function GetArrName(s: string): string;
+begin
+  Result := copy(s, 1, pos('[', s) - 1);
+end;
+
+function IsClass(s: string): boolean;
+var
+  c: cardinal;
+begin
+  Result := False;
+  c := 0;
+  s := Trim(s);
+  while c < ClassStack.Count do
+  begin
+    if TMashClass(ClassStack[c]).CName = s then
+    begin
+      Result := True;
+      break;
+    end;
+    Inc(c);
+  end;
+end;
+
+function FindClassRec(s: string): TMashClass;
+var
+  c: cardinal;
+begin
+  Result := nil;
+  s := Trim(s);
+  c := 0;
+  while c < ClassStack.Count do
+  begin
+    if TMashClass(ClassStack[c]).CName = s then
+    begin
+      Result := TMashClass(ClassStack[c]);
+      break;
+    end;
+    Inc(c);
+  end;
+  if Result = nil then
+    PrpError('Invalid class allocation. Class "' + s + '" doesn''t exist.');
 end;
 
 function IsWord(var s: string): boolean;
@@ -291,87 +413,6 @@ begin
   end
   else
     PrpError('Invalid constant call "' + s + '".');
-end;
-
-function PreprocessVarAction(varexpr, action: string; varmgr: TVarManager): string;
-begin
-  Result := action + ' ' + GetVar(varexpr, varmgr);
-end;
-
-function GetFullVarName(s: string): string;
-begin
-  if copy(s, 1, 1) = '$' then
-    Delete(s, 1, 1);
-  if copy(s, 1, 1) = '.' then
-  begin
-    Delete(s, 1, 1);
-    s := LocalVarPref + s;
-  end;
-  Result := s;
-end;
-
-function GetCurrentMethodName: string;
-var
-  CB: TCodeBlock;
-  i: integer;
-begin
-  i := 1;
-  Result := 'global code';
-  if BlockStack.Count > 0 then
-    repeat
-      CB := TCodeBlock(BlockStack[BlockStack.Count - i]);
-      if CB.bType in [btFunc, btProc] then
-      begin
-        Result := CB.mName;
-        break;
-      end;
-      Inc(i);
-    until BlockStack.Count - i = 0;
-end;
-
-function CutNextArg(var s: string): string;
-var
-  in_str: boolean;
-  in_br, in_rbr: integer;
-begin
-  Result := '';
-  in_str := False;
-  in_br := 0;
-  in_rbr := 0;
-  while Length(s) > 0 do
-  begin
-    if s[1] = '"' then
-      in_str := not in_str;
-
-    if not in_str then
-    begin
-      if s[1] = '(' then
-        Inc(in_br);
-      if s[1] = ')' then
-        Dec(in_br);
-      if s[1] = '[' then
-        Inc(in_rbr);
-      if s[1] = ']' then
-        Dec(in_rbr);
-    end;
-
-    if (not in_str) and (in_br <= 0) and (in_rbr <= 0) then
-    begin
-      if s[1] = ',' then
-      begin
-        Delete(s, 1, 1);
-        break;
-      end;
-    end;
-
-    Result := Result + s[1];
-    Delete(s, 1, 1);
-  end;
-end;
-
-function GetArrName(s: string): string;
-begin
-  Result := copy(s, 1, pos('[', s) - 1);
 end;
 
 end.
