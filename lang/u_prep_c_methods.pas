@@ -72,7 +72,7 @@ begin
       if bf[1] = '$' then
         Delete(bf, 1, 1);
       if bf[1] <> '.' then
-        AsmWarn('Receiving control of global variable "' + bf +
+        AsmWarn('Receiving arguments in global variable "' + bf +
           '" in proc "' + pn + '".');
       if varmgr.DefinedVars.IndexOf(bf) = -1 then
       begin

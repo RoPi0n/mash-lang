@@ -34,11 +34,10 @@ var
   sl: TStringList;
 begin
   Result := '';
-  Delete(s, 1, pos('(', s));
-  s := ReverseString(s);
-  Delete(s, 1, pos(')', s));
-  s := ReverseString(s);
+  bf := TryToGetProcName(s);
   s := Trim(s);
+  Delete(s, 1, Length(bf) + 1);
+  Delete(s, Length(s), 1);
 
   sl := TStringList.Create;
   while length(s) > 0 do
@@ -50,6 +49,27 @@ begin
   while sl.Count > 0 do
   begin
     Bf := sl[sl.Count - 1];
+    if (Length(TryToGetProcName(s)) > 0) and
+      (CheckName(TryToGetProcName(s)) or IsArr(TryToGetProcName(s))) then
+    begin
+      if pos('(', s) > 0 then
+      begin
+        Result := PreprocessCall(s, varmgr);
+        s := Trim(TryToGetProcName(s));
+      end;
+
+      if IsArr(s) then
+        Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
+          sLineBreak + 'gpm';
+
+      if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+        Result := Result + sLineBreak + 'jc'
+      else
+        Result := Result + sLineBreak + 'invoke';
+    end
+    else
     if IsExpr(Bf) then
       Result := Result + sLineBreak + PreprocessExpression(Bf, varmgr)
     else
@@ -84,24 +104,27 @@ begin
     else
     if Pos('(', s) > 0 then
     begin
-      if (ProcList.IndexOf(TryToGetProcName(s)) <> -1) or
-        (ImportsLst.IndexOf(TryToGetProcName(s)) <> -1) then
+      if (Length(TryToGetProcName(s)) > 0) and
+        (not (Pos(' ', TryToGetProcName(s)) > 0)) then
       begin
         if pos('(', s) > 0 then
         begin
-          Result := Result + sLineBreak + PreprocessCall(s, varmgr);
-          s := GetProcName(Trim(s));
+          Result := PreprocessCall(s, varmgr);
+          s := Trim(TryToGetProcName(s));
         end;
 
-        s := Trim(s);
-
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-          sLineBreak + 'gpm' + sLineBreak;
-        if ProcList.IndexOf(s) <> -1 then
-          Result := Result + 'jc'
+        if IsArr(s) then
+          Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
         else
-          Result := Result + 'invoke';
-      end{
+          Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
+            sLineBreak + 'gpm';
+
+        if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+          Result := Result + sLineBreak + 'jc'
+        else
+          Result := Result + sLineBreak + 'invoke';
+      end;
+{
       else
         PrpError('Error in operation with [<index>] -> "' + s + '".')};
     end{
@@ -149,6 +172,26 @@ begin
   if IsExpr(s) then
     Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
   else
+  if (Length(TryToGetProcName(s)) > 0) and (CheckName(TryToGetProcName(s)) or
+    IsArr(s)) then
+  begin
+    if pos('(', s) > 0 then
+    begin
+      Result := PreprocessCall(s, varmgr);
+      s := Trim(TryToGetProcName(s));
+    end;
+
+    if IsArr(s) then
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+    else
+      Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+
+    if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+      Result := Result + sLineBreak + 'jc'
+    else
+      Result := Result + sLineBreak + 'invoke';
+  end
+  else
   if IsVar(s, varmgr) then
     Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
   else
@@ -186,32 +229,6 @@ begin
     end;
   end
   else
-  if pos('(', s) > 0 then //calling
-  begin
-    if (ProcList.IndexOf(TryToGetProcName(s)) <> -1) or
-      (ImportsLst.IndexOf(TryToGetProcName(s)) <> -1) then
-    begin
-      if pos('(', s) > 0 then
-      begin
-        Result := Result + sLineBreak + PreprocessCall(s, varmgr);
-        s := GetProcName(Trim(s));
-      end;
-
-      s := Trim(s);
-
-      Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-        sLineBreak + 'gpm' + sLineBreak;
-      if ProcList.IndexOf(s) <> -1 then
-        Result := Result + 'jc'
-      else
-      begin
-        Result := Result + 'invoke';
-        if PushTemporary then
-          Result := Result + 'gpm';
-      end;
-    end;
-  end
-  else
     PrpError('Invalid call "' + bf + '".');
 
   if copy(bf, 1, 1) = '@' then //we need to push pointer to object!
@@ -244,6 +261,29 @@ begin
   Result := '';
   if Copy(s, 1, 1)[1] in ['@', '?'] then
     Delete(s, 1, 1);
+  if IsExpr(s) then
+    Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
+  else
+  if (Length(TryToGetProcName(s)) > 0) and (CheckName(TryToGetProcName(s)) or
+    IsArr(s)) then
+  begin
+    if pos('(', s) > 0 then
+    begin
+      Result := PreprocessCall(s, varmgr);
+      s := Trim(TryToGetProcName(s));
+    end;
+
+    if IsArr(s) then
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+    else
+      Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+
+    if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+      Result := Result + sLineBreak + 'jc'
+    else
+      Result := Result + sLineBreak + 'invoke';
+  end
+  else
   if IsVar(s, varmgr) then
     Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr) +
       sLineBreak + 'copy' + sLineBreak + 'gpm' + sLineBreak +
@@ -256,28 +296,6 @@ begin
     Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) +
       sLineBreak + 'copy' + sLineBreak + 'gpm' + sLineBreak +
       'swp' + sLineBreak + 'pop'
-  else
-  if pos('(', s) > 0 then //calling
-  begin
-    if (ProcList.IndexOf(TryToGetProcName(s)) <> -1) or
-      (ImportsLst.IndexOf(TryToGetProcName(s)) <> -1) then
-    begin
-      if pos('(', s) > 0 then
-      begin
-        Result := Result + sLineBreak + PreprocessCall(s, varmgr);
-        s := GetProcName(Trim(s));
-      end;
-
-      s := Trim(s);
-
-      Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-        sLineBreak + 'gpm' + sLineBreak;
-      if ProcList.IndexOf(s) <> -1 then
-        Result := Result + 'jc'
-      else
-        Result := Result + 'invoke';
-    end;
-  end
   else
     PrpError('Invalid call "' + bf + '".');
 
@@ -1007,4 +1025,3 @@ begin
 end;
 
 end.
-

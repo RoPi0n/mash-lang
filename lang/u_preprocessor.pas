@@ -442,23 +442,24 @@ begin
   end
   else
   {** Fast Calling **}
-  if (ProcList.IndexOf(TryToGetProcName(s)) <> -1) or
-    (ImportsLst.IndexOf(TryToGetProcName(s)) <> -1) then
+  if (Length(TryToGetProcName(s)) > 0) and
+     (CheckName(TryToGetProcName(s)) or IsArr(s)) then
   begin
     if pos('(', s) > 0 then
     begin
       Result := PreprocessCall(s, varmgr);
-      s := GetProcName(Trim(s));
+      s := Trim(TryToGetProcName(s));
     end;
 
-    s := Trim(s);
-
-    Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-      sLineBreak + 'gpm' + sLineBreak;
-    if ProcList.IndexOf(s) <> -1 then
-      Result := Result + 'jc'
+    if IsArr(s) then
+     Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
     else
-      Result := Result + 'invoke';
+     Result := Result + sLineBreak + 'pushc ' + GetConst('!'+s) + sLineBreak + 'gpm';
+
+    if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+      Result := Result + sLineBreak + 'jc'
+    else
+      Result := Result + sLineBreak + 'invoke';
   end
   else
   if IsEqExpr(s, varmgr) then

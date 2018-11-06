@@ -125,6 +125,8 @@ begin
       if copy(s, 1, 2) = '->' then
       begin
         Delete(s, 1, 2);
+        Result := Trim(Result);
+        s := Trim(s);
         Result := Result + '[' + ClassChildPref;
         while Length(s) > 0 do
         begin

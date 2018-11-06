@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, u_globalvars, u_variables, u_prep_global,
-  u_prep_expressions, u_prep_array, u_prep_methods;
+  u_prep_expressions, u_prep_array, u_prep_methods, u_global;
 
 function PreprocessVarDefine(s: string; varmgr: TVarManager): string;
 function PreprocessVarDefines(s: string; varmgr: TVarManager): string;
@@ -63,6 +63,27 @@ begin
     if IsOpNew(s) then
       Result := Result + sLineBreak + PreprocessOpNew(s, varmgr)
     else
+    if (Length(TryToGetProcName(s)) > 0) and
+      (CheckName(TryToGetProcName(s)) or IsArr(s)) then
+    begin
+      if pos('(', s) > 0 then
+      begin
+        Result := PreprocessCall(s, varmgr);
+        s := Trim(TryToGetProcName(s));
+      end;
+
+      if IsArr(s) then
+        Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
+          sLineBreak + 'gpm';
+
+      if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+        Result := Result + sLineBreak + 'jc'
+      else
+        Result := Result + sLineBreak + 'invoke';
+    end
+    else
     //Result := Result + sLineBreak + PushIt(s, varmgr);
     if IsVar(s, varmgr) then
       Result := PreprocessVarAction(s, 'push', varmgr)
@@ -75,30 +96,6 @@ begin
     else
     if IsExpr(s) then
       Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
-    else
-    if (Pos('(', s) > 0) and (s[1] <> '[') then
-    begin
-      if (ProcList.IndexOf(TryToGetProcName(s)) <> -1) or
-        (ImportsLst.IndexOf(TryToGetProcName(s)) <> -1) then
-      begin
-        if pos('(', s) > 0 then
-        begin
-          Result := Result + sLineBreak + PreprocessCall(s, varmgr);
-          s := GetProcName(Trim(s));
-        end;
-
-        s := Trim(s);
-
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-          sLineBreak + 'gpm' + sLineBreak;
-        if ProcList.IndexOf(s) <> -1 then
-          Result := Result + 'jc'
-        else
-          Result := Result + 'invoke';
-      end
-      else
-        PrpError('Invalid variable definition with = in "' + s + '".');
-    end
     else
       Result := Result + sLineBreak + PushIt(s, varmgr);
     //PrpError('Invalid variable definition with = in "' + s + '".');
@@ -123,4 +120,3 @@ begin
 end;
 
 end.
-
