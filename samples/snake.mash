@@ -1,0 +1,204 @@
+uses <bf>
+uses <crt>
+uses <threads>
+uses <classes>
+
+////////////////////////////////////////////////////////////////////////////////
+
+enum SnakeMovingVector [smvLeft, smvRight, smvUp, smvDown]
+
+class Snake:
+  var Body, MovingVector
+  proc Init, Free
+end
+
+proc Snake::Init():
+  $Body = new vector
+  $Body->Init()
+  $Body->Push_Back(point.createxy(10, 10))
+  $Body->Push_Back(point.createxy(11, 10))
+  $Body->Push_Back(point.createxy(12, 10))
+  $MovingVector = new
+  $MovingVector = smvRight
+end
+
+proc Snake::Free():
+  Free(MovingVector)
+  $Body->Free()
+  FreeClass($)
+end
+
+func Snake.create():
+  var .s = new snake
+  .s->Init()
+  return .s
+end
+
+////////////////////////////////////////////////////////////////////////////////
+
+var snk = snake.create(), food = point.create(), score = 0, sleeptime = 100, ControlThr
+
+str snake_char "*"
+str food_char  "&"
+str border_char "N"
+
+proc PutCh(.x, .y, .char):
+  Crt.gotoXY32(.y, .x)
+  Print(.char)
+end
+
+proc DrawBorders():
+  var .x, .y
+  for(.y ?= 1; .y < 23; inc .y):
+    for(.x ?= 1; .x < 43; inc .x):
+      if (.y == 1) | (.y == 22):
+        PutCh(.x, .y, border_char)
+      else:
+        if (.x == 1) | (.x == 42):
+          PutCh(.x, .y, border_char)
+        end
+      end
+    end
+  end
+end
+
+proc GameOver():
+  thr_suspend(ControlThr)
+  Crt.ClrScr()
+  Crt.CursorOn()
+  PutCh(1, 1, "Game over!")
+  PutCh(1, 2, "Score: " + I2S(score) + ".")
+  Crt.ReadKey()
+  Halt()
+end
+
+////////////////////////////////////////////////////////////////////////////////
+
+proc RandFood():
+  food->set(RandomB(39) + 2, RandomB(19) + 2)
+  var .i
+  for(.i ?= 1; .i < snk->Body->Size(); inc .i):
+    if (food->x == snk->Body->Items[.i]->x) & (food->y == snk->Body->Items[.i]->y):
+      RandFood()
+      break
+    end
+  end
+end
+
+proc MoveSnake(.x, .y):
+  var .head = snk->Body->Peek_Back()
+  var .newhead = point.createxy(.head->x + .x, .head->y + .y)
+
+  if (.newhead->x == food->x) & (.newhead->y == food->y):
+    RandFood()
+    PutCh(food->x, food->y, food_char)
+    inc score
+    PutCh(46, 13, "Score: " + I2S(score) + ".")
+  else:
+    var .tmp
+    snk->Body->Pop_First()
+    pop .tmp
+    PutCh(.tmp->x, .tmp->y, " ")
+    .tmp->Free()
+
+    var .i
+    for(.i ?= 1; .i < snk->Body->Size(); inc .i):
+      if (.newhead->x == snk->Body->Items[.i]->x) & (.newhead->y == snk->Body->Items[.i]->y):
+        GameOver()
+      end
+    end
+
+    if (.newhead->x == 1) | (.newhead->x == 42) | (.newhead->y == 1) | (.newhead->y == 22):
+      GameOver()
+    end
+  end
+
+  PutCh(food->x, food->y, food_char)
+  PutCh(.newhead->x, .newhead->y, snake_char)
+  snk->Body->Push_Back(.newhead)
+end
+
+
+proc GameTick():
+  if snk->MovingVector == smvLeft:
+    MoveSnake(-1, 0)
+    break
+  end
+  if snk->MovingVector == smvRight:
+    MoveSnake(1, 0)
+    break
+  end
+  if snk->MovingVector == smvUp:
+    MoveSnake(0, -1)
+    break
+  end
+  if snk->MovingVector == smvDown:
+    MoveSnake(0, 1)
+    break
+  end
+end
+
+////////////////////////////////////////////////////////////////////////////////
+
+proc ControlThread(.ThreadContext, .Arg):
+  var .k
+  while true:
+    .k ?= Crt.ReadKey()
+
+    sleeptime = 100
+
+    if (.k == "w") | (.k == "W"):
+      if snk->MovingVector == smvUp:
+        sleeptime = 50
+      end
+      snk->MovingVector = smvUp
+    end
+    if (.k == "s") | (.k == "S"):
+      if snk->MovingVector == smvDown:
+        sleeptime = 50
+      end
+      snk->MovingVector = smvDown
+    end
+    if (.k == "a") | (.k == "A"):
+      if snk->MovingVector == smvLeft:
+        sleeptime = 50
+      end
+      snk->MovingVector = smvLeft
+    end
+    if (.k == "d") | (.k == "D"):
+      if snk->MovingVector == smvRight:
+        sleeptime = 50
+      end
+      snk->MovingVector = smvRight
+    end
+
+    Free(.k)
+  end
+end
+
+////////////////////////////////////////////////////////////////////////////////
+
+proc main():
+  ControlThr ?= async(ControlThread, 0)
+  Randomize()
+  Crt.ClrScr()
+  Crt.CursorOff()
+  DrawBorders()
+  PutCh(snk->body->items[1]->x, snk->body->items[1]->y, snake_char)
+  PutCh(snk->body->items[2]->x, snk->body->items[2]->y, snake_char)
+  PutCh(snk->body->items[3]->x, snk->body->items[3]->y, snake_char)
+  food->set(RandomB(39) + 2, RandomB(19) + 2)
+  PutCh(food->x, food->y, food_char)
+
+  PutCh(46, 10, "[MASH LANG!]")
+  PutCh(46, 11, "[SNAKE]")
+  PutCh(46, 13, "Score: 0.")
+
+  while true:
+    Sleep(sleeptime)
+    GameTick()
+    gc
+  end
+
+  InputLn()
+end
