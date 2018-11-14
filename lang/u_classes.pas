@@ -24,7 +24,7 @@ type
     AllocSize: cardinal;
     CName: string;
     VarDefs: TList;
-    Methods, Constructors, Destructors: TStringList;
+    Methods, MethodsLinks, Constructors, Destructors: TStringList;
     Table: TStringList;
     constructor Create(Name: string);
     destructor Destroy; override;
@@ -59,6 +59,7 @@ begin
   CName := Name;
   VarDefs := TList.Create;
   Methods := TStringList.Create;
+  MethodsLinks := TStringList.Create;
   Constructors := TStringList.Create;
   Destructors := TStringList.Create;
   Table := TStringList.Create;
@@ -73,6 +74,7 @@ begin
   end;
   FreeAndNil(VarDefs);
   FreeAndNil(Methods);
+  FreeAndNil(MethodsLinks);
   FreeAndNil(Constructors);
   FreeAndNil(Destructors);
   FreeAndNil(Table);

@@ -23,9 +23,9 @@ function IsClassDefine(s: string): boolean;
 begin // class ClassName:
   Result := False;
   s := Trim(s);
-  if copy(s, 1, 5) = 'class' then
+  if copy(s, 1, 6) = 'class ' then
   begin
-    Delete(s, 1, 5);
+    Delete(s, 1, 6);
     s := Trim(s);
     if Length(s) > 1 then
       Result := s[length(s)] = ':';
@@ -33,14 +33,52 @@ begin // class ClassName:
 end;
 
 function PreprocessClassDefine(s: string): string;
+var
+  Mc, Mc2: TMashClass;
+  Bf: string;
+  c: cardinal;
 begin
   Result := '';
   s := Trim(s);
   Delete(s, 1, 5);
   Delete(s, Length(s), 1);
   s := Trim(s);
-  BlockStack.Add(TCodeBlock.Create(btClass, s, '', ''));
-  ClassStack.Add(TMashClass.Create(s));
+  bf := GetProcName(s);
+
+  if (Pos('(', s) > 0) and (s[length(s)] = ')') then
+  begin
+    Mc := TMashClass.Create(bf);
+    Delete(s, length(s), 1);
+    Delete(s, 1, pos('(', s));
+
+    while Length(s) > 0 do
+    begin
+      bf := Trim(CutNextArg(s));
+      Mc2 := FindClassRec(bf);
+
+      if Mc2 <> nil then
+      begin
+        c := 0;
+        while c < Mc2.Methods.Count do
+        begin
+          if Mc.Methods.IndexOf(Mc2.Methods[c]) = -1 then
+          begin
+            Mc.Methods.Add(Mc2.Methods[c]);
+            Mc.MethodsLinks.Add(Mc2.MethodsLinks[c]);
+          end
+          else
+            Mc.MethodsLinks[c] := Mc2.MethodsLinks[c];
+          inc(c);
+        end;
+      end;
+
+    end;
+  end
+  else
+    Mc := TMashClass.Create(s);
+
+  BlockStack.Add(TCodeBlock.Create(btClass, bf, '', ''));
+  ClassStack.Add(Mc);
 end;
 
 function IsInClassBlock: boolean;
@@ -128,6 +166,10 @@ end;
 
 
 function PreprocessClassPart(s: string; varmgr: TVarManager): string;
+var
+  mc: TMashClass;
+  bf: string;
+  i: integer;
 begin
   Result := '';
   s := Trim(s);
@@ -146,10 +188,22 @@ begin
     Delete(s, 1, 4);
     s := Trim(s);
     while Length(s) > 0 do
-     begin
-       TMashClass(ClassStack[ClassStack.Count - 1]).Methods.Add(Trim(CutNextArg(s)));
-     end;
-  end;
+    begin
+      Mc := TMashClass(ClassStack[ClassStack.Count - 1]);
+      bf := Trim(CutNextArg(s));
+      i := Mc.Methods.IndexOf(bf);
+      if i = -1 then
+      begin
+        Mc.Methods.Add(bf);
+        Mc.MethodsLinks.Add(Mc.CName + '__' + bf);
+      end
+      else
+        Mc.MethodsLinks[i] := Mc.CName + '__' + bf;
+    end;
+  end
+  else
+   PrpError('Invalid class definition, class: <' +
+            TMashClass(ClassStack[ClassStack.Count - 1]).CName + '>.');
 end;
 
 function GenClassAllocator(MClass: TMashClass; varmgr: TVarManager): string;
@@ -161,21 +215,23 @@ begin
 
   mname := '__class_' + MClass.CName + '_allocator';
   Result := mname + ':' + sLineBreak + TempPushIt(IntToStr(MClass.AllocSize), varmgr) +
-            sLineBreak + TempPushIt('1', varmgr) + sLineBreak + 'newa' + sLineBreak;
+    sLineBreak + TempPushIt('1', varmgr) + sLineBreak + 'newa' + sLineBreak;
 
   // StructFree()
-  Result := Result + 'pcopy' + sLineBreak + 'pushc ' + '__class_' + MClass.CName + '_structure_free' + sLineBreak +
-            'swp' + sLineBreak + 'pushc ' + ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak + 'swp' + sLineBreak +
-            'peekai' + sLineBreak;
+  Result := Result + 'pcopy' + sLineBreak + 'pushc ' + '__class_' +
+    MClass.CName + '_structure_free' + sLineBreak + 'swp' + sLineBreak +
+    'pushc ' + ClassChildPref + 'structfree' + sLineBreak + 'gpm' +
+    sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
 
   c := 0;
   while c < MClass.Methods.Count do
-   begin
-     Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.CName + '__' + MClass.Methods[c] + sLineBreak +
-               'swp' + sLineBreak + 'pushc ' + ClassChildPref + MClass.Methods[c] + sLineBreak + 'gpm' + sLineBreak + 'swp' + sLineBreak +
-               'peekai' + sLineBreak;
-     inc(c);
-   end;
+  begin
+    Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.MethodsLinks[c]
+      {MClass.CName + '__' + MClass.Methods[c]} + sLineBreak + 'swp' +
+      sLineBreak + 'pushc ' + ClassChildPref + MClass.Methods[c] +
+      sLineBreak + 'gpm' + sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
+    Inc(c);
+  end;
 
   Result := Result + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
 
@@ -185,20 +241,24 @@ begin
   Result := Result + sLineBreak + mname + ':';
 
   Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
-            ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak +
-            'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' + sLineBreak + 'pop';
+    ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak +
+    'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' + sLineBreak + 'pop';
 
   c := 0;
   while c < MClass.Methods.Count do
-   begin
-     Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
-               ClassChildPref + MClass.Methods[c] + sLineBreak + 'gpm' + sLineBreak +
-               'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' + sLineBreak + 'pop';
-     inc(c);
-   end;
+  begin
+    Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
+      ClassChildPref + MClass.Methods[c] + sLineBreak + 'gpm' +
+      sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' +
+      sLineBreak + 'pop';
+    Inc(c);
+  end;
 
-  Result := Result {+ sLineBreak + 'gpa'} + sLineBreak + 'pop' + sLineBreak +
-            '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
+  Result := Result {+ sLineBreak + 'gpa'} + sLineBreak + 'pop' +
+    sLineBreak + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
+
+
+
 end;
 
 end.
