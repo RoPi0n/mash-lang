@@ -1,5 +1,5 @@
-uses <bf.mash>
-uses <crt.mash>
+uses <bf>
+uses <crt>
 
 proc main():
   PrintLn("Hello, what is your name?")
