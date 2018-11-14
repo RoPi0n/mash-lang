@@ -1,16 +1,17 @@
+// Imports example.
 import PrintLn "crt.lib" "PRINTLN"
 import InputLn "crt.lib" "INPUTLN"
 
+// Program entry point (because we don't write "uses <bf>").
 proc __EntryPoint():
-  var $b = 0, $c = 1, $d = 0
+  var a = 0, b = 1, tmp = 0
   PrintLn(0)
   PrintLn(1)
-  for(var $a = 0; $a < 40; inc $a):
-    $d = $c
-    $c = $c + $b
-    $b = $d
-    PrintLn($c)
+  for(var i = 0; i < 40; inc i):
+    tmp = b
+    b = b + a
+    a = tmp
+    PrintLn(b)
   end
-  gc
   InputLn()
 end
