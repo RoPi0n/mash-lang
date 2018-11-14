@@ -1,23 +1,24 @@
-// threads
+// Mash lang threads unit.
+// Code version: 1.0
+
 uses <bf.mash>
 
-func fthread(.method):
-  pushc  .method
-  gpm
+////////////////////////////////////////////////////////////////////////////////
+// Some methods
+////////////////////////////////////////////////////////////////////////////////
+
+proc fthread(.method, .arg):
+  push .arg
+  push .method
   cthr
-  var .r
-  pop .r
-  return .r
 end
 
-func async(.method):
-  pushc  .method
-  gpm
+proc async(.method, .arg):
+  push .arg
+  push .method
   cthr
-  var .r
-  peek .r
+  pcopy
   rthr
-  return .r
 end
 
 proc thr_resume(.thread):
@@ -34,3 +35,7 @@ proc thr_terminate(.thread):
   push .thread
   tthr
 end
+
+////////////////////////////////////////////////////////////////////////////////
+// Thread class
+////////////////////////////////////////////////////////////////////////////////

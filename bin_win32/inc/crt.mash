@@ -67,27 +67,27 @@ var Crt.TextAttr
 
 proc Crt.Init():
   push 0x07
-  pop  $Crt.TextAttr
+  pop  Crt.TextAttr
 end
 
-proc Crt.TextColor($.color):
-  and  $.color, 143
-  and  $Crt.TextAttr, 112
-  or   $Crt.TextAttr, $.color
+proc Crt.TextColor(.color):
+  and  .color, 143
+  and  Crt.TextAttr, 112
+  or   Crt.TextAttr, .color
 end
 
-proc Crt.TextBackground($.color):
-var .buf = 0xf0
-  store($.color)
-  and  $.buf,          $.color
-  shl  $.color,        4
-  and  $.color,        $.buf
-  mov  $.buf,          0x0f
-  or   $.buf,          !Crt.Blink
-  and  $.buf,          $Crt.TextAttr
-  or   $.color,        $.buf
-  mov  $Crt.TextAttr, $.color
-  load($.color)
+proc Crt.TextBackground(.color):
+//var .buf = 0xf0
+//  store(.color)
+//  and  .buf,          .color
+//  shl  .color,        4
+//  and  .color,        .buf
+//  mov  .buf,          0x0f
+//  or   .buf,          !Crt.Blink
+//  and  .buf,          Crt.TextAttr
+//  or   .color,        .buf
+//  mov  Crt.TextAttr, .color
+//  load(.color)
 end
 
 proc Crt.NormVideo():
@@ -121,13 +121,13 @@ proc Crt.Pause():
 end
 
 proc PrintFmt():
-  push $.Crt.TextAttr
+  push .Crt.TextAttr
   swp
   PrintFormat()
 end
 
 proc PrintLnFmt():
-  push $Crt.TextAttr
+  push Crt.TextAttr
   swp
   PrintFormat()
   push ""

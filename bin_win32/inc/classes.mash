@@ -1,0 +1,137 @@
+// Mash lang classes unit.
+// Code version: 1.0
+
+uses <bf.mash>
+
+////////////////////////////////////////////////////////////////////////////////
+// Simple classes
+////////////////////////////////////////////////////////////////////////////////
+
+class class: // for free class-methods declaration
+end          // like:  proc class::MyProc()  -- for that -->  MyClass->MyMethod = class::MyProc
+
+////////////////////////////////////////////////////////////////////////////////
+// Point
+////////////////////////////////////////////////////////////////////////////////
+
+class point:
+  var x, y
+  proc Init, Free, Set, Compare
+end
+
+proc point::Init(.x, .y):
+  $x = new
+  $x = .x
+  $y = new
+  $y = .y
+end
+
+proc point::Free():
+  Free($x)
+  Free($y)
+  FreeClass($)
+end
+
+proc point::Set(.x, .y):
+  $x = .x
+  $y = .y
+end
+
+func point::Compare(.p):
+  return ($x == p->x) & ($y == p->y)
+end
+
+// Constructor's
+
+func point.create():
+  var .p = new point
+  .p->Init(0, 0)
+  return .p
+end
+
+func point.createxy(.x, .y):
+  var .p = new point
+  .p->Init(.x, .y)
+  return .p
+end
+
+////////////////////////////////////////////////////////////////////////////////
+//  Vector
+////////////////////////////////////////////////////////////////////////////////
+
+class vector:
+  var Items
+  proc Init, Free, Push_Back, Rem_Back, Rem_First
+  func Pop_Back, Pop_First, Peek_Back, Peek_First, At, Size
+end
+
+proc vector::Init():
+  $Items = new[1]
+  $Items[0] = new
+  $Items[0] = 0
+end
+
+proc vector::Push_Back(.Object):
+  setarrlen($Items, $Items[0] + 2)
+  inc $Items[0]
+  $Items[$Items[0]] ?= .Object
+end
+
+func vector::Pop_Back():
+  var .r = $Items[$Items[0]]
+  setarrlen($Items, $Items[0])
+  dec $Items[0]
+  return .r
+end
+
+func vector::Pop_First():
+  var .r = $Items[1], .i
+  for(.i ?= 1; .i < $Items[0]; inc .i):
+    $Items[.i] ?= $Items[.i + 1]
+  end
+  setarrlen($Items, $Items[0])
+  dec $Items[0]
+  return .r
+end
+
+func vector::Peek_Back():
+  return $Items[$Items[0]]
+end
+
+func vector::Peek_First():
+  return $Items[1]
+end
+
+proc vector::Rem_First():
+  for(var .i = 1; .i < $Items[0]; inc .i):
+    $Items[.i] ?= $Items[.i + 1]
+  end
+  setarrlen($Items, $Items[0])
+  dec $Items[0]
+end
+
+proc vector::Rem_Back():
+  setarrlen($Items, $Items[0])
+  dec $Items[0]
+end
+
+func vector::At(.Index):
+  return $Items[.Index - 1]
+end
+
+func vector::Size():
+  return $Items[0]
+end
+
+proc vector::Free():
+  FreeArr($Items)
+  FreeClass($)
+end
+
+// Constructor
+
+func vector.Create():
+  var .v = new vector
+  .v->Init()
+  return .v
+end
