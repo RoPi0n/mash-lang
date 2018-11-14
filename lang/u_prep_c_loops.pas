@@ -5,7 +5,7 @@ unit u_prep_c_loops;
 interface
 
 uses
-  Classes, SysUtils, u_global, u_globalvars, u_variables, u_prep_global,
+  Classes, SysUtils, u_globalvars, u_variables, u_prep_global,
   u_prep_expressions,
   u_prep_codeblock;
 

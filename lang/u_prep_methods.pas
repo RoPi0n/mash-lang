@@ -8,16 +8,25 @@ uses
   Classes, SysUtils;
 
 function GetProcName(s: string): string;
-function TryToGetProcName(s: string): string;
+function ExtractProcName(s: string): string;
 
 implementation
 
-function GetProcName(s: string): string;
+function ExtractProcName(s: string): string;
+var
+  bf: string;
 begin
-  Result := Copy(s, 1, Pos('(', s) - 1);
+  if pos('::', s) > 0 then
+   begin
+     bf := Trim(copy(s, 1, pos('::', s)-1));
+     Delete(s, 1, pos('::', s)+1);
+     s := Trim(s);
+     s := bf + '__' + s;
+   end;
+  Result := s;
 end;
 
-function TryToGetProcName(s: string): string;
+function GetProcName(s: string): string;
 var
   in_br, in_rbr: integer;
   in_str: boolean;
@@ -51,14 +60,6 @@ begin
   end;
   if Length(s) = 0 then
    Result := '';
-  {if pos('(', s) > 0 then
-  begin
-    Delete(s, pos('(', s), length(s));
-    if length(s) > 0 then
-      if s[1] in ['$', '!'] then
-        Delete(s, 1, 1);
-    Result := s;
-  end;}
 end;
 
 end.

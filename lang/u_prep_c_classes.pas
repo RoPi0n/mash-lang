@@ -15,6 +15,7 @@ function IsInClassBlock: boolean;
 //procedure PreprocessClassVarDefine(s: string; varmgr: TVarManager; MClass: TMashClass);
 procedure PreprocessClassVarDefines(s: string; varmgr: TVarManager; MClass: TMashClass);
 function PreprocessClassPart(s: string; varmgr: TVarManager): string;
+function GenClassAllocator(MClass: TMashClass; varmgr: TVarManager): string;
 
 implementation
 
@@ -123,8 +124,6 @@ begin
     MClass.VarDefs.Add(TMashClassVariableDefine.Create(Trim(CutNextArg(s)), False, ''));
     //PreprocessClassVarDefine(CutNextArg(s), varmgr, MClass);
   end;
-
-
 end;
 
 
@@ -140,7 +139,66 @@ begin
     Delete(s, 1, 3);
     s := Trim(s);
     PreprocessClassVarDefines(s, varmgr, TMashClass(ClassStack[ClassStack.Count - 1]));
+  end
+  else
+  if (copy(s, 1, 5) = 'func ') or (copy(s, 1, 5) = 'proc ') then
+  begin
+    Delete(s, 1, 4);
+    s := Trim(s);
+    while Length(s) > 0 do
+     begin
+       TMashClass(ClassStack[ClassStack.Count - 1]).Methods.Add(Trim(CutNextArg(s)));
+     end;
   end;
+end;
+
+function GenClassAllocator(MClass: TMashClass; varmgr: TVarManager): string;
+var
+  mname: string;
+  c: cardinal;
+begin
+  // Allocation
+
+  mname := '__class_' + MClass.CName + '_allocator';
+  Result := mname + ':' + sLineBreak + TempPushIt(IntToStr(MClass.AllocSize), varmgr) +
+            sLineBreak + TempPushIt('1', varmgr) + sLineBreak + 'newa' + sLineBreak;
+
+  // StructFree()
+  Result := Result + 'pcopy' + sLineBreak + 'pushc ' + '__class_' + MClass.CName + '_structure_free' + sLineBreak +
+            'swp' + sLineBreak + 'pushc ' + ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak + 'swp' + sLineBreak +
+            'peekai' + sLineBreak;
+
+  c := 0;
+  while c < MClass.Methods.Count do
+   begin
+     Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.CName + '__' + MClass.Methods[c] + sLineBreak +
+               'swp' + sLineBreak + 'pushc ' + ClassChildPref + MClass.Methods[c] + sLineBreak + 'gpm' + sLineBreak + 'swp' + sLineBreak +
+               'peekai' + sLineBreak;
+     inc(c);
+   end;
+
+  Result := Result + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
+
+  // Clear memory
+
+  mname := '__class_' + MClass.CName + '_structure_free';
+  Result := Result + sLineBreak + mname + ':';
+
+  Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
+            ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak +
+            'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' + sLineBreak + 'pop';
+
+  c := 0;
+  while c < MClass.Methods.Count do
+   begin
+     Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
+               ClassChildPref + MClass.Methods[c] + sLineBreak + 'gpm' + sLineBreak +
+               'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' + sLineBreak + 'pop';
+     inc(c);
+   end;
+
+  Result := Result {+ sLineBreak + 'gpa'} + sLineBreak + 'pop' + sLineBreak +
+            '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
 end;
 
 end.

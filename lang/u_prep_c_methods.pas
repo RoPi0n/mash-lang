@@ -6,8 +6,7 @@ interface
 
 uses
   Classes, SysUtils, u_global, u_variables, u_globalvars, u_prep_global,
-  u_prep_codeblock, u_prep_methods,
-  u_prep_expressions;
+  u_prep_codeblock, u_prep_methods;
 
 function IsProc(s: string): boolean;
 function PreprocessProc(s: string; varmgr: TVarManager): string;
@@ -26,8 +25,13 @@ begin
       Delete(s, length(s), 1);
       s := Trim(s);
       if (Pos('(', s) > 0) and (Pos(')', s) > 0) then
-        if CheckName(Copy(s, 1, Pos('(', s) - 1)) then
+       begin
+         if Pos('::', s) > 0 then
+          Result := True
+         else
+         if CheckName(Copy(s, 1, Pos('(', s) - 1)) then
           Result := True;
+       end;
     end;
 end;
 
@@ -35,6 +39,7 @@ function PreprocessProc(s: string; varmgr: TVarManager): string;
 var
   bf, pn: string;
   CB: TCodeBlock;
+  IsClassM: boolean;
 begin
   s := Trim(s);
   bf := Copy(s, 1, 4);
@@ -42,7 +47,16 @@ begin
   s := Trim(s);
   if s[Length(s)] = ':' then
     Delete(s, length(s), 1);
-  pn := GetProcName(Trim(s));
+  pn := Trim(GetProcName(Trim(s)));
+
+  if pos('::', pn) > 0 then
+   begin
+     IsClassM := True;
+     pn := ExtractProcName(pn);
+   end
+  else
+   IsClassM := False;
+
   if bf = 'proc' then
     CB := TCodeBlock.Create(btProc, '', '', '__gen_' + pn + '_method_end')
   else
@@ -54,6 +68,14 @@ begin
   LocalVarPref := LocalVarPref + pn + '.';
   Delete(s, 1, pos('(', s));
   Delete(s, pos(')', s), length(s));
+  s := Trim(s);
+
+  if IsClassM then
+   if Length(s) > 0 then
+    s := '.this, ' + s
+   else
+    s := '.this';
+
   while length(s) > 0 do
   begin
     if pos(',', s) > 0 then

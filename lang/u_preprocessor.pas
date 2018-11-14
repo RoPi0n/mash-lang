@@ -164,7 +164,18 @@ begin
         Delete(s, length(s), 1);
         s := ExtractFilePath(ParamStr(0)) + 'inc\' + s;
         if not FileExists(s) then
-          PrpError('File "' + s + '" not found.');
+         begin
+           if FileExists(s + '.mash') then
+            s := s + '.mash'
+           else
+           if FileExists(s + '.inc') then
+            s := s + '.inc'
+           else
+           if FileExists(s + '.h') then
+            s := s + '.h'
+           else
+           PrpError('File "' + s + '" not found.');
+         end;
         if IncludedFiles.IndexOf(s) = -1 then
         begin
           IncludedFiles.Add(s);
@@ -189,7 +200,7 @@ begin
   begin
     Delete(s, 1, 4);
     s := Trim(s);
-    s1 := GetProcName(Trim(s));
+    s1 := ExtractProcName(GetProcName(Trim(s)));
     if ProcList.IndexOf(s1) = -1 then
       ProcList.Add(s1);
     if ConstDefs.IndexOf(s1) = -1 then
@@ -236,33 +247,9 @@ begin
       begin
         Delete(s, 1, 1);
         if pos('"', s) <> Length(s) then
-          PrpError('Invalid construction: "uses "' + s + '".');
-        Delete(s, length(s), 1);
-        s := ExtractFilePath(ParamStr(1)) + s;
-        if not FileExists(s) then
-          PrpError('File "' + s + '" not found.');
-        sl := TStringList.Create;
-        sl.LoadFromFile(s);
-        if sl.Count > 0 then
-        begin
-          for c := 0 to sl.Count - 1 do
-            sl[c] := TrimCodeStr(sl[c]);
-          for c := 0 to sl.Count - 1 do
-            sl[c] := PreprocessStr(sl[c], varmgr);
-          for c := sl.Count - 1 downto 0 do
-            if trim(sl[c]) = '' then
-              sl.Delete(c);
-        end;
-        Result := sl.Text + sLineBreak;
-        FreeAndNil(sl);
-      end;
-      '<':
-      begin
-        Delete(s, 1, 1);
-        if pos('>', s) <> Length(s) then
           PrpError('Invalid construction: "uses <' + s + '".');
         Delete(s, length(s), 1);
-        s := ExtractFilePath(ParamStr(0)) + 'inc\' + s;
+        s := ExtractFilePath(ParamStr(1)) + s;
         if not FileExists(s) then
           PrpError('File "' + s + '" not found.');
         if IncludedFiles.IndexOf(s) = -1 then
@@ -273,7 +260,46 @@ begin
           if sl.Count > 0 then
           begin
             for c := 0 to sl.Count - 1 do
-              sl[c] := TrimCodeStr(sl[c]);
+              sl[c] := PreprocessClassCalls(TrimCodeStr(sl[c]));
+            for c := 0 to sl.Count - 1 do
+              sl[c] := PreprocessStr(sl[c], varmgr);
+            for c := sl.Count - 1 downto 0 do
+              if trim(sl[c]) = '' then
+                sl.Delete(c);
+          end;
+          Result := sl.Text + sLineBreak;
+          FreeAndNil(sl);
+        end;
+      end;
+      '<':
+      begin
+        Delete(s, 1, 1);
+        if pos('>', s) <> Length(s) then
+          PrpError('Invalid construction: "uses <' + s + '".');
+        Delete(s, length(s), 1);
+        s := ExtractFilePath(ParamStr(0)) + 'inc\' + s;
+        if not FileExists(s) then
+         begin
+           if FileExists(s + '.mash') then
+            s := s + '.mash'
+           else
+           if FileExists(s + '.inc') then
+            s := s + '.inc'
+           else
+           if FileExists(s + '.h') then
+            s := s + '.h'
+           else
+           PrpError('File "' + s + '" not found.');
+         end;
+        if IncludedFiles.IndexOf(s) = -1 then
+        begin
+          IncludedFiles.Add(s);
+          sl := TStringList.Create;
+          sl.LoadFromFile(s);
+          if sl.Count > 0 then
+          begin
+            for c := 0 to sl.Count - 1 do
+              sl[c] := PreprocessClassCalls(TrimCodeStr(sl[c]));
             for c := 0 to sl.Count - 1 do
               sl[c] := PreprocessStr(sl[c], varmgr);
             for c := sl.Count - 1 downto 0 do
@@ -401,54 +427,27 @@ begin
     Result := 'pushc super.' + Tk(s, 2) + sLineBreak + 'gpm' + sLineBreak + 'jc';
   end
   else
-  if Tk(s, 1) = 'store' then
-  begin
-    Delete(s, 1, length('store'));
-    s := Trim(s);
-    if s = 'null' then
-      Result := 'pushn'
-    else
-      Result := PushIt(s, varmgr);
-    PrpError('Invalid store operation with "' + s + '".');
-    Result := Result + sLineBreak + 'pushc store' + sLineBreak +
-      'gpm' + sLineBreak + 'jc';
-  end
-  else
-  if Tk(s, 1) = 'load' then
-  begin
-    Delete(s, 1, length('load'));
-    s := Trim(s);
-    if s = 'null' then
-      PrpError('Invalid load operation with null.')
-    else
-    if IsVar(s, varmgr) then
-      Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
-    else
-    if IsConst(s) then
-      PrpError('Invalid load operation with constant "' + s + '".')
-    else
-    if IsArr(s) then
-      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
-    else
-      PrpError('Invalid load operation with "' + s + '".');
-    Result := Result + sLineBreak + 'pushc load' + sLineBreak +
-      'gpm' + sLineBreak + 'jc';
-  end
-  else
   {** Check imports for fast calling **}
   if Tk(s, 1) = 'import' then
   begin
     Result := s;
   end
   else
+  if IsEqExpr(s, varmgr) then
+  begin
+    Result := Result + sLineBreak + ParseEqExpr(s, varmgr);
+  end
+  else
   {** Fast Calling **}
-  if (Length(TryToGetProcName(s)) > 0) and
-     (CheckName(TryToGetProcName(s)) or IsArr(s)) then
+  if (Length(GetProcName(s)) > 0) and
+     (CheckName(GetProcName(s)) or IsArr(s)) then
   begin
     if pos('(', s) > 0 then
     begin
       Result := PreprocessCall(s, varmgr);
-      s := Trim(TryToGetProcName(s));
+      s := Trim(GetProcName(s));
+      if IsClassProcCallingAddr(s) then
+       Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
     end;
 
     if IsArr(s) then
@@ -460,11 +459,6 @@ begin
       Result := Result + sLineBreak + 'jc'
     else
       Result := Result + sLineBreak + 'invoke';
-  end
-  else
-  if IsEqExpr(s, varmgr) then
-  begin
-    Result := Result + sLineBreak + ParseEqExpr(s, varmgr);
   end
   else
   {** Anything **}
@@ -1341,6 +1335,8 @@ begin
 end;
 
 procedure InitPreprocessor;
+var
+  cn:TConstant;
 begin
   ImportsLst := TStringList.Create;
   ProcEnterList := TStringList.Create;
@@ -1348,8 +1344,18 @@ begin
   BlockStack := TList.Create;
   ConstDefs := TStringList.Create;
   InitCode := TStringList.Create;
+  PostInitCode := TStringList.Create;
   ClassStack := TList.Create;
+
   ClassTable := TStringList.Create;
+  ClassTable.Add('structfree');
+  CN := TConstant.Create;
+  CN.c_names.Add(ClassChildPref + 'structfree');
+  CN.c_type := ctUnsigned64;
+  St_WriteCardinal(CN.c_value, 0);
+  Constants.Add(CN);
+  ConstDefs.Add(ClassChildPref + 'structfree');
+
   //VarDefs := TStringList.Create;
 end;
 
@@ -1371,7 +1377,7 @@ begin
 
   while ClassStack.Count > 0 do
   begin
-    //InitCode.Add(TMashClass(ClassStack[0]).GenAllocator(varmgr));
+    PostInitCode.Add(GenClassAllocator(TMashClass(ClassStack[0]), varmgr));
     TMashClass(ClassStack[0]).Free;
     ClassStack.Delete(0);
   end;

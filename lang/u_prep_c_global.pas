@@ -82,11 +82,11 @@ begin
         MC.FillTable;
         while MC.Table.Count > 0 do
         begin
-          if ClassTable.IndexOf(MC.Table[0]) = -1 then
-            ClassTable.Add(Trim(MC.Table[0]));
+          if ClassTable.IndexOf(Trim(MC.Table[0])) = -1 then
+           ClassTable.Add(Trim(MC.Table[0]));
           MC.Table.Delete(0);
         end;
-        MC.AllocSize := ClassTable.Count;
+        MC.AllocSize := ClassTable.Count+1;
         while c < ClassTable.Count do
         begin
           CN := TConstant.Create;

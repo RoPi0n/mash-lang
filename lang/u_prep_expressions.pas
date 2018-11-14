@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, StrUtils, u_variables, u_global, u_globalvars, u_prep_global,
-  u_prep_methods, u_prep_array, u_prep_enums;
+  u_prep_methods, u_prep_array, u_prep_enums, u_classes;
 
 function IsExpr(s: string): boolean;
 function CutNextExprToken(var s: string): string;
@@ -34,7 +34,7 @@ var
   sl: TStringList;
 begin
   Result := '';
-  bf := TryToGetProcName(s);
+  bf := GetProcName(s);
   s := Trim(s);
   Delete(s, 1, Length(bf) + 1);
   Delete(s, Length(s), 1);
@@ -49,13 +49,13 @@ begin
   while sl.Count > 0 do
   begin
     Bf := sl[sl.Count - 1];
-    if (Length(TryToGetProcName(s)) > 0) and
-      (CheckName(TryToGetProcName(s)) or IsArr(TryToGetProcName(s))) then
+    if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or
+      IsArr(GetProcName(s))) then
     begin
       if pos('(', s) > 0 then
       begin
         Result := PreprocessCall(s, varmgr);
-        s := Trim(TryToGetProcName(s));
+        s := Trim(GetProcName(s));
       end;
 
       if IsArr(s) then
@@ -102,33 +102,28 @@ begin
     if IsExpr(s) then
       Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
     else
-    if Pos('(', s) > 0 then
+    if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
     begin
-      if (Length(TryToGetProcName(s)) > 0) and
-        (not (Pos(' ', TryToGetProcName(s)) > 0)) then
+      if pos('(', s) > 0 then
       begin
-        if pos('(', s) > 0 then
-        begin
-          Result := PreprocessCall(s, varmgr);
-          s := Trim(TryToGetProcName(s));
-        end;
-
-        if IsArr(s) then
-          Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
-        else
-          Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-            sLineBreak + 'gpm';
-
-        if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
-          Result := Result + sLineBreak + 'jc'
-        else
-          Result := Result + sLineBreak + 'invoke';
+        Result := PreprocessCall(s, varmgr);
+        s := Trim(GetProcName(s));
+        if IsClassProcCallingAddr(s) then
+          Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
       end;
-{
+
+      if IsArr(s) then
+        Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        PrpError('Error in operation with [<index>] -> "' + s + '".')};
-    end{
-    else
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
+          sLineBreak + 'gpm';
+
+      if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+        Result := Result + sLineBreak + 'jc'
+      else
+        Result := Result + sLineBreak + 'invoke';
+    end
+    {else
       PrpError('Error in operation with [<index>] -> "' + s + '".')};
     Dec(c);
   end;
@@ -172,13 +167,14 @@ begin
   if IsExpr(s) then
     Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
   else
-  if (Length(TryToGetProcName(s)) > 0) and (CheckName(TryToGetProcName(s)) or
-    IsArr(s)) then
+  if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
   begin
     if pos('(', s) > 0 then
     begin
       Result := PreprocessCall(s, varmgr);
-      s := Trim(TryToGetProcName(s));
+      s := Trim(GetProcName(s));
+      if IsClassProcCallingAddr(s) then
+        Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
     end;
 
     if IsArr(s) then
@@ -264,13 +260,14 @@ begin
   if IsExpr(s) then
     Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
   else
-  if (Length(TryToGetProcName(s)) > 0) and (CheckName(TryToGetProcName(s)) or
-    IsArr(s)) then
+  if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
   begin
     if pos('(', s) > 0 then
     begin
       Result := PreprocessCall(s, varmgr);
-      s := Trim(TryToGetProcName(s));
+      s := Trim(GetProcName(s));
+      if IsClassProcCallingAddr(s) then
+        Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
     end;
 
     if IsArr(s) then
@@ -919,17 +916,18 @@ function IsEqExpr(s: string; varmgr: TVarManager): boolean;
 var
   Bf: string;
 begin
-  Result := False;
-  if IsExpr(s) then
-  begin
+  Result :=  False;
+
+  {if IsExpr(s) then
+  begin}
     Bf := Trim(CutNextExprToken(s));
     s := Trim(s);
-    if IsVar(Bf, varmgr) or IsArr(Bf) then
-    begin
+    {if IsVar(Bf, varmgr) or IsArr(Bf) then
+    begin}
       Bf := Trim(GetNextExprOp(s));
       Result := (Bf = '=') or (Bf = '?=') or (Bf = '@=');
-    end;
-  end;
+    {end;
+  end;}
 end;
 
 function ParseEqExpr(s: string; varmgr: TVarManager): string;
@@ -940,9 +938,9 @@ begin
   Bf := Trim(CutNextExprToken(s));
   s := Trim(s);
   Op := CutNextExprOp(s);
-  s := Trim(s);
   if Op = '=' then
   begin
+    s := Trim(s);
     if IsOpNew(s) then
       Result := PreprocessOpNew(s, varmgr) + sLineBreak + PopIt(Bf, varmgr)
     else
@@ -950,14 +948,69 @@ begin
       Result := PreprocessExpression(s, varmgr) + sLineBreak +
         PushIt(Bf, varmgr) + sLineBreak + 'mov'
     else
+    if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
+    begin
+      if pos('(', s) > 0 then
+      begin
+        Result := PreprocessCall(s, varmgr);
+        s := Trim(GetProcName(s));
+        if IsClassProcCallingAddr(s) then
+          Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
+      end;
+
+      if IsArr(s) then
+        Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+
+      if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+        Result := Result + sLineBreak + 'jc' + sLineBreak +
+        PushIt(Bf, varmgr) + sLineBreak + 'mov'
+      else
+        Result := Result + sLineBreak + 'invoke' + sLineBreak +
+        PushIt(Bf, varmgr) + sLineBreak + 'mov';
+    end
+    else
+    if IsArr(s) then
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) + sLineBreak
+        + PushIt(Bf, varmgr) + sLineBreak + 'mov'
+    else
       Result := PushIt(s, varmgr) + sLineBreak + PushIt(Bf, varmgr) + sLineBreak + 'mov';
   end
   else
   if Op = '@=' then
   begin
+    s := Trim(s);
     if IsExpr(s) then
       Result := PreprocessExpression(s, varmgr) + sLineBreak +
         PushIt(Bf, varmgr) + sLineBreak + 'movbp'
+    else
+    if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
+    begin
+      if pos('(', s) > 0 then
+      begin
+        Result := PreprocessCall(s, varmgr);
+        s := Trim(GetProcName(s));
+        if IsClassProcCallingAddr(s) then
+          Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
+      end;
+
+      if IsArr(s) then
+        Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+
+      if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+        Result := Result + sLineBreak + 'jc' + sLineBreak +
+        PushIt(Bf, varmgr) + sLineBreak + 'movbp'
+      else
+        Result := Result + sLineBreak + 'invoke' + sLineBreak +
+        PushIt(Bf, varmgr) + sLineBreak + 'movbp';
+    end
+    else
+    if IsArr(s) then
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) + sLineBreak
+        + PushIt(Bf, varmgr) + sLineBreak + 'movbp'
     else
       Result := PushIt(s, varmgr) + sLineBreak + PushIt(Bf, varmgr) +
         sLineBreak + 'movbp';
@@ -971,6 +1024,31 @@ begin
     else
     if IsExpr(s) then
       Result := PreprocessExpression(s, varmgr) + sLineBreak + PopIt(Bf, varmgr)
+    else
+    if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
+    begin
+      if pos('(', s) > 0 then
+      begin
+        Result := PreprocessCall(s, varmgr);
+        s := Trim(GetProcName(s));
+        if IsClassProcCallingAddr(s) then
+          Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
+      end;
+
+      if IsArr(s) then
+        Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+
+      if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
+        Result := Result + sLineBreak + 'jc' + sLineBreak + PopIt(Bf, varmgr)
+      else
+        Result := Result + sLineBreak + 'invoke' + sLineBreak + PopIt(Bf, varmgr);
+    end
+    else
+    if IsArr(s) then
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) + sLineBreak
+        + PopIt(Bf, varmgr)
     else
       Result := PushIt(s, varmgr) + sLineBreak + PopIt(Bf, varmgr);
   end;
@@ -1018,8 +1096,14 @@ begin
     end
     else
     begin //for classes...
-      Result := Result + PushIt(IntToStr(FindClassRec(s).AllocSize), varmgr) +
-        sLineBreak + PushIt('1', varmgr) + sLineBreak + 'newa';
+      if ConstDefs.IndexOf('__class_' + s + '_allocator') = -1 then
+        ConstDefs.Add('__class_' + s + '_allocator');
+
+      Result := Result + TempPushIt('__class_' + s + '_allocator', varmgr) +
+        sLineBreak + 'jc';
+
+      //Result := Result + PushIt(IntToStr(FindClassRec(s).AllocSize), varmgr) +
+      //  sLineBreak + PushIt('1', varmgr) + sLineBreak + 'newa';
     end;
   end;
 end;

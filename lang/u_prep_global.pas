@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, u_global, u_globalvars, u_variables, u_consts,
-  u_prep_codeblock, u_classes, u_writers;
+  u_prep_codeblock, u_classes, u_writers, u_prep_methods;
 
 function IsWord(var s: string): boolean;
 function IsInt(s: string): boolean;
@@ -39,7 +39,7 @@ var
   ClassStack: TList;
   ClassTable: TStringList;
   CntConstAutoDefs: cardinal = 0;
-  InitCode: TStringList;
+  InitCode, PostInitCode: TStringList;
 
 const
   AutoDefConstPref = '__defc_gen_';
@@ -339,6 +339,8 @@ begin
     if s1[1] = '!' then
     begin
       Delete(s1, 1, 1);
+      if Pos('::', s1) > 0 then
+       s1 := ExtractProcName(s1);
       Result := CheckName(s1);
     end
     else

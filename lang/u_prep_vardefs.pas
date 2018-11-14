@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, u_globalvars, u_variables, u_prep_global,
-  u_prep_expressions, u_prep_array, u_prep_methods, u_global;
+  u_prep_expressions, u_prep_array, u_prep_methods, u_global, u_classes;
 
 function PreprocessVarDefine(s: string; varmgr: TVarManager): string;
 function PreprocessVarDefines(s: string; varmgr: TVarManager): string;
@@ -63,25 +63,28 @@ begin
     if IsOpNew(s) then
       Result := Result + sLineBreak + PreprocessOpNew(s, varmgr)
     else
-    if (Length(TryToGetProcName(s)) > 0) and
-      (CheckName(TryToGetProcName(s)) or IsArr(s)) then
+    if IsExpr(s) then
+      Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
+    else
+    if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
     begin
       if pos('(', s) > 0 then
       begin
         Result := PreprocessCall(s, varmgr);
-        s := Trim(TryToGetProcName(s));
+        s := Trim(GetProcName(s));
+        if IsClassProcCallingAddr(s) then
+          Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
       end;
 
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-          sLineBreak + 'gpm';
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
-        Result := Result + sLineBreak + 'jc'
+        Result := Result + sLineBreak + 'jc' + sLineBreak
       else
-        Result := Result + sLineBreak + 'invoke';
+        Result := Result + sLineBreak + 'invoke' + sLineBreak;
     end
     else
     //Result := Result + sLineBreak + PushIt(s, varmgr);
@@ -93,9 +96,6 @@ begin
     else
     if IsArr(s) then
       Result := PreprocessArrAction(s, 'pushai', varmgr)
-    else
-    if IsExpr(s) then
-      Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
     else
       Result := Result + sLineBreak + PushIt(s, varmgr);
     //PrpError('Invalid variable definition with = in "' + s + '".');
