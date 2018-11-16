@@ -61,6 +61,7 @@ proc SetArrLen(.array, .newlen):
   push .array
   push .newlen
   salen
+  pop
 end
 
 proc FreeArr(.array):
@@ -71,17 +72,44 @@ end
 
 proc Free(.simple_object):
   push .simple_object
-  //gpm
-  //pop
   rem
 end
 
 proc FreeClass(.object):
   .object->StructFree()
   SetArrLen(.object, 0)
-  //push .object
-  //gpa
-  //pop
+//  push .object
+//  gpa
+//  pop
+end
+
+proc thread(.method, .arg):
+  push .arg
+  push .method
+  cthr
+end
+
+proc async(.method, .arg):
+  push .arg
+  push .method
+  cthr
+  pcopy
+  rthr
+end
+
+proc thr_resume(.thread):
+  push .thread
+  rthr
+end
+
+proc thr_suspend(.thread):
+  push .thread
+  sthr
+end
+
+proc thr_terminate(.thread):
+  push .thread
+  tthr
 end
 
 func In(.v, .array):

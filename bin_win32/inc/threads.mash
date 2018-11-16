@@ -1,41 +1,70 @@
 // Mash lang threads unit.
 // Code version: 1.0
 
-uses <bf.mash>
+uses <bf>
 
 ////////////////////////////////////////////////////////////////////////////////
-// Some methods
+// Thread controller class
 ////////////////////////////////////////////////////////////////////////////////
 
-proc fthread(.method, .arg):
-  push .arg
-  push .method
-  cthr
+class TThread:
+//public
+  var Resumed, Terminated, FreeOnTerminate
+  proc Execute, Create, Free, Suspend, Resume, Terminate, ReJoin
+//should be private
+  var ThreadContext
 end
 
-proc async(.method, .arg):
-  push .arg
-  push .method
-  cthr
-  pcopy
-  rthr
+proc TThread::Execute():
+  // method for overriding
 end
 
-proc thr_resume(.thread):
-  push .thread
-  rthr
+proc TThread_Join(.CurrentThreadContext, .TThreadClass):
+  .TThreadClass->Execute()
+  .TThreadClass->Terminated = true
+  if .TThreadClass->FreeOnTerminate:
+    TThreadClass->Free()
+  end
 end
 
-proc thr_suspend(.thread):
-  push .thread
-  sthr
+proc TThread::Create(.Resumed):
+  $Resumed ?= new(false)
+  $Terminated ?= new(false)
+  $FreeOnTerminate ?= new(true)
+  $ThreadContext ?= thread(TThread_Join, $)
+  if .Resumed:
+    $Resume()
+  end
 end
 
-proc thr_terminate(.thread):
-  push .thread
-  tthr
+proc TThread::Free():
+  Free($Suspended)
+  Free($Terminated)
+  Free($FreeOnTerminate)
+  FreeClass$()
 end
 
-////////////////////////////////////////////////////////////////////////////////
-// Thread class
-////////////////////////////////////////////////////////////////////////////////
+proc TThread::ReJoin(.Resumed):
+  $ThreadContext ?= thread(TThread_Join, $)
+  if .Resumed:
+    $Resume()
+  end
+end
+
+proc TThread::Suspend():
+  thr_suspend($ThreadContext)
+  $Resumed = false
+end
+
+proc TThread::Resume():
+  thr_resume($ThreadContext)
+  $Resumed = true
+end
+
+proc TThread::Terminate():
+  thr_terminate($ThreadContext)
+  $Terminated = true
+  if $FreeOnTerminate:
+    $Free()
+  end
+end

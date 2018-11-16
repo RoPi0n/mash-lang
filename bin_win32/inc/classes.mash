@@ -1,7 +1,7 @@
 // Mash lang classes unit.
 // Code version: 1.0
 
-uses <bf.mash>
+uses <bf>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Simple classes
@@ -16,14 +16,12 @@ end          // like:  proc class::MyProc()  -- for that -->  MyClass->MyMethod 
 
 class point:
   var x, y
-  proc Init, Free, Set, Compare
+  proc Create, Free, Set, Compare
 end
 
-proc point::Init(.x, .y):
-  $x = new
-  $x = .x
-  $y = new
-  $y = .y
+proc point::Create(.x, .y):
+  $x ?= new(.x)
+  $y ?= new(.y)
 end
 
 proc point::Free():
@@ -41,34 +39,19 @@ func point::Compare(.p):
   return ($x == p->x) & ($y == p->y)
 end
 
-// Constructor's
-
-func point.create():
-  var .p = new point
-  .p->Init(0, 0)
-  return .p
-end
-
-func point.createxy(.x, .y):
-  var .p = new point
-  .p->Init(.x, .y)
-  return .p
-end
-
 ////////////////////////////////////////////////////////////////////////////////
 //  Vector
 ////////////////////////////////////////////////////////////////////////////////
 
 class vector:
   var Items
-  proc Init, Free, Push_Back, Rem_Back, Rem_First
+  proc Create, Free, Push_Back, Rem_Back, Rem_First
   func Pop_Back, Pop_First, Peek_Back, Peek_First, At, Size
 end
 
-proc vector::Init():
-  $Items = new[1]
-  $Items[0] = new
-  $Items[0] = 0
+proc vector::Create():
+  $Items ?= new[1]
+  $Items[0] ?= new(0)
 end
 
 proc vector::Push_Back(.Object):
@@ -126,12 +109,4 @@ end
 proc vector::Free():
   FreeArr($Items)
   FreeClass($)
-end
-
-// Constructor
-
-func vector.Create():
-  var .v = new vector
-  .v->Init()
-  return .v
 end
