@@ -1,6 +1,5 @@
 uses <bf>
 uses <crt>
-uses <threads>
 uses <classes>
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -9,17 +8,15 @@ enum SnakeMovingVector [smvLeft, smvRight, smvUp, smvDown]
 
 class Snake:
   var Body, MovingVector
-  proc Init, Free
+  proc Create, Free
 end
 
-proc Snake::Init():
-  $Body = new vector
-  $Body->Init()
-  $Body->Push_Back(point.createxy(10, 10))
-  $Body->Push_Back(point.createxy(11, 10))
-  $Body->Push_Back(point.createxy(12, 10))
-  $MovingVector = new
-  $MovingVector = smvRight
+proc Snake::Create():
+  $Body ?= new vector()
+  $Body->Push_Back(new point(10, 10))
+  $Body->Push_Back(new point(11, 10))
+  $Body->Push_Back(new point(12, 10))
+  $MovingVector ?= new(smvRight)
 end
 
 proc Snake::Free():
@@ -28,19 +25,13 @@ proc Snake::Free():
   FreeClass($)
 end
 
-func Snake.create():
-  var .s = new snake
-  .s->Init()
-  return .s
-end
-
 ////////////////////////////////////////////////////////////////////////////////
 
-var snk = snake.create(), food = point.create(), score = 0, sleeptime = 100, ControlThr
+var snk, food, score = 0, sleeptime = 100, ControlThr
 
-str snake_char "*"
+str snake_char "@"
 str food_char  "&"
-str border_char "N"
+str border_char "#"
 
 proc PutCh(.x, .y, .char):
   Crt.gotoXY32(.y, .x)
@@ -87,7 +78,7 @@ end
 
 proc MoveSnake(.x, .y):
   var .head = snk->Body->Peek_Back()
-  var .newhead = point.createxy(.head->x + .x, .head->y + .y)
+  var .newhead = new point(.head->x + .x, .head->y + .y)
 
   if (.newhead->x == food->x) & (.newhead->y == food->y):
     RandFood()
@@ -179,6 +170,8 @@ end
 ////////////////////////////////////////////////////////////////////////////////
 
 proc main():
+  snk ?= new snake()
+  food ?= new point(0, 0)
   ControlThr ?= async(ControlThread, 0)
   Randomize()
   Crt.ClrScr()
