@@ -23,17 +23,18 @@ function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True): 
 function TempPushIt(s: string; varmgr: TVarManager): string;
 function IsOpNew(s: string): boolean;
 function PreprocessOpNew(s: string; varmgr: TVarManager): string;
-function PreprocessCall(s: string; varmgr: TVarManager): string;
+function PreprocessCall(s: string; varmgr: TVarManager; SwapMode:boolean = false): string;
 function PreprocessArrAction(arrexpr, action: string; varmgr: TVarManager): string;
 
 implementation
 
-function PreprocessCall(s: string; varmgr: TVarManager): string;
+function PreprocessCall(s: string; varmgr: TVarManager; SwapMode:boolean = false): string;
 var
   bf: string;
   sl: TStringList;
 begin
   Result := '';
+  s := Trim(s);
   bf := GetProcName(s);
   s := Trim(s);
   Delete(s, 1, Length(bf) + 1);
@@ -49,6 +50,9 @@ begin
   while sl.Count > 0 do
   begin
     Bf := sl[sl.Count - 1];
+    if IsOpNew(s) then
+      Result := Result + sLineBreak + PreprocessOpNew(s, varmgr)
+    else
     if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or
       IsArr(GetProcName(s))) then
     begin
@@ -74,7 +78,11 @@ begin
       Result := Result + sLineBreak + PreprocessExpression(Bf, varmgr)
     else
       Result := Result + sLineBreak + PushIt(Bf, varmgr);
+
     sl.Delete(sl.Count - 1);
+
+    if SwapMode then
+     Result := Result + sLineBreak + 'swp';
   end;
   FreeAndNil(sl);
 end;
@@ -166,6 +174,9 @@ begin
     Delete(s, 1, 1);
   if IsExpr(s) then
     Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
+  else
+  if IsOpNew(s) then
+    Result := Result + sLineBreak + PreprocessOpNew(s, varmgr)
   else
   if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
   begin
@@ -259,6 +270,9 @@ begin
     Delete(s, 1, 1);
   if IsExpr(s) then
     Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
+  else
+  if IsOpNew(s) then
+    Result := Result + sLineBreak + PreprocessOpNew(s, varmgr)
   else
   if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or IsArr(s)) then
   begin
@@ -1069,6 +1083,7 @@ function PreprocessOpNew(s: string; varmgr: TVarManager): string;
 var
   lvl, i: integer;
   bf: string;
+  mc: TMashClass;
 begin
   Result := '';
   s := Trim(s);
@@ -1096,14 +1111,34 @@ begin
     end
     else
     begin //for classes...
+      bf := '';
+      if Length(GetProcName(s)) > 0 then
+       begin
+         bf := s;
+         s := Trim(GetProcName(s));
+       end;
+
+      mc := FindClassRec(s);
+      if mc = nil then
+       PrpError('Not exist class object allocation "'+s+'".');
+
       if ConstDefs.IndexOf('__class_' + s + '_allocator') = -1 then
         ConstDefs.Add('__class_' + s + '_allocator');
 
       Result := Result + TempPushIt('__class_' + s + '_allocator', varmgr) +
         sLineBreak + 'jc';
 
-      //Result := Result + PushIt(IntToStr(FindClassRec(s).AllocSize), varmgr) +
-      //  sLineBreak + PushIt('1', varmgr) + sLineBreak + 'newa';
+      if Length(bf) > 0 then
+       begin
+         i := mc.Methods.IndexOf('create');
+         if i = -1 then
+          PrpError('Calling to class "' + s + '" constructor, but this class haven''t constructor!' + sLineBreak +
+                   'Declarate class "' + s + '" constructor (proc create) or change this allocation construction to fix that error.');
+                                         //.this
+         Result := Result + sLineBreak + 'pcopy' + sLineBreak +
+                   PreprocessCall(bf, varmgr, true) + sLineBreak + 'pushc ' + mc.MethodsLinks[i] +
+                   sLineBreak + 'gpm' + sLineBreak + 'jc';
+       end;
     end;
   end;
 end;

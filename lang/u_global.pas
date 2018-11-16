@@ -65,8 +65,15 @@ begin
         if Length(s) > 1 then
           if s[2] = '/' then
             break;
+
       Result := Result + LowerCase(s[1]);
-      Delete(s, 1, 1);
+      if s[1] in ['?', '=', '@'] then
+       begin
+         Delete(s, 1, 1);
+         s := Trim(s);
+       end
+      else
+       Delete(s, 1, 1);
     end;
   end;
 end;
