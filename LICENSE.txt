@@ -3,6 +3,8 @@
 *|  This software and all its author's additions are licensed with BSD-2-Clause license.
 *|  Autor: Pavel Shiryaev.
 *|  Mail: pavel151@inbox.ru
+*|  GitHub: github.com/RoPi0n/mash-lang
+*|  Site: mash-lang.tech
 *|
 *|  Copyright from 2018, Pavel Shiryaev.
 *|
