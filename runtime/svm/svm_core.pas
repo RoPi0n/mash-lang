@@ -4,8 +4,8 @@
   library svm_core;
 {$Else}
   program svm_core;
-  //{$apptype gui}
-  //{$define BuildGUI}
+  {$apptype gui}
+  {$define BuildGUI}
 {$EndIf}
 
 uses
@@ -218,6 +218,7 @@ type
   PMemArr = ^TMemArr;
   TMemType = (mtNull, mtVar, mtArray, mtPointer);
   TMemory = array of pointer;
+  PMemory = ^TMemory;
   PPointer = ^Pointer;
   TByteArr = array of byte;
   PByteArr = ^TByteArr;
@@ -745,7 +746,7 @@ type
   TSVM = object
   public
     mainclasspath: string;
-    mem: TMemory;
+    mem: PMemory;
     stack: TStack;
     cbstack: TCallBackStack;
     bytes: PByteArr;
@@ -764,32 +765,57 @@ type
 
   TSVMThread = class(TThread)
   public
-    vm: TSVM;
+    vm: PSVM;
     constructor Create(bytes: PByteArr; consts: PConstSection;
-      extern_methods: PImportSection; method: TInstructionPointer;
+      extern_methods: PImportSection; svm_memory:PMemory; method: TInstructionPointer;
       arg: pointer);
     procedure Execute; override;
+    destructor Destroy; override;
   end;
 
   constructor TSVMThread.Create(bytes: PByteArr; consts: PConstSection;
-    extern_methods: PImportSection; method: TInstructionPointer;
+    extern_methods: PImportSection; svm_memory:PMemory; method: TInstructionPointer;
     arg: pointer);
+  var
+    c, ml: cardinal;
   begin
     FreeOnTerminate := True;
-    vm.bytes := bytes;
-    vm.end_ip := length(bytes^);
-    vm.consts := consts;
-    vm.extern_methods := extern_methods;
-    vm.stack.push(arg);
-    vm.stack.push(self);
-    vm.ip := method;
-    vm.grabber.run;
+    new(vm);
+    vm^.bytes := bytes;
+    vm^.end_ip := length(bytes^);
+    vm^.consts := consts;
+    vm^.extern_methods := extern_methods;
+
+    //fill mem map
+    new(vm^.mem);
+    ml := Length(svm_memory^);
+    SetLength(vm^.mem^, ml);
+    c := 0;
+    while c < ml do
+     begin
+       vm^.mem^[c] := svm_memory^[c];
+       inc(c);
+     end;
+
+    vm^.stack.push(arg);
+    vm^.stack.push(self);
+    vm^.ip := method;
     inherited Create(True);
   end;
 
   procedure TSVMThread.Execute;
   begin
-    vm.RunThread;
+    vm^.RunThread;
+  end;
+
+  destructor TSVMThread.Destroy;
+  begin
+    vm^.grabber.run;
+    SetLength(vm^.mem^, 0);
+    Dispose(vm^.mem);
+    vm^.stack.drop;
+    Dispose(vm);
+    inherited Destroy;
   end;
 
   procedure TSVM.RunThread;
@@ -805,7 +831,7 @@ type
           case TComand(self.bytes^[self.ip]) of
             bcPH:
             begin
-              self.stack.push(self.mem[cardinal(
+              self.stack.push(self.mem^[cardinal(
                 (self.bytes^[self.ip + 1] shl 24) + (self.bytes^[self.ip + 2] shl 16) +
                 (self.bytes^[self.ip + 3] shl 8) +
                 self.bytes^[self.ip + 4])]);
@@ -814,7 +840,7 @@ type
 
             bcPK:
             begin
-              self.mem[
+              self.mem^[
                 cardinal((self.bytes^[self.ip + 1] shl 24) +
                 (self.bytes^[self.ip + 2] shl 14) + (self.bytes^[self.ip + 3] shl 8) +
                 self.bytes^[self.ip + 4])
@@ -1070,7 +1096,7 @@ type
 
             bcMS:
             begin
-              SetLength(self.mem, PMem(self.stack.popv)^);
+              SetLength(self.mem^, PMem(self.stack.popv)^);
               Inc(self.ip);
             end;
 
@@ -1089,6 +1115,7 @@ type
             bcMD:
             begin
               self.stack.push(self.stack.peek);
+              Inc(self.ip);
             end;
 
             bcRM:
@@ -1105,7 +1132,7 @@ type
 
             bcSF:
             begin
-              self.stack.push(NewMemV(SizeOf(PMem(self.stack.popv)^)));
+              self.stack.push(NewMemV(SizeOf(self.stack.popv^)));
               Inc(self.ip);
             end;
 
@@ -1195,7 +1222,7 @@ type
             bcCTHR:
             begin
               self.stack.push(TSVMThread.Create(self.bytes, self.consts,
-                self.extern_methods, Cardinal(PMem(self.stack.popv)^),
+                self.extern_methods, self.mem, Cardinal(PMem(self.stack.popv)^),
                 self.stack.popv));
               Inc(self.ip);
             end;
@@ -1214,7 +1241,6 @@ type
 
             bcTTHR:
             begin
-              TSVMThread(self.stack.peek).Terminate;
               TSVMThread(self.stack.popv).Free;
               Inc(self.ip);
             end;
@@ -1723,11 +1749,12 @@ type
 	      Inc(self.ip);
             end;
 
-            bcSTCHATK:  // peek str[x]
+            bcSTCHATK:  // pop str[x]
             begin
               p := self.stack.popv;
-              S := String(PMem(p)^);
-              S[Cardinal(PMem(self.stack.popv)^)] := Char(PMem(self.stack.popv)^);
+              S := PMem(p)^;
+              p2 := self.stack.popv;
+              S[PMem(self.stack.popv)^] := PMem(p2)^;
               PMem(p)^ := S;
               S := '';
               Inc(self.ip);
@@ -1933,6 +1960,7 @@ begin
   New(Result);
   New(Result^.consts);
   New(Result^.extern_methods);
+  New(Result^.mem);
 end;
 
 procedure SVM_Free(SVM:PSVM); stdcall;
@@ -2008,6 +2036,7 @@ begin
   new(svm.bytes);
   new(svm.consts);
   new(svm.extern_methods);
+  new(svm.mem);
   svm.LoadByteCodeFromFile(ParamStr(1));
   CheckHeader(svm.bytes);
   CutLeftBytes(svm.bytes,10);
