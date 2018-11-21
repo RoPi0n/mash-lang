@@ -1,6 +1,7 @@
 uses <bf>
 uses <crt>
 uses <classes>
+uses <threads>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -87,8 +88,7 @@ proc MoveSnake(.x, .y):
     PutCh(46, 13, "Score: " + I2S(score) + ".")
   else:
     var .tmp
-    snk->Body->Pop_First()
-    pop .tmp
+    .tmp ?= snk->Body->Pop_First()
     PutCh(.tmp->x, .tmp->y, " ")
     .tmp->Free()
 
@@ -175,7 +175,6 @@ proc main():
   ControlThr ?= async(ControlThread, 0)
   Randomize()
   Crt.ClrScr()
-  Crt.CursorOff()
   DrawBorders()
   PutCh(snk->body->items[1]->x, snk->body->items[1]->y, snake_char)
   PutCh(snk->body->items[2]->x, snk->body->items[2]->y, snake_char)
@@ -188,6 +187,7 @@ proc main():
   PutCh(46, 13, "Score: 0.")
 
   while true:
+    Crt.CursorOff()
     Sleep(sleeptime)
     GameTick()
     gc
