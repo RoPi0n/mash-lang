@@ -4,7 +4,7 @@ uses <crt>
 uses <forms>
 
 str _Caption "Test form"
-stream _Icon "Icon.ico"
+//stream _Icon "Icon.ico"
 
 var Form1, Canvas, Form1_Thr
 
@@ -62,7 +62,7 @@ end
 
 proc main():
   _Application_Initialize()
-  _Application_LoadIconFromStream(_Icon)
+  //_Application_LoadIconFromStream(_Icon)
   Form1 ?= _Application_CreateForm()
   Form1_Thr ?= async(Form1_Thread, 0)
   _Application_Run()
