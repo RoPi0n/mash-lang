@@ -324,7 +324,7 @@ begin
   {** Class def **}
   if IsClassDefine(s) then
   begin
-    PreprocessClassDefine(s);
+    Result := PreprocessClassDefine(s);
   end
   else
   {** RegAPI **}
@@ -429,14 +429,13 @@ begin
   else
   {** Check imports for fast calling **}
   if Tk(s, 1) = 'import' then
-  begin
-    Result := s;
-  end
+   Result := s
+  else
+  if IsOpNew(s) then
+   Result := Result + sLineBreak + PreprocessOpNew(s, varmgr)
   else
   if IsEqExpr(s, varmgr) then
-  begin
-    Result := Result + sLineBreak + ParseEqExpr(s, varmgr);
-  end
+   Result := Result + sLineBreak + ParseEqExpr(s, varmgr)
   else
   {** Fast Calling **}
   if (Length(GetProcName(s)) > 0) and
@@ -1360,8 +1359,6 @@ begin
 end;
 
 procedure FreePreprocessor(varmgr: TVarManager);
-var
-  c: cardinal;
 begin
   FreeAndNil(ImportsLst);
   FreeAndNil(ProcEnterList);
@@ -1374,6 +1371,13 @@ begin
   if BlockStack.Count > 0 then
     PrpError('One or more code blocks are not completed by the end statement.');
   FreeAndNil(BlockStack);
+
+  if ClassStack.Count > 0 then
+  begin
+    PostInitCode.Add('_common_class_constructor:');
+    PostInitCode.Add('pop');
+    PostInitCode.Add('jr');
+  end;
 
   while ClassStack.Count > 0 do
   begin

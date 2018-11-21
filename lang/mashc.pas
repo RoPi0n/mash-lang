@@ -58,6 +58,13 @@ begin
     writeln(' /o-         - build without optimisation.');
     writeln(' /o+         - build with optimization (default).');
     writeln(' /out <file> - write output in <file> (default - change extension to "*.vmc").');
+    writeln(' /rtti-      - disable RTTI support.');
+    writeln(' /rtti+      - enable RTTI support (default).');
+    if ARGC_Enable then
+     begin
+       writeln(' /ccargcs+   - enable passing the number of arguments to methods (default).');
+       writeln(' /ccargcs-   - disable passing the number of arguments to methods.');
+     end;
     halt;
   end;
   Tm := Now;
@@ -120,6 +127,18 @@ begin
 
       if s = '/o-' then
         EnableOptimization := False;
+
+      if s = '/rtti+' then
+        RTTI_Enable := True;
+
+      if s = '/rtti-' then
+        RTTI_Enable := False;
+
+      if s = '/ccargcs+' then
+        ARGC_Enable := True;
+
+      if s = '/ccargcs-' then
+        ARGC_Enable := False;
 
       if s = '/out' then
       begin

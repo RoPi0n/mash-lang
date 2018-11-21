@@ -45,8 +45,6 @@ var
 begin
   Result := '';
   s := Trim(s);
-  if s[1] = '$' then
-    Delete(s, 1, 1);
   if s[1] = '.' then
   begin
     Delete(s, 1, 1);
@@ -82,9 +80,9 @@ begin
         Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
-        Result := Result + sLineBreak + 'jc' + sLineBreak
+        Result := Result + sLineBreak + 'jc'
       else
-        Result := Result + sLineBreak + 'invoke' + sLineBreak;
+        Result := Result + sLineBreak + 'invoke';
     end
     else
     //Result := Result + sLineBreak + PushIt(s, varmgr);

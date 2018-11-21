@@ -86,7 +86,22 @@ begin
            ClassTable.Add(Trim(MC.Table[0]));
           MC.Table.Delete(0);
         end;
-        MC.AllocSize := ClassTable.Count+1;
+
+        if RTTI_Enable then
+         MC.AllocSize := ClassTable.Count + 2
+        else
+         MC.AllocSize := ClassTable.Count + 1;
+
+        if RTTI_Enable then
+         begin
+           CN := TConstant.Create;
+           CN.c_names.Add(MC.CName);
+           CN.c_type := ctUnsigned64;
+           St_WriteCardinal(CN.c_value, ClassStack.Count - 1);
+           Constants.Add(CN);
+           ConstDefs.Add(MC.CName);
+         end;
+
         while c < ClassTable.Count do
         begin
           CN := TConstant.Create;

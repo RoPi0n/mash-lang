@@ -63,6 +63,8 @@ begin
   Constructors := TStringList.Create;
   Destructors := TStringList.Create;
   Table := TStringList.Create;
+  if RTTI_Enable then
+   VarDefs.Add(TMashClassVariableDefine.Create('type', false, ''));
 end;
 
 destructor TMashClass.Destroy;
@@ -85,12 +87,19 @@ procedure TMashClass.FillTable;
 var
   c: cardinal;
 begin
+
   c := 0;
   while c < VarDefs.Count do
   begin
     Table.Add(TMashClassVariableDefine(VarDefs[c]).ClassVarName);
     Inc(c);
   end;
+
+  if Methods.IndexOf('create') = -1 then
+   begin
+     Methods.Add('create');
+     MethodsLinks.Add('_common_class_constructor');
+   end;
 
   c := 0;
   while c < Methods.Count do
@@ -171,6 +180,9 @@ begin
         Delete(s, 1, 1);
         Inc(ChrCounter);
         s := Trim(s);
+        if Length(s) = 0 then
+          Result := Result + '.this'
+        else
         if (copy(s, 1, 1)[1] in ['[', ']', ')']) or (copy(s, 1, 2) = '->') then
           Result := Result + '.this'
         else

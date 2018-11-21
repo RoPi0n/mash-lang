@@ -202,6 +202,7 @@ begin
     end;
   end
   else
+  if Trim(s) <> '' then
    PrpError('Invalid class definition, class: <' +
             TMashClass(ClassStack[ClassStack.Count - 1]).CName + '>.');
 end;
@@ -216,6 +217,12 @@ begin
   mname := '__class_' + MClass.CName + '_allocator';
   Result := mname + ':' + sLineBreak + TempPushIt(IntToStr(MClass.AllocSize), varmgr) +
     sLineBreak + TempPushIt('1', varmgr) + sLineBreak + 'newa' + sLineBreak;
+
+  // Introspection
+  if RTTI_Enable then
+   Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.CName + sLineBreak +
+             'swp' + sLineBreak + 'pushc ' + ClassChildPref + 'type' + sLineBreak +
+             'gpm' + sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
 
   // StructFree()
   Result := Result + 'pcopy' + sLineBreak + 'pushc ' + '__class_' +
@@ -240,6 +247,12 @@ begin
   mname := '__class_' + MClass.CName + '_structure_free';
   Result := Result + sLineBreak + mname + ':';
 
+  // Introspection
+  if RTTI_Enable then
+   Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' + ClassChildPref + 'type' + sLineBreak +
+             'gpm' + sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' +
+             sLineBreak + 'pop';
+
   Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
     ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak +
     'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' + sLineBreak + 'pop';
@@ -256,9 +269,6 @@ begin
 
   Result := Result {+ sLineBreak + 'gpa'} + sLineBreak + 'pop' +
     sLineBreak + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
-
-
-
 end;
 
 end.

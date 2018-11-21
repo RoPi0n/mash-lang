@@ -30,14 +30,15 @@ implementation
 
 function PreprocessCall(s: string; varmgr: TVarManager; SwapMode:boolean = false): string;
 var
-  bf: string;
+  bf, pn: string;
   sl: TStringList;
+  argc: cardinal;
 begin
   Result := '';
   s := Trim(s);
-  bf := GetProcName(s);
+  pn := GetProcName(s);
   s := Trim(s);
-  Delete(s, 1, Length(bf) + 1);
+  Delete(s, 1, Length(pn) + 1);
   Delete(s, Length(s), 1);
 
   sl := TStringList.Create;
@@ -46,6 +47,8 @@ begin
     sl.Add(Trim(CutNextArg(s)));
     s := Trim(s);
   end;
+
+  argc := sl.Count;
 
   while sl.Count > 0 do
   begin
@@ -85,6 +88,23 @@ begin
      Result := Result + sLineBreak + 'swp';
   end;
   FreeAndNil(sl);
+
+  if ARGC_Enable and
+     ((ProcList.IndexOf(pn) <> -1)) and
+     (not SwapMode) and
+     (not IsClassProcCallingAddr(pn)) then
+   begin
+     Result := Result + sLineBreak + PushIt(IntToStr(Argc), varmgr);
+     //if SwapMode then
+     // Result := Result + sLineBreak + 'swp';
+   end;
+
+  {if IsClassProcCallingAddr(s) then
+   begin
+     Result := Result + sLineBreak + PushIt(GetClassProcCallingContext(s), varmgr);
+     if SwapMode then
+      Result := Result + sLineBreak + 'swp';
+   end;}
 end;
 
 function PreprocessArrAction(arrexpr, action: string; varmgr: TVarManager): string;
@@ -1136,7 +1156,9 @@ begin
                    'Declarate class "' + s + '" constructor (proc create) or change this allocation construction to fix that error.');
                                          //.this
          Result := Result + sLineBreak + 'pcopy' + sLineBreak +
-                   PreprocessCall(bf, varmgr, true) + sLineBreak + 'pushc ' + mc.MethodsLinks[i] +
+                   PreprocessCall(bf, varmgr, true) + sLineBreak;
+
+         Result := Result + 'pushc ' + mc.MethodsLinks[i] +
                    sLineBreak + 'gpm' + sLineBreak + 'jc';
        end;
     end;
