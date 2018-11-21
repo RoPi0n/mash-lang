@@ -1,6 +1,3 @@
-// Maximum lightweight helloworld on Mash!
-// Compilled size: 132 bytes.
-
 import PrintLn "crt.lib" "PRINTLN"
 import InputLn "crt.lib" "INPUTLN"
 

@@ -1,5 +1,5 @@
-uses <bf>
-uses <crt>
+uses <bf.mash>
+uses <crt.mash>
 
 proc Err():
   raise "Error"
@@ -12,7 +12,7 @@ proc main():
     Err()
   catch:
     var e = getError()
-    PrintLn(e)
+    PrintLn($e)
   finally:
     PrintLn("Finally")
   end

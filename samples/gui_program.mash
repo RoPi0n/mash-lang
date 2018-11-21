@@ -1,0 +1,69 @@
+uses <bf>
+uses <threads>
+uses <crt>
+uses "forms.mash"
+
+str _Caption "Test form"
+stream _Icon "Icon.ico"
+
+var Form1, Canvas, Form1_Thr
+
+////////////////////////////////////////////////////////////////////////////////
+
+var MouseDowned = false
+
+proc Form1_CheckEvent(.Event):
+  if .Event == EVT_FormMouseDown:
+    MouseDowned = true
+  end
+
+  if .Event == EVT_FormMouseUp:
+    MouseDowned = false
+  end
+
+  if .Event == EVT_FormMouseMove:
+    var .x, .y
+    .x ?= _Form_LastEventArgAt(Form1, 1)
+    .y ?= _Form_LastEventArgAt(Form1, 0)
+
+    if MouseDowned:
+      _Canvas_LineTo(Canvas, .x, .y)
+    else:
+      _Canvas_MoveTo(Canvas, .x, .y)
+    end
+
+    Free(.x)
+    Free(.y)
+  end
+
+
+end
+
+proc Form1_Thread(.ThreadContext, .Arg):
+  _Form_SetLeft(Form1, 100)
+  _Form_SetTop(Form1, 100)
+  _Form_SetWidth(Form1, 500)
+  _Form_SetHeight(Form1, 500)
+  _Form_SetCaption(Form1, _Caption)
+  Canvas ?= _Form_GetCanvas(Form1)
+  _Canvas_SetPenColor(Canvas, 0)
+
+  _Form_Show(Form1)
+
+  var Event
+  while true:
+    Event ?= _Form_CheckEvent(Form1)
+    Form1_CheckEvent(Event)
+    Free(Event)
+    Sleep(1)
+    gc
+  end
+end
+
+proc main():
+  _Application_Initialize()
+  _Application_LoadIconFromStream(_Icon)
+  Form1 ?= _Application_CreateForm()
+  Form1_Thr ?= async(Form1_Thread, 0)
+  _Application_Run()
+end
