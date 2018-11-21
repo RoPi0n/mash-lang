@@ -1,7 +1,7 @@
 uses <bf>
 uses <threads>
 uses <crt>
-uses "forms.mash"
+uses <forms>
 
 str _Caption "Test form"
 stream _Icon "Icon.ico"
