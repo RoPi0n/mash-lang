@@ -1,4 +1,6 @@
-// str utils
+// strings.mash
+
+uses <bf>
 
 proc s_at(.s, .index):
   push .index
@@ -12,4 +14,23 @@ proc s_set(.s, .index, .char):
   push .char
   push .s
   stchatk
+end
+
+proc s_len(.s):
+  push .s
+  strl
+end
+
+proc s_del(.s, .from, .count):
+  push .from
+  push .count
+  push .s
+  strd
+end
+
+func s_copy(.s, .from, .count):
+  var .r = copy(.s)
+  s_del(.r, .from + .count + 1, s_len(.r))
+  s_del(.r, 1, .from - 1)
+  return .r
 end

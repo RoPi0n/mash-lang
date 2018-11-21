@@ -3,6 +3,40 @@
 
 uses <bf>
 
+proc thread(.method, .arg):
+  push .arg
+  push .method
+  cthr
+end
+
+proc async(.method, .arg):
+  push .arg
+  push .method
+  cthr
+  pcopy
+  rthr
+end
+
+proc thr_resume(.thread):
+  push .thread
+  rthr
+end
+
+proc thr_suspend(.thread):
+  push .thread
+  sthr
+end
+
+proc thr_terminate(.thread):
+  push .thread
+  tthr
+end
+
+proc thr_kill(.thread):
+  thr_suspend(.thread)
+  thr_terminate(.thread)
+end
+
 ////////////////////////////////////////////////////////////////////////////////
 // Thread controller class
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,11 +57,11 @@ proc TThread_Join(.CurrentThreadContext, .TThreadClass):
   .TThreadClass->Execute()
   .TThreadClass->Terminated = true
   if .TThreadClass->FreeOnTerminate:
-    TThreadClass->Free()
+    .TThreadClass->Free()
   end
 end
 
-proc TThread::Create(.Resumed):
+proc TThread::Create():
   $Resumed ?= new(false)
   $Terminated ?= new(false)
   $FreeOnTerminate ?= new(true)

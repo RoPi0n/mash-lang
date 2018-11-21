@@ -1,0 +1,13 @@
+//Some math methods
+
+import Sin    "math.lib" "SIN"
+import Cos    "math.lib" "COS"
+import Tg     "math.lib" "TG"
+import Ctg    "math.lib" "CTG"
+import ArcSin "math.lib" "ARCSIN"
+import ArcCos "math.lib" "ARCCOS"
+import Log10  "math.lib" "LOG10"
+import Log2   "math.lib" "LOG2"
+import LogN   "math.lib" "LOGN"
+import LNXP1  "math.lib" "LNXP1"
+import Exp    "math.lib" "EXP"

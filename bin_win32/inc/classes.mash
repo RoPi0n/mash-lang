@@ -107,6 +107,7 @@ func vector::Size():
 end
 
 proc vector::Free():
+  Free($Items[0])
   FreeArr($Items)
   FreeClass($)
 end

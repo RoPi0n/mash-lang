@@ -61,22 +61,35 @@ word Crt.White          15
 // Add-in for blinking
 word Crt.Blink          128
 
-//Functions & procedures for work with CRT
+//Some methods
 
-var Crt.TextAttr
+//proc Print():
+//  while .argc > 0:
+//    _Print()
+//    dec .argc
+//  end
+//end
 
-proc Crt.Init():
-  push 0x07
-  pop  Crt.TextAttr
-end
+//proc PrintLn():
+//  while .argc > 0:
+//    _PrintLn()
+//    dec .argc
+//  end
+//end
 
-proc Crt.TextColor(.color):
-  and  .color, 143
-  and  Crt.TextAttr, 112
-  or   Crt.TextAttr, .color
-end
+//var Crt.TextAttr
 
-proc Crt.TextBackground(.color):
+//proc Crt.Init():
+//  Crt.TextAttr = new(0x07)
+//end
+
+//proc Crt.TextColor(.color):
+//  and  .color, 143
+//  and  Crt.TextAttr, 112
+//  or   Crt.TextAttr, .color
+//end
+
+//proc Crt.TextBackground(.color):
 //var .buf = 0xf0
 //  store(.color)
 //  and  .buf,          .color
@@ -88,49 +101,49 @@ proc Crt.TextBackground(.color):
 //  or   .color,        .buf
 //  mov  Crt.TextAttr, .color
 //  load(.color)
-end
+//end
 
-proc Crt.NormVideo():
-  push 7
-  Crt.TextColor()
-  push 0
-  Crt.TextBackGround()
-end
+//proc Crt.NormVideo():
+//  push 7
+//  Crt.TextColor()
+//  push 0
+//  Crt.TextBackGround()
+//end
 
-proc Crt.WhereX():
-  Crt.WhereX32()
-  push   256
-  gpm
-  swp
-  mod
-end
+//proc Crt.WhereX():
+//  Crt.WhereX32()
+//  push   256
+//  gpm
+//  swp
+//  mod
+//end
 
-proc Crt.WhereY():
-  Crt.WhereY32()
-  push   256
-  gpm
-  swp
-  mod
-end
+//proc Crt.WhereY():
+//  Crt.WhereY32()
+//  push   256
+//  gpm
+//  swp
+//  mod
+//end
 
-proc Crt.Pause():
-  gc
-  Crt.KeyPressed()
-  gpm
-  jz !Crt.Pause
-end
+//proc Crt.Pause():
+//  gc
+//  Crt.KeyPressed()
+//  gpm
+//  jz !Crt.Pause
+//end
 
-proc PrintFmt():
-  push .Crt.TextAttr
-  swp
-  PrintFormat()
-end
+//proc PrintFmt():
+//  push .Crt.TextAttr
+//  swp
+//  PrintFormat()
+//end
 
-proc PrintLnFmt():
-  push Crt.TextAttr
-  swp
-  PrintFormat()
-  push ""
-  gpm
-  PrintLn()
-end
+//proc PrintLnFmt():
+//  push Crt.TextAttr
+//  swp
+//  PrintFormat()
+//  push ""
+//  gpm
+//  PrintLn()
+//end
