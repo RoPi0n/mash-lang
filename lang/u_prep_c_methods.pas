@@ -70,12 +70,6 @@ begin
   Delete(s, pos(')', s), length(s));
   s := Trim(s);
 
-  if ARGC_Enable and (not IsClassM) then
-   if Length(s) > 0 then
-    s := '.argc, ' + s
-   else
-    s := '.argc';
-
   if IsClassM then
    if Length(s) > 0 then
     s := '.this, ' + s
@@ -95,6 +89,9 @@ begin
       bf := Trim(s);
       s := '';
     end;
+    if bf = '...' then
+      //Hm, all ok...
+    else
     if IsVar(bf, varmgr) then
     begin
       if bf[1] = '$' then

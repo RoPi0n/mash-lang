@@ -202,7 +202,11 @@ begin
     end;
   end
   else
-  if Trim(s) <> '' then
+  if (s = 'public:') or (s = 'protected:') or (s = 'private:') or
+     (s = 'public :') or (s = 'protected :') or (s = 'private :') then
+    //It's formality
+  else
+  if s <> '' then
    PrpError('Invalid class definition, class: <' +
             TMashClass(ClassStack[ClassStack.Count - 1]).CName + '>.');
 end;

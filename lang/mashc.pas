@@ -29,7 +29,8 @@ uses
   u_prep_c_try,
   u_prep_c_loops,
   u_prep_c_classes,
-  u_writers;
+  u_writers,
+  u_fast_prep;
 
 {** Main **}
 
@@ -43,7 +44,6 @@ var
   AppMode: string = '/cns';
   Tm, Tm2: TDateTime;
   OutFilePath, s: string;
-  EnableOptimization: boolean = True;
 begin
   writeln('Mash lang!');
   writeln('Version: 1.2, Pavel Shiryaev (c) from 2018.');
@@ -60,29 +60,72 @@ begin
     writeln(' /out <file> - write output in <file> (default - change extension to "*.vmc").');
     writeln(' /rtti-      - disable RTTI support.');
     writeln(' /rtti+      - enable RTTI support (default).');
-    if ARGC_Enable then
-     begin
-       writeln(' /ccargcs+   - enable passing the number of arguments to methods (default).');
-       writeln(' /ccargcs-   - disable passing the number of arguments to methods.');
-     end;
+    writeln(' /ccargcs+   - enable passing the number of arguments to methods (default).');
+    writeln(' /ccargcs-   - disable passing the number of arguments to methods.');
     halt;
   end;
+
+  FastPrep_Defines := TStringList.Create;
+
+  c := 2;
+    while c <= ParamCount do
+    begin
+      s := Trim(LowerCase(ParamStr(c)));
+
+      if (s = '/bin') or (s = '/gui') or (s = '/cns') then
+        AppMode := s;
+
+      if s = '/o+' then
+        EnableOptimization := True;
+
+      if s = '/o-' then
+        EnableOptimization := False;
+
+      if s = '/rtti+' then
+       RTTI_Enable := True;
+
+      if s = '/rtti-' then
+       RTTI_Enable := False;
+
+      if s = '/ccargcs+' then
+       ARGC_Enable := True;
+
+      if s = '/ccargcs-' then
+        ARGC_Enable := False;
+
+      if s = '/out' then
+      begin
+        OutFilePath := ParamStr(c + 1);
+        Inc(c);
+      end;
+
+      Inc(c);
+    end;
+
+  if RTTI_Enable then
+   FastPrep_Defines.Add('rtti');
+
+  if ARGC_Enable then
+   FastPrep_Defines.Add('argcounter');
+
   Tm := Now;
   writeln('Building started.');
   DecimalSeparator := '.';
   IncludedFiles := TStringList.Create;
   Code := TStringList.Create;
   Code.LoadFromFile(ParamStr(1));
+
   if Code.Count > 0 then
     for c := 0 to Code.Count - 1 do
-      Code[c] := PreprocessClassCalls(TrimCodeStr(Code[c]));
+      Code[c] := PreprocessClassCalls(FastPrep(TrimCodeStr(Code[c])));
+
  {for c:=code.count-1 downto 0 do
   if trim(code[c
   ])='' then code.delete(c);}
   varmgr := TVarManager.Create;
   Constants := TConstantManager.Create(Code);
   //WriteLn('Code analyzing...');
-  InitPreprocessor;
+  InitPreprocessor(varmgr);
   c := 0;
   while c < Code.Count do
   begin
@@ -113,41 +156,6 @@ begin
   begin
     OutFilePath := ChangeFileExt(ParamStr(1), '.vmc');
     Output := TMemoryStream.Create;
-
-    c := 2;
-    while c <= ParamCount do
-    begin
-      s := Trim(LowerCase(ParamStr(c)));
-
-      if (s = '/bin') or (s = '/gui') or (s = '/cns') then
-        AppMode := s;
-
-      if s = '/o+' then
-        EnableOptimization := True;
-
-      if s = '/o-' then
-        EnableOptimization := False;
-
-      if s = '/rtti+' then
-        RTTI_Enable := True;
-
-      if s = '/rtti-' then
-        RTTI_Enable := False;
-
-      if s = '/ccargcs+' then
-        ARGC_Enable := True;
-
-      if s = '/ccargcs-' then
-        ARGC_Enable := False;
-
-      if s = '/out' then
-      begin
-        OutFilePath := ParamStr(c + 1);
-        Inc(c);
-      end;
-
-      Inc(c);
-    end;
 
     if AppMode <> '/bin' then
     begin

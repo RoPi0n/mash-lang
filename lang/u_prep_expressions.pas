@@ -20,6 +20,7 @@ function PreprocessExpression(s: string; varmgr: TVarManager): string;
 function IsEqExpr(s: string; varmgr: TVarManager): boolean;
 function ParseEqExpr(s: string; varmgr: TVarManager): string;
 function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True): string;
+function PopIt(s: string; varmgr: TVarManager): string;
 function TempPushIt(s: string; varmgr: TVarManager): string;
 function IsOpNew(s: string): boolean;
 function PreprocessOpNew(s: string; varmgr: TVarManager): string;
@@ -56,6 +57,9 @@ begin
     if IsOpNew(s) then
       Result := Result + sLineBreak + PreprocessOpNew(s, varmgr)
     else
+    if IsExpr(Bf) then
+      Result := Result + sLineBreak + PreprocessExpression(Bf, varmgr)
+    else
     if (Length(GetProcName(s)) > 0) and (CheckName(GetProcName(s)) or
       IsArr(GetProcName(s))) then
     begin
@@ -77,9 +81,6 @@ begin
         Result := Result + sLineBreak + 'invoke';
     end
     else
-    if IsExpr(Bf) then
-      Result := Result + sLineBreak + PreprocessExpression(Bf, varmgr)
-    else
       Result := Result + sLineBreak + PushIt(Bf, varmgr);
 
     sl.Delete(sl.Count - 1);
@@ -89,14 +90,10 @@ begin
   end;
   FreeAndNil(sl);
 
-  if ARGC_Enable and
-     ((ProcList.IndexOf(pn) <> -1)) and
-     (not SwapMode) and
-     (not IsClassProcCallingAddr(pn)) then
+  if ARGC_Enable then
    begin
-     Result := Result + sLineBreak + PushIt(IntToStr(Argc), varmgr);
-     //if SwapMode then
-     // Result := Result + sLineBreak + 'swp';
+     Result := Result + sLineBreak + PushIt(IntToStr(Argc), varmgr) +
+               sLineBreak + PopIt('argcount', varmgr);
    end;
 
   {if IsClassProcCallingAddr(s) then

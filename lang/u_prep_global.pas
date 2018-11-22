@@ -314,11 +314,19 @@ end;
 
 function IsStr(s: string): boolean;
 begin
-  Result := Length(s) > 0;
-  Result := Result and (s[1] = '"') and (s[length(s)] = '"');
-  Delete(s, 1, 1);
-  Delete(s, length(s), 1);
-  Result := Result and (pos('"', s) = 0);
+  if copy(s, 1, 1) = '#' then
+   begin
+     Delete(s, 1, 1);
+     Result := IsInt(s);
+   end
+  else
+   begin
+     Result := Length(s) > 0;
+     Result := Result and (s[1] = '"') and (s[length(s)] = '"');
+     Delete(s, 1, 1);
+     Delete(s, length(s), 1);
+     Result := Result and (pos('"', s) = 0);
+   end;
 end;
 
 function IsConst(var s: string): boolean;
@@ -389,8 +397,16 @@ begin
     if IsStr(s) then
     begin
       s1 := s;
-      Delete(s1, 1, 1);
-      Delete(s1, Length(s1), 1);
+      if copy(s1, 1, 1) = '#' then
+       begin
+         Delete(s1, 1, 1);
+         s1 := Chr(StrToInt(s1));
+       end
+      else
+       begin
+         Delete(s1, 1, 1);
+         Delete(s1, Length(s1), 1);
+       end;
       s := AutoDefConstPref + 'str' + AutoDefConstSuffx + IntToStr(CntConstAutoDefs);
       Cnt := TConstant.Create;
       Cnt.c_names.Add(s);

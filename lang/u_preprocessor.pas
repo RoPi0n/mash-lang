@@ -25,11 +25,12 @@ uses
   u_prep_c_global,
   u_prep_c_try,
   u_prep_c_loops,
-  u_prep_c_classes;
+  u_prep_c_classes,
+  u_fast_prep;
 
 procedure PreprocessDefinitions(s: string; varmgr: TVarManager);
 function PreprocessStr(s: string; varmgr: TVarManager): string;
-procedure InitPreprocessor;
+procedure InitPreprocessor(varmgr: TVarManager);
 procedure FreePreprocessor(varmgr: TVarManager);
 
 implementation
@@ -149,7 +150,7 @@ begin
           begin
             IncludedFiles.Add(s);
             for c := 0 to sl.Count - 1 do
-              sl[c] := TrimCodeStr(sl[c]);
+              sl[c] := FastPrep(TrimCodeStr(sl[c]));
             for c := 0 to sl.Count - 1 do
               PreprocessDefinitions(sl[c], varmgr);
           end;
@@ -184,7 +185,7 @@ begin
           if sl.Count > 0 then
           begin
             for c := 0 to sl.Count - 1 do
-              sl[c] := TrimCodeStr(sl[c]);
+              sl[c] := FastPrep(TrimCodeStr(sl[c]));
             for c := 0 to sl.Count - 1 do
               PreprocessDefinitions(sl[c], varmgr);
           end;
@@ -260,7 +261,7 @@ begin
           if sl.Count > 0 then
           begin
             for c := 0 to sl.Count - 1 do
-              sl[c] := PreprocessClassCalls(TrimCodeStr(sl[c]));
+              sl[c] := PreprocessClassCalls(FastPrep(TrimCodeStr(sl[c])));
             for c := 0 to sl.Count - 1 do
               sl[c] := PreprocessStr(sl[c], varmgr);
             for c := sl.Count - 1 downto 0 do
@@ -299,9 +300,11 @@ begin
           if sl.Count > 0 then
           begin
             for c := 0 to sl.Count - 1 do
-              sl[c] := PreprocessClassCalls(TrimCodeStr(sl[c]));
+              sl[c] := PreprocessClassCalls(FastPrep(TrimCodeStr(sl[c])));
+
             for c := 0 to sl.Count - 1 do
               sl[c] := PreprocessStr(sl[c], varmgr);
+
             for c := sl.Count - 1 downto 0 do
               if trim(sl[c]) = '' then
                 sl.Delete(c);
@@ -754,6 +757,78 @@ begin
       else
         PrpError('Dec "' + s + '"');
       Result := Result + sLineBreak + 'dec';
+      Result := Result + sLineBreak + 'pop';
+    end
+    else
+    if Tk(s, 1) = 'incw' then
+    begin
+      Delete(s, 1, length('incw'));
+      s := Trim(s);
+      if IsVar(s, varmgr) then
+        Result := PreprocessVarAction(s, 'push', varmgr)
+      else
+      if IsConst(s) then
+        PrpError('Inc constant value "' + s + '".')
+      else
+      if IsArr(s) then
+        Result := PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        PrpError('Incw "' + s + '"');
+      Result := Result + sLineBreak + 'incw';
+      Result := Result + sLineBreak + 'pop';
+    end
+    else
+    if Tk(s, 1) = 'decw' then
+    begin
+      Delete(s, 1, length('decw'));
+      s := Trim(s);
+      if IsVar(s, varmgr) then
+        Result := PreprocessVarAction(s, 'push', varmgr)
+      else
+      if IsConst(s) then
+        PrpError('Dec constant value "' + s + '".')
+      else
+      if IsArr(s) then
+        Result := PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        PrpError('Decw "' + s + '"');
+      Result := Result + sLineBreak + 'decw';
+      Result := Result + sLineBreak + 'pop';
+    end
+    else
+    if Tk(s, 1) = 'inci' then
+    begin
+      Delete(s, 1, length('inci'));
+      s := Trim(s);
+      if IsVar(s, varmgr) then
+        Result := PreprocessVarAction(s, 'push', varmgr)
+      else
+      if IsConst(s) then
+        PrpError('Inc constant value "' + s + '".')
+      else
+      if IsArr(s) then
+        Result := PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        PrpError('Inci "' + s + '"');
+      Result := Result + sLineBreak + 'inci';
+      Result := Result + sLineBreak + 'pop';
+    end
+    else
+    if Tk(s, 1) = 'deci' then
+    begin
+      Delete(s, 1, length('deci'));
+      s := Trim(s);
+      if IsVar(s, varmgr) then
+        Result := PreprocessVarAction(s, 'push', varmgr)
+      else
+      if IsConst(s) then
+        PrpError('Dec constant value "' + s + '".')
+      else
+      if IsArr(s) then
+        Result := PreprocessArrAction(s, 'pushai', varmgr)
+      else
+        PrpError('Deci "' + s + '"');
+      Result := Result + sLineBreak + 'deci';
       Result := Result + sLineBreak + 'pop';
     end
     else
@@ -1333,7 +1408,7 @@ begin
     Result := s;
 end;
 
-procedure InitPreprocessor;
+procedure InitPreprocessor(varmgr: TVarManager);
 var
   cn:TConstant;
 begin
@@ -1355,6 +1430,10 @@ begin
   Constants.Add(CN);
   ConstDefs.Add(ClassChildPref + 'structfree');
 
+  if ARGC_Enable then
+   begin
+     varmgr.DefVar('argcount');
+   end;
   //VarDefs := TStringList.Create;
 end;
 

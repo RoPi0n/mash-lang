@@ -60,6 +60,9 @@ begin
       Delete(s, 1, 1);
     end
     else
+    if copy(s, 1, 2) = '  ' then
+      Delete(s, 1, 1)
+    else
     begin
       if s[1] = '/' then
         if Length(s) > 1 then
