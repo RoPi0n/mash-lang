@@ -70,6 +70,11 @@ proc FreeArr(.array):
   pop
 end
 
+proc gc():
+  gc
+  stkdrop
+end
+
 proc Free(.simple_object):
   push .simple_object
   rem

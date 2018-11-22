@@ -24,8 +24,17 @@ import Crt.GetWindMinY    "crt.lib" "GETWINDMINY"
 import Crt.GetCheckBreak  "crt.lib" "GETCHECKBREAK"
 import Crt.GetCheckEOF    "crt.lib" "GETCHECKEOF"
 import Crt.GetCheckSnow   "crt.lib" "GETCHECKSNOW"
+
+{_ifdef_ argcounter}
+import _Print             "crt.lib" "PRINT"
+import _PrintLn           "crt.lib" "PRINTLN"
+{_end_}
+
+{_ifndef_ argcounter}
 import Print              "crt.lib" "PRINT"
 import PrintLn            "crt.lib" "PRINTLN"
+{_end_}
+
 import PrintFormat        "crt.lib" "PRINTFORMAT"
 import Input              "crt.lib" "INPUT"
 import InputLn            "crt.lib" "INPUTLN"
@@ -63,19 +72,32 @@ word Crt.Blink          128
 
 //Some methods
 
-//proc Print():
-//  while .argc > 0:
-//    _Print()
-//    dec .argc
-//  end
-//end
+uses <strings>
 
-//proc PrintLn():
-//  while .argc > 0:
-//    _PrintLn()
-//    dec .argc
-//  end
-//end
+var LnBreak = c_chr(13) + c_chr(10)
+
+{_ifdef_ argcounter}
+
+proc print(...):
+  var .t
+  .t ?= argcount
+  while .t > 0:
+    _print()
+    dec .t
+  end
+end
+
+proc println(...):
+  var .t
+  .t ?= argcount
+  while .t > 0:
+    _print()
+    dec .t
+  end
+  _println("")
+end
+
+{_end_}
 
 //var Crt.TextAttr
 
