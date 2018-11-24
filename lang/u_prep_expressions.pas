@@ -383,7 +383,7 @@ begin
       if Length(s) > 1 then
         if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or
           (s[1] + s[2] = '<<') or (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or
-          (s[1] + s[2] = '?=') then
+          (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') then
         begin
           Result := True;
           break;
@@ -426,7 +426,7 @@ begin
       if Length(s) > 1 then
         if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or (s[1] + s[2] = '<<') or
           (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or
-          (s[1] + s[2] = '?=') then
+          (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') then
           break;
       if (in_br < 0) or (in_rbr < 0) then
         break;
@@ -449,7 +449,7 @@ begin
   begin
     if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or (s[1] + s[2] = '<<') or
       (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or (s[1] + s[2] = '==') or
-      (s[1] + s[2] = '?=') then
+      (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') then
     begin
       Result := s[1] + s[2];
       Delete(s, 1, 2);

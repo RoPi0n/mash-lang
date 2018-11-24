@@ -30,7 +30,8 @@ uses
   u_prep_c_loops,
   u_prep_c_classes,
   u_writers,
-  u_fast_prep;
+  u_fast_prep,
+  u_prep_switch;
 
 {** Main **}
 

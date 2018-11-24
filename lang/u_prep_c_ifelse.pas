@@ -74,6 +74,13 @@ begin
       CB.bMeta := '+';
     end
     else
+    if CB.bType = btSwitch then
+    begin
+      if CB.bMeta = '2' then
+       PrpError('Add two or more else''s in switch construction.');
+      CB.bMeta := '2';
+    end
+    else
       PrpError('Using operator "else" without "if".');
   end
   else

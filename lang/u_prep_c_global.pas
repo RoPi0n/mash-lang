@@ -112,6 +112,14 @@ begin
           ConstDefs.Add(ClassChildPref + ClassTable[c]);
           Inc(c);
         end;
+      end;
+      btSwitch: begin
+        if CB.bMeta = '0' then
+         PrpError('Using switch without cases.');
+        Result := CB.bMCode;
+      end;
+      btCase: begin
+        Result := CB.bMCode;
       end
       else
         PrpError('Using operator "end" for not supported block.');
@@ -141,7 +149,7 @@ begin
     begin
       repeat
         CB := TCodeBlock(BlockStack[BlockStack.Count - i]);
-        if CB.bType in [btFor, btWhile, btUntil] then
+        if CB.bType in [btFor, btWhile, btUntil, btCase] then
         begin
           Result := 'pushc ' + CB.bEndCode + sLineBreak + 'gpm' + sLineBreak + 'jp';
           break;

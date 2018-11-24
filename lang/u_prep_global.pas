@@ -33,6 +33,8 @@ var
   WhileBlCounter: cardinal = 0;
   UntilBlCounter: cardinal = 0;
   TryBlCounter: cardinal = 0;
+  SwBlCounter: cardinal = 0;
+  CsBlCounter: cardinal = 0;
   BlockStack: TList;
   ConstDefs: TStringList;
   //VarDefs: TStringList;

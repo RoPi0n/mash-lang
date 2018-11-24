@@ -26,7 +26,8 @@ uses
   u_prep_c_try,
   u_prep_c_loops,
   u_prep_c_classes,
-  u_fast_prep;
+  u_fast_prep,
+  u_prep_switch;
 
 procedure PreprocessDefinitions(s: string; varmgr: TVarManager);
 function PreprocessStr(s: string; varmgr: TVarManager): string;
@@ -388,6 +389,14 @@ begin
   {** End **}
   if s = 'end' then
     Result := GenEnd
+  else
+  {** Switch **}
+  if IsSwitch(s) then
+    Result := ParseSwitch(s, varmgr)
+  else
+  {** Case **}
+  if IsCase(s) then
+    Result := ParseCase(s, varmgr)
   else
   {** Break **}
   if s = 'break' then
