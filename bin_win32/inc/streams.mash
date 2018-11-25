@@ -1,30 +1,36 @@
-import Stream.Create                 "streams.lib" "_Stream_Create"
-import Stream.Seek                   "streams.lib" "_Stream_Seek"
-import Stream.GetCaretPos            "streams.lib" "_Stream_GetCaretPos"
-import Stream.WriteFromMemoryStream  "streams.lib" "_Stream_WriteFromStream"
-import Stream.ReadFromMemoryStream   "streams.lib" "_Stream_ReadFromStream"
-import Stream.CopyFromStream         "streams.lib" "_Stream_CopyFromStream"
-import Stream.WriteByte              "streams.lib" "_Stream_WriteByte"
-import Stream.WriteWord              "streams.lib" "_Stream_WriteWord"
-import Stream.WriteInt               "streams.lib" "_Stream_WriteInt"
-import Stream.WriteFloat             "streams.lib" "_Stream_WriteFloat"
-import Stream.WriteStr               "streams.lib" "_Stream_WriteStr"
-import Stream.ReadByte               "streams.lib" "_Stream_ReadByte"
-import Stream.ReadWord               "streams.lib" "_Stream_ReadWord"
-import Stream.ReadInt                "streams.lib" "_Stream_ReadInt"
-import Stream.ReadFloat              "streams.lib" "_Stream_ReadFloat"
-import Stream.ReadStr                "streams.lib" "_Stream_ReadStr"
-import Stream.GetSize                "streams.lib" "_Stream_GetSize"
-import Stream.Clear                  "streams.lib" "_Stream_Clear"
-import Stream.Free                   "streams.lib" "_Stream_Free"
-import MemoryStream.Create           "streams.lib" "_MemoryStream_Create"
-import MemoryStream.Free             "streams.lib" "_MemoryStream_Free"
-import MemoryStream.LoadFromStream   "streams.lib" "_MemoryStream_LoadFromStream"
-import MemoryStream.StoreToStream    "streams.lib" "_MemoryStream_StoreToStream"
-import MemoryStream.LoadFromFile     "streams.lib" "_MemoryStream_LoadFromFile"
-import MemoryStream.SaveToFile       "streams.lib" "_MemoryStream_SaveToFile"
-import FileStream.Create             "streams.lib" "_FileStream_Create"
-import FileStream.Free               "streams.lib" "_FileStream_Free"
+// I/O and memory streams
+
+import _Stream_Create                 "streams.lib" "_Stream_Create"
+import _Stream_Seek                   "streams.lib" "_Stream_Seek"
+import _Stream_GetCaretPos            "streams.lib" "_Stream_GetCaretPos"
+import _Stream_WriteFromMemoryStream  "streams.lib" "_Stream_WriteFromStream"
+import _Stream_ReadFromMemoryStream   "streams.lib" "_Stream_ReadFromStream"
+import _Stream_CopyFromStream         "streams.lib" "_Stream_CopyFromStream"
+import _Stream_WriteByte              "streams.lib" "_Stream_WriteByte"
+import _Stream_WriteWord              "streams.lib" "_Stream_WriteWord"
+import _Stream_WriteInt               "streams.lib" "_Stream_WriteInt"
+import _Stream_WriteFloat             "streams.lib" "_Stream_WriteFloat"
+import _Stream_WriteStr               "streams.lib" "_Stream_WriteStr"
+import _Stream_ReadByte               "streams.lib" "_Stream_ReadByte"
+import _Stream_ReadWord               "streams.lib" "_Stream_ReadWord"
+import _Stream_ReadInt                "streams.lib" "_Stream_ReadInt"
+import _Stream_ReadFloat              "streams.lib" "_Stream_ReadFloat"
+import _Stream_ReadStr                "streams.lib" "_Stream_ReadStr"
+import _Stream_GetSize                "streams.lib" "_Stream_GetSize"
+import _Stream_Clear                  "streams.lib" "_Stream_Clear"
+import _Stream_Free                   "streams.lib" "_Stream_Free"
+import _MemoryStream_Create           "streams.lib" "_MemoryStream_Create"
+import _MemoryStream_Free             "streams.lib" "_MemoryStream_Free"
+import _MemoryStream_LoadFromStream   "streams.lib" "_MemoryStream_LoadFromStream"
+import _MemoryStream_StoreToStream    "streams.lib" "_MemoryStream_StoreToStream"
+import _MemoryStream_LoadFromFile     "streams.lib" "_MemoryStream_LoadFromFile"
+import _MemoryStream_SaveToFile       "streams.lib" "_MemoryStream_SaveToFile"
+import _FileStream_Create             "streams.lib" "_FileStream_Create"
+import _FileStream_Free               "streams.lib" "_FileStream_Free"
+
+uses <bf>
+
+//constants
 
 word SO_Start         0
 word SO_Current       1
@@ -40,3 +46,22 @@ word FM_ShareExclusive 0x0010
 word FM_ShareDenyWrite 0x0020
 word FM_ShareDenyRead  0x0030
 word FM_ShareDenyNone  0x0040
+
+// classes
+
+class TStream:
+  private:
+    var StreamPtr
+
+  public:
+    proc Create, Free
+end
+
+proc TStream::Create():
+  $StreamPtr = _Stream_Create()
+end
+
+proc TStream::Free():
+  _Stream_Free($StreamPtr)
+  FreeClass$()
+end

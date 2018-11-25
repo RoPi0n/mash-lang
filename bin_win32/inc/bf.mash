@@ -1,20 +1,20 @@
-// Base functions & SVMEXE Initialization.
+// Base functions & Initialization.
 
-import I2S          "bf.lib" "INTTOSTR"
-import F2S          "bf.lib" "FLOATTOSTR"
-import S2I          "bf.lib" "STRTOINT"
-import S2F          "bf.lib" "STRTOFLOAT"
+import _I2S         "bf.lib" "INTTOSTR"
+import _F2S         "bf.lib" "FLOATTOSTR"
+import _S2I         "bf.lib" "STRTOINT"
+import _S2F         "bf.lib" "STRTOFLOAT"
 import Halt         "bf.lib" "HALT"
 import Sleep        "bf.lib" "SLEEP"
-import StrUpper     "bf.lib" "STRUPPER"
-import StrLower     "bf.lib" "STRLOWER"
-import ChrUpper     "bf.lib" "CHRUPPER"
-import ChrLower     "bf.lib" "CHRLOWER"
-import Now          "bf.lib" "CURRENTDATETIME"
+import _StrUpper    "bf.lib" "STRUPPER"
+import _StrLower    "bf.lib" "STRLOWER"
+import _ChrUpper    "bf.lib" "CHRUPPER"
+import _ChrLower    "bf.lib" "CHRLOWER"
+import _Now         "bf.lib" "CURRENTDATETIME"
 import Randomize    "bf.lib" "RANDOMIZE"
-import Random       "bf.lib" "RANDOM"
-import RandomB      "bf.lib" "RANDOMB"
-import TickCnt      "bf.lib" "TICKCNT"
+import _Random      "bf.lib" "RANDOM"
+import _RandomB     "bf.lib" "RANDOMB"
+import _TickCnt     "bf.lib" "TICKCNT"
 
 // Global values
 int  true  -1
@@ -64,12 +64,6 @@ proc SetArrLen(.array, .newlen):
   pop
 end
 
-proc FreeArr(.array):
-  push .array
-  gpa
-  pop
-end
-
 proc gc():
   gc
   stkdrop
@@ -83,9 +77,16 @@ end
 proc FreeClass(.object):
   .object->StructFree()
   SetArrLen(.object, 0)
-  //push .object
-  //gpa
-  //pop
+end
+
+proc opx(...):
+  var .i, .k, .t = argcount \ 2
+  while .t > 0:
+    pop .i
+    pop .k
+    .i = .i + .k
+    dec .t
+  end
 end
 
 func In(.v, .array):
@@ -105,6 +106,7 @@ end
 
 proc GetError():
   //err already in stack
+  gpm
 end
 
 proc Exit():
@@ -126,5 +128,67 @@ jr
 
 proc gpm(.v):
   push .v
+  gpm
+end
+
+// API redefine
+
+proc I2S():
+  _I2S()
+  gpm
+end
+
+proc F2S():
+  _F2S()
+  gpm
+end
+
+proc S2I():
+  _S2I()
+  gpm
+end
+
+proc S2F():
+  _S2F()
+  gpm
+end
+
+proc StrUpper():
+  _StrUpper()
+  gpm
+end
+
+proc StrLower():
+  _StrLower()
+  gpm
+end
+
+proc ChrUpper():
+  _ChrUpper()
+  gpm
+end
+
+proc ChrLower():
+  _ChrLower()
+  gpm
+end
+
+proc Now():
+  _Now()
+  gpm
+end
+
+proc Random():
+  _Random()
+  gpm
+end
+
+proc RandomB():
+  _RandomB()
+  gpm
+end
+
+proc TickCnt():
+  _TickCnt()
   gpm
 end

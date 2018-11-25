@@ -4,13 +4,6 @@
 uses <bf>
 
 ////////////////////////////////////////////////////////////////////////////////
-// Simple classes
-////////////////////////////////////////////////////////////////////////////////
-
-class class: // for free class-methods declaration
-end          // like:  proc class::MyProc()  -- for that -->  MyClass->MyMethod = class::MyProc
-
-////////////////////////////////////////////////////////////////////////////////
 // Point
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -55,24 +48,24 @@ proc vector::Create():
 end
 
 proc vector::Push_Back(.Object):
-  setarrlen($Items, $Items[0] + 2)
+  SetArrLen($Items, $Items[0] + 2)
   inc $Items[0]
   $Items[$Items[0]] ?= .Object
 end
 
 func vector::Pop_Back():
   var .r = $Items[$Items[0]]
-  setarrlen($Items, $Items[0])
+  SetArrLen($Items, $Items[0])
   dec $Items[0]
   return .r
 end
 
 func vector::Pop_First():
-  var .r = $Items[1], .i
-  for(.i ?= 1; .i < $Items[0]; inc .i):
+  var .r = $Items[1]
+  for(var .i = copy(1); .i < $Items[0]; inc .i):
     $Items[.i] ?= $Items[.i + 1]
   end
-  setarrlen($Items, $Items[0])
+  SetArrLen($Items, $Items[0])
   dec $Items[0]
   return .r
 end
@@ -86,15 +79,15 @@ func vector::Peek_First():
 end
 
 proc vector::Rem_First():
-  for(var .i = 1; .i < $Items[0]; inc .i):
+  for(var .i = copy(1); .i < $Items[0]; inc .i):
     $Items[.i] ?= $Items[.i + 1]
   end
-  setarrlen($Items, $Items[0])
+  SetArrLen($Items, $Items[0])
   dec $Items[0]
 end
 
 proc vector::Rem_Back():
-  setarrlen($Items, $Items[0])
+  SetArrLen($Items, $Items[0])
   dec $Items[0]
 end
 
@@ -108,6 +101,13 @@ end
 
 proc vector::Free():
   Free($Items[0])
-  FreeArr($Items)
+  Free($Items)
   FreeClass($)
 end
+
+////////////////////////////////////////////////////////////////////////////////
+// Simple classes
+////////////////////////////////////////////////////////////////////////////////
+
+class class: // for free class-methods declaration
+end       // like:  proc class::MyProc()  -- for that -->  MyClass->MyMethod = class::MyProc

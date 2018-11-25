@@ -38,55 +38,65 @@ import _Canvas_GetPenColor                "forms_api.lib"       "_Canvas_GetPenC
 
 // ** Constants **
 
-  // Event types
-  word   EVT_Null                   0
-  word   EVT_FormActivate           1
-  word   EVT_FormChangeBounds       2
-  word   EVT_FormClick              3
-  word   EVT_FormClose              4
-  word   EVT_FormCloseQuery         5
-  word   EVT_FormContextPopup       6
-  word   EVT_FormDblClick           7
-  word   EVT_FormDeactivate         8
-  word   EVT_FormDestroy            9
-  word   EVT_FormDockDrop           10
-  word   EVT_FormDockOver           11
-  word   EVT_FormDragDrop           12
-  word   EVT_FormDragOver           13
-  word   EVT_FormDropFiles          14
-  word   EVT_FormEndDock            15
-  word   EVT_FormGetSiteInfo        16
-  word   EVT_FormHelp               17
-  word   EVT_FormHide               18
-  word   EVT_FormKeyDown            19
-  word   EVT_FormKeyPress           20
-  word   EVT_FormKeyUp              21
-  word   EVT_FormMouseDown          22
-  word   EVT_FormMouseEnter         23
-  word   EVT_FormMouseLeave         24
-  word   EVT_FormMouseMove          25
-  word   EVT_FormMouseUp            26
-  word   EVT_FormMouseWheel         27
-  word   EVT_FormMouseWheelDown     28
-  word   EVT_FormMouseWheelUp       29
-  word   EVT_FormResize             30
-  word   EVT_FormShortCut           31
-  word   EVT_FormShow               32
-  word   EVT_FormShowHint           33
-  word   EVT_FormStartDock          34
-  word   EVT_FormUnDock             35
-  word   EVT_FormUTF8KeyPress       36
-  word   EVT_FormWindowStateChange  37
-  word   EVT_FormPaint              38
+// Event types
+word   EVT_Null                   0
+word   EVT_FormActivate           1
+word   EVT_FormChangeBounds       2
+word   EVT_FormClick              3
+word   EVT_FormClose              4
+word   EVT_FormCloseQuery         5
+word   EVT_FormContextPopup       6
+word   EVT_FormDblClick           7
+word   EVT_FormDeactivate         8
+word   EVT_FormDestroy            9
+word   EVT_FormDockDrop           10
+word   EVT_FormDockOver           11
+word   EVT_FormDragDrop           12
+word   EVT_FormDragOver           13
+word   EVT_FormDropFiles          14
+word   EVT_FormEndDock            15
+word   EVT_FormGetSiteInfo        16
+word   EVT_FormHelp               17
+word   EVT_FormHide               18
+word   EVT_FormKeyDown            19
+word   EVT_FormKeyPress           20
+word   EVT_FormKeyUp              21
+word   EVT_FormMouseDown          22
+word   EVT_FormMouseEnter         23
+word   EVT_FormMouseLeave         24
+word   EVT_FormMouseMove          25
+word   EVT_FormMouseUp            26
+word   EVT_FormMouseWheel         27
+word   EVT_FormMouseWheelDown     28
+word   EVT_FormMouseWheelUp       29
+word   EVT_FormResize             30
+word   EVT_FormShortCut           31
+word   EVT_FormShow               32
+word   EVT_FormShowHint           33
+word   EVT_FormStartDock          34
+word   EVT_FormUnDock             35
+word   EVT_FormUTF8KeyPress       36
+word   EVT_FormWindowStateChange  37
+word   EVT_FormPaint              38
   
-  // Drag states
-  word   DS_DragEnter               0
-  word   DS_DragLeave               1
-  word   DS_DragMove                2
+// Drag states
+word   DS_DragEnter               0
+word   DS_DragLeave               1
+word   DS_DragMove                2
   
-  // Mouse buttons
-  word   MB_Left                    0
-  word   MB_Right                   1
-  word   MB_Middle                  2
-  word   MB_Extra1                  3
-  word   MB_Extra2                  4
+// Mouse buttons
+word   MB_Left                    0
+word   MB_Right                   1
+word   MB_Middle                  2
+word   MB_Extra1                  3
+word   MB_Extra2                  4
+
+// Form
+
+class Form:
+  private:
+    var _form
+
+  public:
+    proc Create, Free
+end
