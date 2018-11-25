@@ -76,8 +76,8 @@ begin
   else
     ExprCode := PushIt(s, varmgr);
   Result := CsNum + ':' + sLineBreak + 'pcopy' + sLineBreak + ExprCode + sLineBreak +
-            'eq' + sLineBreak + 'pushc ' + CsNum + '_end' + sLineBreak + 'gpm' + sLineBreak +
-            'swp' + sLineBreak + 'jz';
+            'eq' + sLineBreak + 'gpm' + sLineBreak + 'pushc ' + CsNum + '_end' + sLineBreak + 'gpm' + sLineBreak +
+            'swp' + sLineBreak + 'jz' + sLineBreak + 'pop';
 
   CB := TCodeBlock(BlockStack[BlockStack.Count - 1]);
   if CB.bMeta = '0' then CB.bMeta := '1';

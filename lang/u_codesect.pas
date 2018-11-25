@@ -103,7 +103,6 @@ type
 
     {** memory grabber **}
     bcGPM,    // add pointer to TMem to grabber task-list
-    bcGPA,    // add pointer to TMemArr to grabber task-list
     bcGC,     // run grabber
 
     {** constant's **}
@@ -415,9 +414,6 @@ begin
     else
     if Tk(s, 1) = 'gpm' then
       Outp.WriteByte(byte(bcGPM))
-    else
-    if Tk(s, 1) = 'gpa' then
-      Outp.WriteByte(byte(bcGPA))
     else
     if Tk(s, 1) = 'gc' then
       Outp.WriteByte(byte(bcGC))

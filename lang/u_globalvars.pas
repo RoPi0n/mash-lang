@@ -6,6 +6,9 @@ interface
 
 uses Classes, u_consts;
 
+type
+  TSVMAppMode = (amBin, amConsole, amGUI);
+
 var
   {** Preprocessor **}
   IncludedFiles: TStringList;
@@ -16,6 +19,7 @@ var
   ARGC_Enable: boolean = true;
   EnableOptimization: boolean = True;
   FastPrep_Defines: TStringList;
+  AppMode: TSVMAppMode = amConsole;
 
 implementation
 

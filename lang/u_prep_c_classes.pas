@@ -254,24 +254,22 @@ begin
   // Introspection
   if RTTI_Enable then
    Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' + ClassChildPref + 'type' + sLineBreak +
-             'gpm' + sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' +
-             sLineBreak + 'pop';
+             'gpm' + sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'rem';
 
   Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
     ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak +
-    'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' + sLineBreak + 'pop';
+    'swp' + sLineBreak + 'pushai' + sLineBreak + 'rem';
 
   c := 0;
   while c < MClass.Methods.Count do
   begin
     Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
       ClassChildPref + MClass.Methods[c] + sLineBreak + 'gpm' +
-      sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'gpm' +
-      sLineBreak + 'pop';
+      sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'rem';
     Inc(c);
   end;
 
-  Result := Result {+ sLineBreak + 'gpa'} + sLineBreak + 'pop' +
+  Result := Result {+ sLineBreak + 'gpm'} + sLineBreak + 'pop' +
     sLineBreak + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
 end;
 

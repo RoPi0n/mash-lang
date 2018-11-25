@@ -42,7 +42,6 @@ var
   varmgr: TVarManager;
   Imports: TImportSection;
   CodeSection: TCodeSection;
-  AppMode: string = '/cns';
   Tm, Tm2: TDateTime;
   OutFilePath, s: string;
 begin
@@ -73,14 +72,20 @@ begin
     begin
       s := Trim(LowerCase(ParamStr(c)));
 
-      if (s = '/bin') or (s = '/gui') or (s = '/cns') then
-        AppMode := s;
+      if s = '/bin' then
+       AppMode := amBin;
+
+      if s = '/gui' then
+       AppMode := amGUI;
+
+      if s = '/cns' then
+       AppMode := amConsole;
 
       if s = '/o+' then
-        EnableOptimization := True;
+       EnableOptimization := True;
 
       if s = '/o-' then
-        EnableOptimization := False;
+       EnableOptimization := False;
 
       if s = '/rtti+' then
        RTTI_Enable := True;
@@ -158,7 +163,7 @@ begin
     OutFilePath := ChangeFileExt(ParamStr(1), '.vmc');
     Output := TMemoryStream.Create;
 
-    if AppMode <> '/bin' then
+    if AppMode <> amBin then
     begin
       Output.WriteByte(Ord('S'));
       Output.WriteByte(Ord('V'));
@@ -167,23 +172,23 @@ begin
       Output.WriteByte(Ord('X'));
       Output.WriteByte(Ord('E'));
       Output.WriteByte(Ord('_'));
-      if AppMode = '/gui' then
+      if AppMode = amGUI then
       begin
         Output.WriteByte(Ord('G'));
         Output.WriteByte(Ord('U'));
         Output.WriteByte(Ord('I'));
-        writeln('Header: SVM - Executable GUI program.');
+        writeln('Header: Executable GUI program.');
       end
       else
       begin
         Output.WriteByte(Ord('C'));
         Output.WriteByte(Ord('N'));
         Output.WriteByte(Ord('S'));
-        writeln('Header: SVM - Executable console program.');
+        writeln('Header: Executable console program.');
       end;
     end
     else
-      writeln('Header: SVM - Executable object file.');
+      writeln('Header: Executable object file.');
 
     if EnableOptimization then
       OptimizeCode(Code);

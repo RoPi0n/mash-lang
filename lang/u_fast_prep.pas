@@ -34,12 +34,34 @@ begin
         delete(s, length(s), 1);
         s := Trim(s);
 
+        if s = 'appmode gui' then
+         begin
+           RTTI_Enable := true;
+           if FastPrep_Defines.IndexOf('gui') = -1 then
+            FastPrep_Defines.Add('gui');
+         end;
+
+        if s = 'appmode console' then
+         begin
+           RTTI_Enable := true;
+           if FastPrep_Defines.IndexOf('console') = -1 then
+            FastPrep_Defines.Add('console');
+         end;
+
+        if s = 'appmode bin' then
+         begin
+           RTTI_Enable := true;
+           if FastPrep_Defines.IndexOf('binary') = -1 then
+            FastPrep_Defines.Add('binary');
+         end;
+
         if s = 'o+' then
          begin
            RTTI_Enable := true;
            if FastPrep_Defines.IndexOf('o') = -1 then
             FastPrep_Defines.Add('o');
          end;
+
         if s = 'o-' then
          begin
            RTTI_Enable := false;
@@ -54,6 +76,7 @@ begin
            if FastPrep_Defines.IndexOf('rtti') = -1 then
             FastPrep_Defines.Add('rtti');
          end;
+
         if s = 'rtti-' then
          begin
            RTTI_Enable := false;
@@ -68,6 +91,7 @@ begin
            if FastPrep_Defines.IndexOf('argcounter') = -1 then
             FastPrep_Defines.Add('argcounter');
          end;
+
         if s = 'argcounter-' then
          begin
            RTTI_Enable := false;
