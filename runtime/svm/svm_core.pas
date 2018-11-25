@@ -4,8 +4,8 @@
   library svm_core;
 {$Else}
   program svm_core;
-  {$apptype gui}
-  {$define BuildGUI}
+  //{$apptype gui}
+  //{$define BuildGUI}
 {$EndIf}
 
 uses
@@ -83,7 +83,6 @@ type
 
     {** memory grabber **}
     bcGPM,    // add pointer to TMem to grabber task-list
-    bcGPA,    // add pointer to TMemArr to grabber task-list
     bcGC,     // run grabber
 
     {** constant's **}
@@ -216,7 +215,6 @@ type
   PMem = ^TMem;
   TMemArr = array of pointer;
   PMemArr = ^TMemArr;
-  TMemType = (mtNull, mtVar, mtArray, mtPointer);
   TMemory = array of pointer;
   PMemory = ^TMemory;
   PPointer = ^Pointer;
@@ -520,7 +518,7 @@ type
 
   procedure RemMem(p: PMem);
   begin
-    dispose(p);
+    FreeMem(p);
   end;
 
 {***** Stack ******************************************************************}
@@ -685,60 +683,32 @@ type
 
 {***** Grabber ****************************************************************}
 type
-  TGrabberTask = record
-    obj_p: pointer;
-    obj_t: TMemType;
-  end;
-
-type
   TGrabber = object
   private
-    tasks: array of TGrabberTask;
+    tasks: array of pointer;
   public
-    procedure AddTask(p: Pointer; t: TMemType);
+    procedure AddTask(p: Pointer);
     procedure Run;
   end;
 
-  procedure TGrabber.AddTask(p: Pointer; t: TMemType);
+  procedure TGrabber.AddTask(p: Pointer);
   begin
     SetLength(self.tasks, length(self.tasks) + 1);
-    with self.tasks[length(self.tasks) - 1] do
-    begin
-      obj_p := p;
-      obj_t := t;
-    end;
+    Self.tasks[length(self.tasks) - 1] := p
   end;
 
   procedure TGrabber.Run;
   var
-    i,{j,}tasks_end: cardinal;
-    {tmp: pointer;}
+    c,tasks_end: cardinal;
   begin
-    if Length(self.tasks) > 0 then
-    begin
-      tasks_end := length(self.tasks) - 1;
-      for i := 0 to tasks_end do
-       {begin
-         tmp := self.tasks[i].obj_p;
-         if tmp <> nil then
-          begin}
-            case self.tasks[i].obj_t of
-              mtVar: Dispose(PMem(self.tasks[i].obj_p));
-              mtArray: Dispose(PMemArr(self.tasks[i].obj_p));
-              else
-                System.Error(reInvalidCast);
-            end;
-            {j := i + 1;
-            while j < tasks_end+1 do
-             begin
-               if self.tasks[j].obj_p = tmp then
-                self.tasks[i].obj_p := nil;
-               inc(j);
-             end;
-          end;
-       end;}
-      SetLength(self.tasks, 0);
-    end;
+    tasks_end := length(self.tasks);
+    c := 0;
+    while c < tasks_end do
+     begin
+       FreeMem(self.tasks[c]);
+       inc(c);
+     end;
+    SetLength(self.tasks, 0);
   end;
 
 {***** VM *********************************************************************}
@@ -1166,13 +1136,7 @@ type
 
             bcGPM:
             begin
-              self.grabber.AddTask(self.stack.peek, mtVar);
-              Inc(self.ip);
-            end;
-
-            bcGPA:
-            begin
-              self.grabber.AddTask(self.stack.peek, mtArray);
+              self.grabber.AddTask(self.stack.peek);
               Inc(self.ip);
             end;
 
