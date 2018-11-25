@@ -3,13 +3,17 @@ uses <crt>
 uses <classes>
 uses <threads>
 
+{_mode_ rtti-}
+{_mode_ argcounter-}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 enum SnakeMovingVector [smvLeft, smvRight, smvUp, smvDown]
 
 class Snake:
-  var Body, MovingVector
-  proc Create, Free
+  public:
+    var Body, MovingVector
+    proc Create, Free
 end
 
 proc Snake::Create():
@@ -28,7 +32,7 @@ end
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var snk, food, score = 0, sleeptime = 100, ControlThr
+var snk, food, score = 0, sleeptime = 80, ControlThr
 
 str snake_char "@"
 str food_char  "&"
@@ -71,6 +75,7 @@ proc RandFood():
   var .i
   for(.i ?= 1; .i < snk->Body->Size(); inc .i):
     if (food->x == snk->Body->Items[.i]->x) & (food->y == snk->Body->Items[.i]->y):
+      gc
       RandFood()
       break
     end
@@ -92,12 +97,16 @@ proc MoveSnake(.x, .y):
     PutCh(.tmp->x, .tmp->y, " ")
     .tmp->Free()
 
+    gc
+
     var .i
     for(.i ?= 1; .i < snk->Body->Size(); inc .i):
       if (.newhead->x == snk->Body->Items[.i]->x) & (.newhead->y == snk->Body->Items[.i]->y):
         GameOver()
       end
     end
+
+    gc
 
     if (.newhead->x == 1) | (.newhead->x == 42) | (.newhead->y == 1) | (.newhead->y == 22):
       GameOver()
@@ -111,21 +120,26 @@ end
 
 
 proc GameTick():
-  if snk->MovingVector == smvLeft:
-    MoveSnake(-1, 0)
-    break
-  end
-  if snk->MovingVector == smvRight:
-    MoveSnake(1, 0)
-    break
-  end
-  if snk->MovingVector == smvUp:
-    MoveSnake(0, -1)
-    break
-  end
-  if snk->MovingVector == smvDown:
-    MoveSnake(0, 1)
-    break
+  switch snk->MovingVector:
+    case smvLeft:
+      MoveSnake(-1, 0)
+      break
+    end
+
+    case smvRight:
+      MoveSnake(1, 0)
+      break
+    end
+
+    case smvUp:
+      MoveSnake(0, -1)
+      break
+    end
+
+    case smvDown:
+      MoveSnake(0, 1)
+      break
+    end
   end
 end
 
@@ -136,34 +150,41 @@ proc ControlThread(.ThreadContext, .Arg):
   while true:
     .k ?= Crt.ReadKey()
 
-    sleeptime = 100
+    switch ChrUpper(.k):
+      case "W":
+        if snk->MovingVector == smvDown:
+          break
+        end
+        snk->MovingVector = smvUp
+        break
+      end
 
-    if (.k == "w") | (.k == "W"):
-      if snk->MovingVector == smvUp:
-        sleeptime = 50
+      case "S":
+        if snk->MovingVector == smvUp:
+          break
+        end
+        snk->MovingVector = smvDown
+        break
       end
-      snk->MovingVector = smvUp
-    end
-    if (.k == "s") | (.k == "S"):
-      if snk->MovingVector == smvDown:
-        sleeptime = 50
-      end
-      snk->MovingVector = smvDown
-    end
-    if (.k == "a") | (.k == "A"):
-      if snk->MovingVector == smvLeft:
-        sleeptime = 50
-      end
-      snk->MovingVector = smvLeft
-    end
-    if (.k == "d") | (.k == "D"):
-      if snk->MovingVector == smvRight:
-        sleeptime = 50
-      end
-      snk->MovingVector = smvRight
-    end
 
+      case "A":
+        if snk->MovingVector == smvRight:
+          break
+        end
+        snk->MovingVector = smvLeft
+        break
+      end
+
+      case "D":
+        if snk->MovingVector == smvLeft:
+          break
+        end
+        snk->MovingVector = smvRight
+        break
+      end
+    end
     Free(.k)
+    gc
   end
 end
 
