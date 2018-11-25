@@ -3,7 +3,7 @@ library forms_api;
 {$mode objfpc}{$H+}
 
 uses
-  SysUtils, Classes, Forms, Graphics, Interfaces, lform_class;
+  SysUtils, Classes, Forms, Graphics, Interfaces, lform_class, SyncObjs;
 
 {$I ..\adp.inc}
 
@@ -149,22 +149,19 @@ end;
 exports  _Form_Hide name  '_Form_Hide';
 
 
-procedure _Form_WaitForEvent(Stack:PStack); cdecl;
+procedure _Form_CheckEvent(Stack:PStack); cdecl;
 var
   F:TLForm;
+  E:TLFEvent;
 begin
   F := TLForm(Stack^.popv);
-  while F.EventQueue.CountEvents = 0 do
-   begin
-     Application.ProcessMessages;
-     Sleep(1);
-   end;
-  if F.LastEvent <> nil then
-   FreeAndNil(F.LastEvent);
-  F.LastEvent := F.EventQueue.GetEvent;
-  Stack^.push(new_svmval(F.LastEvent.GetEvType));
+  E := F.GetEv;
+  if E <> nil then
+   Stack^.push(new_svmval(E.GetEvType))
+  else
+   Stack^.push(new_svmval(EVT_Null));
 end;
-exports  _Form_WaitForEvent name  '_Form_WaitForEvent';
+exports  _Form_CheckEvent name  '_Form_CheckEvent';
 
 
 procedure _Form_GetLastEvent(Stack:PStack); cdecl;
@@ -172,24 +169,24 @@ var
   F:TLForm;
 begin
   F := TLForm(Stack^.popv);
-  if F.LastEvent = nil then
+  if F.LastEv = nil then
    Stack^.push(new_svmval(EVT_Null))
   else
-   Stack^.push(new_svmval(F.LastEvent.GetEvType));
+   Stack^.push(new_svmval(F.LastEv.GetEvType));
 end;
 exports  _Form_GetLastEvent name  '_Form_GetLastEvent';
 
 
 procedure _Form_LastEventArgCount(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).LastEvent.ArgCount));
+  Stack^.push(new_svmval(TLForm(Stack^.popv).LastEv.ArgCount));
 end;
 exports  _Form_LastEventArgCount name  '_Form_LastEventArgCount';
 
 
 procedure _Form_LastEventArgAt(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).LastEvent.GetArg(PMem(Stack^.popv)^)));
+  Stack^.push(new_svmval(TLForm(Stack^.popv).LastEv.GetArg(PMem(Stack^.popv)^)));
 end;
 exports  _Form_LastEventArgAt name  '_Form_LastEventArgAt';
 
@@ -243,4 +240,3 @@ exports  _Canvas_GetPenColor name  '_Canvas_GetPenColor';
 
 begin
 end.
-
