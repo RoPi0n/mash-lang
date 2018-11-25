@@ -4,11 +4,14 @@
     <PathDelim Value="\"/>
     <Version Value="10"/>
     <BuildModes Active="Default"/>
-    <Units Count="6">
+    <Units Count="7">
       <Unit0>
         <Filename Value="mash_ide.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="20"/>
+        <EditorIndex Value="2"/>
+        <CursorPos X="25" Y="8"/>
+        <UsageCount Value="35"/>
+        <Loaded Value="True"/>
       </Unit0>
       <Unit1>
         <Filename Value="mainform.pas"/>
@@ -17,8 +20,9 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="MainForm"/>
-        <IsVisibleTab Value="True"/>
-        <UsageCount Value="20"/>
+        <TopLine Value="338"/>
+        <CursorPos X="45" Y="343"/>
+        <UsageCount Value="35"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit1>
@@ -29,12 +33,18 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
         <UnitName Value="Editor"/>
-        <UsageCount Value="20"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="703"/>
+        <CursorPos X="14" Y="787"/>
+        <UsageCount Value="35"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit2>
       <Unit3>
         <Filename Value="global.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="20"/>
+        <UsageCount Value="35"/>
       </Unit3>
       <Unit4>
         <Filename Value="aboutform.pas"/>
@@ -42,7 +52,11 @@
         <ComponentName Value="AboutFrm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UsageCount Value="20"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="19"/>
+        <UsageCount Value="35"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit4>
       <Unit5>
         <Filename Value="debugger.pas"/>
@@ -51,9 +65,137 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Debugger"/>
-        <UsageCount Value="20"/>
+        <UsageCount Value="35"/>
       </Unit5>
+      <Unit6>
+        <Filename Value="C:\lazarus182_32\lcl\include\treeview.inc"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="48"/>
+        <CursorPos X="9" Y="56"/>
+        <UsageCount Value="10"/>
+      </Unit6>
     </Units>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory Count="30" HistoryIndex="29">
+      <Position1>
+        <Filename Value="editor.pas"/>
+        <Caret Line="485" Column="23" TopLine="483"/>
+      </Position1>
+      <Position2>
+        <Filename Value="editor.pas"/>
+        <Caret Line="484" Column="23" TopLine="482"/>
+      </Position2>
+      <Position3>
+        <Filename Value="editor.pas"/>
+        <Caret Line="485" Column="23" TopLine="483"/>
+      </Position3>
+      <Position4>
+        <Filename Value="editor.pas"/>
+        <Caret Line="585" Column="12" TopLine="561"/>
+      </Position4>
+      <Position5>
+        <Filename Value="editor.pas"/>
+        <Caret Line="575" Column="41" TopLine="569"/>
+      </Position5>
+      <Position6>
+        <Filename Value="editor.pas"/>
+        <Caret Line="617" Column="38" TopLine="596"/>
+      </Position6>
+      <Position7>
+        <Filename Value="editor.pas"/>
+        <Caret Line="586" Column="39" TopLine="571"/>
+      </Position7>
+      <Position8>
+        <Filename Value="editor.pas"/>
+        <Caret Line="574" Column="16" TopLine="569"/>
+      </Position8>
+      <Position9>
+        <Filename Value="editor.pas"/>
+        <Caret Line="590" Column="29" TopLine="581"/>
+      </Position9>
+      <Position10>
+        <Filename Value="editor.pas"/>
+        <Caret Line="586" Column="65" TopLine="583"/>
+      </Position10>
+      <Position11>
+        <Filename Value="editor.pas"/>
+        <Caret Line="591" Column="46" TopLine="589"/>
+      </Position11>
+      <Position12>
+        <Filename Value="editor.pas"/>
+        <Caret Line="613" Column="56" TopLine="576"/>
+      </Position12>
+      <Position13>
+        <Filename Value="editor.pas"/>
+        <Caret Line="592" Column="39" TopLine="580"/>
+      </Position13>
+      <Position14>
+        <Filename Value="editor.pas"/>
+        <Caret Line="566" Column="3" TopLine="558"/>
+      </Position14>
+      <Position15>
+        <Filename Value="editor.pas"/>
+        <Caret Line="573" Column="13" TopLine="562"/>
+      </Position15>
+      <Position16>
+        <Filename Value="editor.pas"/>
+        <Caret Line="93" Column="24" TopLine="73"/>
+      </Position16>
+      <Position17>
+        <Filename Value="editor.pas"/>
+        <Caret Line="225" Column="5" TopLine="71"/>
+      </Position17>
+      <Position18>
+        <Filename Value="editor.pas"/>
+        <Caret Line="128" Column="38" TopLine="111"/>
+      </Position18>
+      <Position19>
+        <Filename Value="editor.pas"/>
+        <Caret Line="368" Column="6" TopLine="365"/>
+      </Position19>
+      <Position20>
+        <Filename Value="editor.pas"/>
+        <Caret Line="679" Column="13" TopLine="657"/>
+      </Position20>
+      <Position21>
+        <Filename Value="editor.pas"/>
+        <Caret Line="116" Column="120" TopLine="104"/>
+      </Position21>
+      <Position22>
+        <Filename Value="editor.pas"/>
+        <Caret Line="651" Column="16" TopLine="628"/>
+      </Position22>
+      <Position23>
+        <Filename Value="editor.pas"/>
+        <Caret Line="642" Column="124" TopLine="635"/>
+      </Position23>
+      <Position24>
+        <Filename Value="editor.pas"/>
+        <Caret Line="613" Column="28" TopLine="597"/>
+      </Position24>
+      <Position25>
+        <Filename Value="editor.pas"/>
+        <Caret Line="612" Column="28" TopLine="596"/>
+      </Position25>
+      <Position26>
+        <Filename Value="editor.pas"/>
+        <Caret Line="704" Column="75" TopLine="698"/>
+      </Position26>
+      <Position27>
+        <Filename Value="editor.pas"/>
+        <Caret Line="736" Column="4" TopLine="113"/>
+      </Position27>
+      <Position28>
+        <Filename Value="editor.pas"/>
+        <Caret Line="133" Column="29" TopLine="110"/>
+      </Position28>
+      <Position29>
+        <Filename Value="editor.pas"/>
+        <Caret Line="394" Column="3" TopLine="391"/>
+      </Position29>
+      <Position30>
+        <Filename Value="editor.pas"/>
+        <Caret Line="405" Column="81" TopLine="387"/>
+      </Position30>
+    </JumpHistory>
   </ProjectSession>
 </CONFIG>

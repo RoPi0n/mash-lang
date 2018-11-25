@@ -6,8 +6,8 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, SynCompletion, Forms, Controls, Graphics,
-  Dialogs, Menus, ComCtrls, ExtCtrls, StdCtrls, Editor, Global, AboutForm,
-  Process, LazUTF8;
+  Dialogs, Menus, ComCtrls, ExtCtrls, StdCtrls, Buttons, Editor, Global,
+  AboutForm, Process, LazUTF8;
 
 type
 
@@ -15,6 +15,12 @@ type
 
   TMainFrm = class(TForm)
     Button1: TButton;
+    Button2: TButton;
+    Button3: TButton;
+    Image1: TImage;
+    Image2: TImage;
+    Label2: TLabel;
+    Label3: TLabel;
     LogsPanel: TPanel;
     MainMenu1: TMainMenu;
     LogMemo: TMemo;
@@ -47,13 +53,19 @@ type
     MenuItem9: TMenuItem;
     OpenDialog: TOpenDialog;
     PageControl: TPageControl;
+    PreviewControlsPanel: TPanel;
+    PreviewPanel: TPanel;
     Panel2: TPanel;
     Panel3: TPanel;
     SaveDialog: TSaveDialog;
     Splitter1: TSplitter;
     StatusBar: TStatusBar;
+    PreviewPanelTimer: TTimer;
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormResize(Sender: TObject);
     procedure MenuItem10Click(Sender: TObject);
     procedure MenuItem12Click(Sender: TObject);
     procedure MenuItem13Click(Sender: TObject);
@@ -79,6 +91,8 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure BuildFile(fp,flags:string);
     procedure BuildFileAndRun(fp,flags,svm:string);
+    procedure PreviewPanelTimerTimer(Sender: TObject);
+    procedure ShowPreviewPanel;
   private
     { private declarations }
   public
@@ -93,6 +107,17 @@ var
 implementation
 
 {$R *.lfm}
+
+procedure TMainFrm.ShowPreviewPanel;
+begin
+  PreviewPanel.Left := PageControl.Left;
+  PreviewPanel.Top := PageControl.Top;
+  PreviewPanel.Width := PageControl.Width;
+  PreviewPanel.Height := PageControl.Height;
+  PreviewControlsPanel.Left := (PreviewPanel.Width - PreviewControlsPanel.Width) div 2;
+  PreviewControlsPanel.Top := (PreviewPanel.Height - PreviewControlsPanel.Height) div 2;
+  PreviewPanel.Visible := True;
+end;
 
 function GetEditor(Tab:TTabSheet):TEditorFrame;
 var
@@ -294,6 +319,13 @@ end;
 procedure TMainFrm.FormCreate(Sender: TObject);
 begin
   LogsPanel.Height := 0;
+  ShowPreviewPanel;
+end;
+
+procedure TMainFrm.FormResize(Sender: TObject);
+begin
+  if PageControl.PageCount = 0 then
+   ShowPreviewPanel;
 end;
 
 procedure TMainFrm.BuildFile(fp,flags:string);
@@ -303,6 +335,7 @@ var
   sl: TStringList;
 begin
   LogMemo.Lines.Clear;
+  LogMemo.Repaint;
   LogMemo.Lines.Add('Start building file: "'+fp+'"');
   AProcess := TProcess.Create(Self);
   sl := TStringList.Create;
@@ -337,6 +370,17 @@ begin
    end
   else
    LogMemo.Lines.Add('Failed to launch .vmc file.');
+end;
+
+procedure TMainFrm.PreviewPanelTimerTimer(Sender: TObject);
+begin
+  //show it
+  if (PageControl.PageCount = 0) and (not PreviewPanel.Visible) then
+   ShowPreviewPanel;
+
+  //hide it
+  if PreviewPanel.Visible and (PageControl.PageCount > 0) then
+   PreviewPanel.Visible := false;
 end;
 
 procedure TMainFrm.MenuItem10Click(Sender: TObject);
@@ -374,6 +418,16 @@ end;
 procedure TMainFrm.Button1Click(Sender: TObject);
 begin
   LogsPanel.Height := 0;
+end;
+
+procedure TMainFrm.Button2Click(Sender: TObject);
+begin
+  MenuItem2Click(Sender);
+end;
+
+procedure TMainFrm.Button3Click(Sender: TObject);
+begin
+  MenuItem3Click(Sender);
 end;
 
 procedure TMainFrm.MenuItem12Click(Sender: TObject);
