@@ -8,14 +8,20 @@
   //{$define BuildGUI}
 {$EndIf}
 
+//{$Define DebugVer}
+
 uses
   {$IfDef UNIX}
   cthreads,
   {$EndIf}
   SysUtils,
   dynlibs,
-  variants,
-  Classes;
+  svm_mem,
+  Classes,
+  svm_grabber
+  {$IfDef DebugVer}
+   , typinfo
+  {$EndIf};
 
 {***** OP Codes ***************************************************************}
 type
@@ -38,10 +44,6 @@ type
     bcEQ,     // [top] == [top-1] ? [top] = 1 : [top] = 0
     bcBG,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
     bcBE,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-    bcLAND,   // [top] = [top] and [top-1]
-    bcLOR,    // [top] = [top] or [top-1]
-    bcLXOR,   // [top] = [top] xor [top-1]
-    bcLNOT,   // [top] = not [top]
 
     bcNOT,    // [top] = ![top]
     bcAND,    // [top] = [top] and [top-1]
@@ -62,7 +64,7 @@ type
 
     bcMV,     // [top]^ = [top-1]^
     bcMVBP,   // [top]^^ = [top-1]^
-	bcGVBP,   // [top]^ = [top-1]^^
+    bcGVBP,   // [top]^ = [top-1]^^
     bcMVP,    // [top]^ = [top-1]
 
     {** memory operation's **}
@@ -72,9 +74,10 @@ type
     bcMD,     // double [top]
     bcRM,     // rem @[top]
     bcNA,     // [top] = @new array[  [top]  ] of pointer
+    bcTF,     // [top] = typeof( [top] )
+    bcSF,     // [top] = sizeof( [top] )
 
     {** array's **}
-    bcSF,     // sizeof( [top] as object )
     bcAL,     // length( [top] as array )
     bcSL,     // setlength( [top] as array, {stack} )
 
@@ -105,82 +108,8 @@ type
     bcTRS,    // success exit from try/catch block
     bcTRR,    // raise exception, message = [top]
 
-    {** for word's **}
-    bcEQ_W,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcBG_W,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
-    bcBE_W,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-
-    bcNOT_W,    // [top] = ![top]
-    bcAND_W,    // [top] = [top] and [top-1]
-    bcOR_W,     // [top] = [top] or  [top-1]
-    bcXOR_W,    // [top] = [top] xor [top-1]
-    bcSHR_W,    // [top] = [top] shr [top-1]
-    bcSHL_W,    // [top] = [top] shl [top-1]
-
-    bcINC_W,    // [top]++
-    bcDEC_W,    // [top]--
-    bcADD_W,    // [top] = [top] + [top-1]
-    bcSUB_W,    // [top] = [top] - [top-1]
-    bcMUL_W,    // [top] = [top] * [top-1]
-    bcDIV_W,    // [top] = [top] / [top-1]
-    bcMOD_W,    // [top] = [top] % [top-1]
-    bcIDIV_W,   // [top] = [top] \ [top-1]
-
-    bcMV_W,     // [top]^ = [top-1]^
-    bcMVBP_W,   // [top]^^ = [top-1]^
-
-    {** for integer's **}
-    bcEQ_I,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcBG_I,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
-    bcBE_I,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-
-    bcNOT_I,    // [top] = ![top]
-    bcAND_I,    // [top] = [top] and [top-1]
-    bcOR_I,     // [top] = [top] or  [top-1]
-    bcXOR_I,    // [top] = [top] xor [top-1]
-    bcSHR_I,    // [top] = [top] shr [top-1]
-    bcSHL_I,    // [top] = [top] shl [top-1]
-
-    bcNEG_I,    // [top] = -[top]
-    bcINC_I,    // [top]++
-    bcDEC_I,    // [top]--
-    bcADD_I,    // [top] = [top] + [top-1]
-    bcSUB_I,    // [top] = [top] - [top-1]
-    bcMUL_I,    // [top] = [top] * [top-1]
-    bcDIV_I,    // [top] = [top] / [top-1]
-    bcMOD_I,    // [top] = [top] % [top-1]
-    bcIDIV_I,   // [top] = [top] \ [top-1]
-
-    bcMV_I,     // [top]^ = [top-1]^
-    bcMVBP_I,   // [top]^^ = [top-1]^
-
-    {** for digit's with floating point **}
-    bcEQ_D,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcBG_D,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
-    bcBE_D,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-
-    bcNEG_D,    // [top] = -[top]
-    bcINC_D,    // [top]++
-    bcDEC_D,    // [top]--
-    bcADD_D,    // [top] = [top] + [top-1]
-    bcSUB_D,    // [top] = [top] - [top-1]
-    bcMUL_D,    // [top] = [top] * [top-1]
-    bcDIV_D,    // [top] = [top] / [top-1]
-    bcMOD_D,    // [top] = [top] % [top-1]
-    bcIDIV_D,   // [top] = [top] \ [top-1]
-
-    bcMV_D,     // [top]^ = [top-1]^
-    bcMVBP_D,   // [top]^^ = [top-1]^
-
     {** for string's **}
-    bcEQ_S,
-    bcADD_S,
-    bcMV_S,
-    bcMVBP_S,
-    bcSTRL,     // strlen
     bcSTRD,     // strdel
-    bcSTCHATP,  // push str[x]
-    bcSTCHATK,  // peek str[x]
     bcCHORD,
     bcORDCH,
 
@@ -200,26 +129,28 @@ type
     bcRSBP,  //read string
     bcWSBP,  //write string
 
-    bcTHREXT //stop code execution
+    bcTHREXT,//stop code execution
+
+    bcDBP    //debug method call
     );
 
 {***** Global consts **********************************************************}
   //const
   // null = '';
 
-{***** Types ******************************************************************}
+{***** Types & variables ******************************************************}
 type
   TInstructionPointer = cardinal;
   //PInstructionPointer = ^TInstructionPointer;
-  TMem = variant;
-  PMem = ^TMem;
-  TMemArr = array of pointer;
-  PMemArr = ^TMemArr;
   TMemory = array of pointer;
   PMemory = ^TMemory;
-  PPointer = ^Pointer;
   TByteArr = array of byte;
   PByteArr = ^TByteArr;
+  TDbgCallBack = procedure(p:pointer); cdecl;
+  PDbgCallBack = ^TDbgCallBack;
+
+var
+  DbgCallBack: PDbgCallBack = nil;
 
 {***** Some functions *********************************************************}
   procedure VMError(m: string);
@@ -258,12 +189,12 @@ type
 type
   TConstSection = object
   private
-    constants: array of variant;
+    constants: array of pointer;
     procedure SetSize(sz: cardinal);
-    procedure SetConst(id: cardinal; v: variant);
+    procedure SetConst(id: cardinal; v: pointer);
   public
     procedure Parse(pb: PByteArr);
-    function GetConst(id: cardinal): variant;
+    function GetConst(id: cardinal): pointer;
   end;
 
   PConstSection = ^TConstSection;
@@ -273,11 +204,12 @@ type
     setlength(self.constants, sz);
   end;
 
-  procedure TConstSection.SetConst(id: cardinal; v: variant);
+  procedure TConstSection.SetConst(id: cardinal; v: pointer);
   begin
     self.constants[id] := v;
   end;
 
+  {$HINTS OFF}
   procedure TConstSection.Parse(pb: PByteArr);
   var
     consts_count, bpos: cardinal;
@@ -299,8 +231,8 @@ type
         begin
           self.SetConst(
             cardinal(length(self.constants)) - consts_count,
-            cardinal((pb^[bpos + 1] shl 24) + (pb^[bpos + 2] shl 16) +
-            (pb^[bpos + 3] shl 8) + pb^[bpos + 4])
+            TSVMMem.CreateFW(cardinal((pb^[bpos + 1] shl 24) + (pb^[bpos + 2] shl 16) +
+            (pb^[bpos + 3] shl 8) + pb^[bpos + 4]))
             );
           Inc(bpos, 5);
         end;
@@ -316,7 +248,7 @@ type
            PByte(Cardinal(@i) + 1)^ := pb^[bpos + 7];
            PByte(Cardinal(@i))^ := pb^[bpos + 4];
            self.SetConst(
-             cardinal(length(self.constants)) - consts_count, i
+             cardinal(length(self.constants)) - consts_count, TSVMMem.CreateF(i, svmtInt)
            );
           Inc(bpos, 9);
         end;
@@ -332,7 +264,7 @@ type
           PByte(Cardinal(@d) + 1)^ := pb^[bpos + 7];
           PByte(Cardinal(@d))^ := pb^[bpos + 8];
           self.SetConst(
-            cardinal(length(self.constants)) - consts_count, d);
+            cardinal(length(self.constants)) - consts_count, TSVMMem.CreateF(d, svmtReal));
           Inc(bpos, 9);
         end;
 
@@ -346,7 +278,7 @@ type
             s := s + chr(pb^[bpos - sl]);
             Dec(sl);
           end;
-          self.SetConst(cardinal(length(self.constants)) - consts_count, s);
+          self.SetConst(cardinal(length(self.constants)) - consts_count, TSVMMem.CreateFS(s));
         end;
 
         ctStream:
@@ -361,8 +293,7 @@ type
           st.WriteBuffer(pb^[bpos], stl);
           st.Seek(0, soFromBeginning);
           Inc(bpos, stl);
-          self.SetConst(cardinal(length(self.constants)) -
-            consts_count, cardinal(Pointer(st)));
+          self.SetConst(cardinal(length(self.constants)) - consts_count, TSVMMem.CreateFW(Cardinal(Pointer(st))));
         end;
         else
           VMError('Error: resource section format not supported.');
@@ -371,8 +302,9 @@ type
     end;
     CutLeftBytes(pb, bpos);
   end;
+  {$HINTS ON}
 
-  function TConstSection.GetConst(id: cardinal): variant;
+  function TConstSection.GetConst(id: cardinal): pointer;
   begin
     Result := self.constants[id];
   end;
@@ -472,14 +404,17 @@ type
     lb: word;
     sl: byte;
     s: string;
+    ssz, c: cardinal;
   begin
+    ssz := length(self.methods);
     libs.Parse(pb, mainclasspath);
     if length(libs.libs) > 0 then
     begin
       methods_count := cardinal((pb^[0] shl 24) + (pb^[1] shl 16) +
         (pb^[2] shl 8) + pb^[3]);
       bpos := 4;
-      self.SetSize(methods_count);
+      self.SetSize(methods_count + ssz);
+      c := 0;
       while methods_count > 0 do
       begin
         lb := (pb^[bpos] shl 8) + pb^[bpos + 1];
@@ -493,6 +428,7 @@ type
         end;
         self.SetFunc(cardinal(length(self.methods)) - methods_count,
           GetProcAddress(libs.GetLibH(lb), s));
+        Inc(c);
         Dec(methods_count);
       end;
       CutLeftBytes(pb, bpos);
@@ -504,28 +440,16 @@ type
     Result := self.methods[id];
   end;
 
-{***** Memory ops *************************************************************}
-  function NewMemV(v: variant): PMem;
-  begin
-    new(Result);
-    Result^ := v;
-  end;
-
-  function NewMem: PMem;
-  begin
-    new(Result);
-  end;
-
-  procedure RemMem(p: PMem);
-  begin
-    FreeMem(p);
-  end;
-
 {***** Stack ******************************************************************}
+const
+  StackBlockSize = 256;
+
 type
   TStack = object
   public
     items: array of pointer;
+    size, i_pos: cardinal;
+    procedure init;
     procedure push(p: pointer);
     function peek: pointer;
     procedure pop;
@@ -534,43 +458,66 @@ type
     procedure drop;
   end;
 
-type
   PStack = ^TStack;
+
+  procedure TStack.init;
+  begin
+    SetLength(items, StackBlockSize);
+    i_pos := 0;
+    size := StackBlockSize;
+  end;
 
   procedure TStack.push(p: pointer);
   begin
-    setlength(self.items, length(self.items) + 1);
-    self.items[length(self.items) - 1] := p;
+    items[i_pos] := p;
+    inc(i_pos);
+    if i_pos >= size then
+     begin
+       size := size + StackBlockSize;
+       SetLength(items, size)
+     end;
   end;
 
   function TStack.peek: pointer;
   begin
-    Result := self.items[length(self.items) - 1];
+    Result := items[i_pos - 1];
   end;
 
   procedure TStack.pop;
   begin
-    setlength(self.items, length(self.items) - 1);
+    dec(i_pos);
+    if size - i_pos > StackBlockSize then
+     begin
+       size := size - StackBlockSize;
+       SetLength(items, size);
+     end;
   end;
 
   function TStack.popv: pointer;
   begin
-    Result := self.items[length(self.items) - 1];
-    setlength(self.items, length(self.items) - 1);
+    dec(i_pos);
+    Result := items[i_pos];
+    if size - i_pos > StackBlockSize then
+     begin
+       size := size - StackBlockSize;
+       SetLength(items, size);
+     end;
   end;
 
   procedure TStack.swp;
   var
     p: pointer;
   begin
-    p := self.items[length(self.items) - 2];
-    self.items[length(self.items) - 2] := self.items[length(self.items) - 1];
-    self.items[length(self.items) - 1] := p;
+    p := items[i_pos - 2];
+    items[i_pos - 2] := items[i_pos - 1];
+    items[i_pos - 1] := p;
   end;
 
   procedure TStack.drop;
   begin
-    SetLength(self.items,0);
+    SetLength(items, StackBlockSize);
+    size := StackBlockSize;
+    i_pos := 0;
   end;
 
 {***** New array **************************************************************}
@@ -579,65 +526,95 @@ type
   TSizeArr = array of cardinal;
   PSizeArr = ^TSizeArr;
 
-  function NewArr_Sub(size_arr: PSizeArr; lvl: word): PMemArr;
+  function NewArr_Sub(size_arr: PSizeArr; lvl: word): TSVMMem;
   var
-    i: cardinal;
+    i, l: cardinal;
   begin
+    Result := TSVMMem.CreateArr(size_arr^[length(size_arr^) - lvl]);
     if lvl > 0 then
-    begin
-      new(Result);
-      setlength(Result^, size_arr^[length(size_arr^) - lvl]);
-      for i := 0 to size_arr^[length(size_arr^) - lvl] do
-      begin
-        Result^[i] := NewArr_Sub(size_arr, lvl - 1);
-      end;
-    end
-    else
-      Result := nil;
+     begin
+       i := 0;
+       l := size_arr^[length(size_arr^) - lvl];
+       while i < l do
+        begin
+          if lvl - 1 > 0 then
+           Result.ArrSet(i, NewArr_Sub(size_arr, lvl - 1))
+          else
+           Result.ArrSet(i, nil);
+          inc(i);
+        end;
+     end;
   end;
 
-  function NewArr(stk: PStack; lvl: word): PMemArr;
+  function NewArr(stk: PStack; lvl: word): TSVMMem;
   var
     size_arr: TSizeArr;
     i: word;
   begin
     SetLength(size_arr, lvl);
-    for i := 0 to lvl - 1 do
-      size_arr[i] := Cardinal(PMem(stk^.popv)^);
+    i := 0;
+    while i < lvl do
+     begin
+       size_arr[i] := TSVMMem(stk^.popv).GetW;
+       inc(i);
+     end;
     Result := NewArr_Sub(@size_arr, lvl);
+    //Result := TSVMMem.CreateArr(TSVMMem(stk^.popv).GetW);
   end;
 
 {***** CallBack stack *********************************************************}
+const
+  CallBackStackBlockSize = 1024;
+
 type
   TCallBackStack = object
   public
     items: array of TInstructionPointer;
+    i_pos, size: cardinal;
+    procedure init;
     procedure push(ip: TInstructionPointer);
     function peek: TInstructionPointer;
     function popv: TInstructionPointer;
     procedure pop;
   end;
 
+  procedure TCallBackStack.init;
+  begin
+    SetLength(items, CallBackStackBlockSize);
+    i_pos := 0;
+    size := CallBackStackBlockSize;
+  end;
+
   procedure TCallBackStack.push(ip: TInstructionPointer);
   begin
-    setlength(self.items, length(self.items) + 1);
-    self.items[length(self.items) - 1] := ip;
+    items[i_pos] := ip;
+    inc(i_pos);
+    if i_pos >= size then
+     begin
+       size := size + CallBackStackBlockSize;
+       SetLength(items, size)
+     end;
   end;
 
   function TCallBackStack.popv: TInstructionPointer;
   begin
-    Result := self.items[length(items) - 1];
-    setlength(self.items, length(self.items) - 1);
+    dec(i_pos);
+    Result := items[i_pos];
   end;
 
   function TCallBackStack.peek: TInstructionPointer;
   begin
-    Result := self.items[length(self.items) - 1];
+    Result := items[i_pos - 1];
   end;
 
   procedure TCallBackStack.pop;
   begin
-    setlength(self.items, length(self.items) - 1);
+    dec(i_pos);
+    if size - i_pos > CallBackStackBlockSize then
+     begin
+       size := size - CallBackStackBlockSize;
+       SetLength(items, size);
+     end;
   end;
 
 {***** Try/Catch block manager ************************************************}
@@ -679,36 +656,6 @@ type
   begin
     Result := self.trblocks[length(self.trblocks) - 1].EndPoint;
     setlength(self.trblocks, length(self.trblocks) - 1);
-  end;
-
-{***** Grabber ****************************************************************}
-type
-  TGrabber = object
-  private
-    tasks: array of pointer;
-  public
-    procedure AddTask(p: Pointer);
-    procedure Run;
-  end;
-
-  procedure TGrabber.AddTask(p: Pointer);
-  begin
-    SetLength(self.tasks, length(self.tasks) + 1);
-    Self.tasks[length(self.tasks) - 1] := p
-  end;
-
-  procedure TGrabber.Run;
-  var
-    c,tasks_end: cardinal;
-  begin
-    tasks_end := length(self.tasks);
-    c := 0;
-    while c < tasks_end do
-     begin
-       FreeMem(self.tasks[c]);
-       inc(c);
-     end;
-    SetLength(self.tasks, 0);
   end;
 
 {***** VM *********************************************************************}
@@ -755,6 +702,9 @@ type
     vm^.end_ip := length(bytes^);
     vm^.consts := consts;
     vm^.extern_methods := extern_methods;
+    vm^.stack.init;
+    vm^.cbstack.init;
+    vm^.grabber.init;
 
     //fill mem map
     new(vm^.mem);
@@ -791,6 +741,7 @@ type
   procedure TSVM.RunThread;
   var
     p, p2: pointer;
+    r: TSVMMem;
     s: string;
   begin
     repeat
@@ -798,6 +749,10 @@ type
       try
       {$EndIf}
         while self.ip < self.end_ip do
+         begin
+          {$IfDef DebugVer}
+            writeln('IP: ', self.ip,', Op: ', GetEnumName(TypeInfo(TComand), self.bytes^[self.ip]));
+          {$EndIf}
           case TComand(self.bytes^[self.ip]) of
             bcPH:
             begin
@@ -838,21 +793,21 @@ type
 
             bcJP:
             begin
-              self.ip := Cardinal(PMem(self.stack.popv)^);
+              self.ip := TSVMMem(self.stack.popv).GetW;
             end;
 
             bcJZ:
             begin
-              if Int64(PMem(self.stack.popv)^) = 0 then
-                self.ip := Cardinal(PMem(self.stack.popv)^)
+              if TSVMMem(self.stack.popv).GetI = 0 then
+                self.ip := TSVMMem(self.stack.popv).GetW
               else
                 Inc(self.ip);
             end;
 
             bcJN:
             begin
-              if Int64(PMem(self.stack.popv)^) <> 0 then
-                self.ip := Cardinal(PMem(self.stack.popv)^)
+              if TSVMMem(self.stack.popv).GetI <> 0 then
+                self.ip := TSVMMem(self.stack.popv).GetW
               else
                 Inc(self.ip);
             end;
@@ -860,7 +815,8 @@ type
             bcJC:
             begin
               self.cbstack.push(self.ip + 1);
-              self.ip := Cardinal(PMem(self.stack.popv)^);
+              {$IfDef DebugVer}writeln(' - Point to jump: ', TSVMMem(self.stack.peek).GetW);{$EndIf}
+              self.ip := TSVMMem(self.stack.popv).GetW;
             end;
 
             bcJR:
@@ -871,66 +827,40 @@ type
             bcEQ:
             begin
               p := self.stack.popv;
-              if PMem(p)^ = PMem(self.stack.popv)^ then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
+              r := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
+              r.OpEq(TSVMMem(self.stack.popv));
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
             bcBG:
             begin
               p := self.stack.popv;
-              if PMem(p)^ > PMem(self.stack.popv)^ then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
+              r := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
+              r.OpBg(TSVMMem(self.stack.popv));
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
             bcBE:
             begin
               p := self.stack.popv;
-              if PMem(p)^ >= PMem(self.stack.popv)^ then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
+              r := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
+              r.OpBe(TSVMMem(self.stack.popv));
+              self.stack.push(r);
               Inc(self.ip);
-            end;
-
-            bcLAND:
-            begin
-              p := self.stack.popv;
-              self.stack.push(NewMemV((PMem(p)^ <> 0) and (PMem(self.stack.popv)^ <> 0)));
-            end;
-
-            bcLOR:
-            begin
-              p := self.stack.popv;
-              self.stack.push(NewMemV((PMem(p)^ <> 0) or (PMem(self.stack.popv)^ <> 0)));
-            end;
-
-            bcLXOR:
-            begin
-              p := self.stack.popv;
-              self.stack.push(NewMemV((PMem(p)^ <> 0) xor (PMem(self.stack.popv)^ <> 0)));
-            end;
-
-            bcLNOT:
-            begin
-              self.stack.push(NewMemV(not (PMem(self.stack.popv)^ <> 0)));
             end;
 
             bcNOT:
             begin
-              PMem(self.stack.peek)^ := not PMem(self.stack.peek)^;
+              TSVMMem(self.stack.peek).OpNot;
               Inc(self.ip);
             end;
 
             bcAND:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ and PMem(self.stack.popv)^;
+              TSVMMem(p).OpAnd(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -938,7 +868,7 @@ type
             bcOR:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ or PMem(self.stack.popv)^;
+              TSVMMem(p).OpOr(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -946,7 +876,7 @@ type
             bcXOR:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ xor PMem(self.stack.popv)^;
+              TSVMMem(p).OpXor(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -954,7 +884,7 @@ type
             bcSHR:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ shr PMem(self.stack.popv)^;
+              TSVMMem(p).OpShr(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -962,36 +892,33 @@ type
             bcSHL:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ shl PMem(self.stack.popv)^;
+              TSVMMem(p).OpShl(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
 
             bcNEG:
             begin
-              p := self.stack.peek;
-              PMem(p)^ := -PMem(p)^;
+              TSVMMem(self.stack.peek).OpNeg;
               Inc(self.ip);
             end;
 
             bcINC:
             begin
-              p := self.stack.peek;
-              PMem(p)^ := PMem(p)^ + 1;
+              TSVMMem(self.stack.peek).OpInc;
               Inc(self.ip);
             end;
 
             bcDEC:
             begin
-              p := self.stack.peek;
-              PMem(p)^ := PMem(p)^ - 1;
+              TSVMMem(self.stack.peek).OpDec;
               Inc(self.ip);
             end;
 
             bcADD:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ + PMem(self.stack.popv)^;
+              TSVMMem(p).OpAdd(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -999,7 +926,7 @@ type
             bcSUB:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ - PMem(self.stack.popv)^;
+              TSVMMem(p).OpSub(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -1007,7 +934,7 @@ type
             bcMUL:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ * PMem(self.stack.popv)^;
+              TSVMMem(p).OpMul(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -1015,7 +942,7 @@ type
             bcDIV:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ / PMem(self.stack.popv)^;
+              TSVMMem(p).OpDiv(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -1023,7 +950,7 @@ type
             bcMOD:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ mod PMem(self.stack.popv)^;
+              TSVMMem(p).OpMod(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -1031,7 +958,7 @@ type
             bcIDIV:
             begin
               p := self.stack.popv;
-              PMem(p)^ := PMem(p)^ div PMem(self.stack.popv)^;
+              TSVMMem(p).OpIDiv(TSVMMem(self.stack.popv));
               self.stack.push(p);
               Inc(self.ip);
             end;
@@ -1039,46 +966,52 @@ type
 	    bcMV:
 	    begin
               p := self.stack.popv;
-	      PMem(p)^ := PMem(self.stack.popv)^;
+	      TSVMMem(p).SetM(TSVMMem(self.stack.popv));
 	      Inc(self.ip);
 	    end;
 			
 	    bcMVBP:
 	    begin
               p := self.stack.popv;
-	      PMem(Pointer(Cardinal(PMem(p)^)))^ := PMem(self.stack.popv)^;
-	      Inc(self.ip);
+              {$HINTS OFF}
+              TSVMMem(Pointer(TSVMMem(p).GetW)).SetM(TSVMMem(self.stack.popv));
+              {$HINTS ON}
+              Inc(self.ip);
 	    end;
 			
 	    bcGVBP:
 	    begin
-              p := self.stack.popv;
-	      PMem(p)^ := PMem(Pointer(Cardinal(PMem(self.stack.popv)^)))^;
-	      Inc(self.ip);
+              {$HINTS OFF}
+	      self.stack.push(TSVMMem(Pointer(TSVMMem(self.stack.popv).GetW)));
+              {$HINTS ON}
+              Inc(self.ip);
 	    end;
 			
 	    bcMVP:
 	    begin
               p := self.stack.popv;
-	      PMem(p)^ := Cardinal(PMem(self.stack.popv));
+              {$HINTS OFF}
+              TSVMMem(p).SetW(Cardinal(self.stack.popv));
+              {$HINTS ON}
 	      Inc(self.ip);
 	    end;
 
             bcMS:
             begin
-              SetLength(self.mem^, PMem(self.stack.popv)^);
+              SetLength(self.mem^, TSVMMem(self.stack.popv).GetW);
+              {$IfDef DebugVer} writeln(' - Mem size: ', Length(self.mem^)); {$EndIf}
               Inc(self.ip);
             end;
 
             bcNW:
             begin
-              self.stack.push(NewMem);
+              self.stack.push(TSVMMem.Create);
               Inc(self.ip);
             end;
 
             bcMC:
             begin
-              self.stack.push(NewMemV(PMem(self.stack.peek)^));
+              self.stack.push(TSVMMem.CreateCopy(TSVMMem(self.stack.peek)));
               Inc(self.ip);
             end;
 
@@ -1090,47 +1023,53 @@ type
 
             bcRM:
             begin
-              RemMem(PMem(self.stack.popv));
+              TSVMMem(self.stack.popv).Free;
               Inc(self.ip);
             end;
 
             bcNA:
             begin
-              self.stack.push(NewArr(@self.stack, Cardinal(PMem(self.stack.popv)^)));
+              self.stack.push(NewArr(@self.stack, Cardinal(TSVMMem(self.stack.popv).GetW)));
+              Inc(self.ip);
+            end;
+
+            bcTF:
+            begin
+              self.stack.push(TSVMMem.CreateFW(byte(TSVMMem(self.stack.popv).m_type)));
               Inc(self.ip);
             end;
 
             bcSF:
             begin
-              self.stack.push(NewMemV(SizeOf(self.stack.popv^)));
+              self.stack.push(TSVMMem.CreateFW(TSVMMem(self.stack.popv).GetSize));
               Inc(self.ip);
             end;
 
             bcAL:
             begin
-              self.stack.push(NewMemV(Length(PMemArr(self.stack.popv)^)));
+              self.stack.push(TSVMMem.CreateFW(TSVMMem(self.stack.popv).ArrGetSize));
               Inc(self.ip);
             end;
 
             bcSL:
             begin
               p := self.stack.popv;
-              SetLength(PMemArr(self.stack.peek)^, cardinal(PMem(p)^));
+              TSVMMem(self.stack.peek).ArrSetSize(TSVMMem(p).GetW);
               Inc(self.ip);
             end;
 
             bcPA:
             begin
               p := self.stack.popv;
-              self.stack.push(PMemArr(p)^[cardinal(PMem(self.stack.popv)^)]);
+              self.stack.push(TSVMMem(p).ArrGet(TSVMMem(self.stack.popv).GetW, @self.grabber));
               Inc(self.ip);
             end;
 
             bcSA:
             begin
               p := self.stack.popv;
-              p := @(PMemArr(p)^[cardinal(PMem(self.stack.popv)^)]);
-              PPointer(p)^ := self.stack.popv;
+              p2:= self.stack.popv;
+              TSVMMem(p).ArrSet(TSVMMem(p2).GetW, self.stack.popv);
               Inc(self.ip);
             end;
 
@@ -1148,10 +1087,13 @@ type
 
             bcPHC:
             begin
-              self.stack.push(NewMemV(self.consts^.GetConst(
-                cardinal((self.bytes^[self.ip + 1] shl 24) +
-                (self.bytes^[self.ip + 2] shl 16) + (self.bytes^[self.ip + 3] shl 8) +
-                self.bytes^[self.ip + 4]))));
+              self.stack.push(
+                  TSVMMem.CreateCopy(TSVMMem(self.consts^.GetConst(
+                    cardinal((self.bytes^[self.ip + 1] shl 24) + (self.bytes^[self.ip + 2] shl 16) +
+                             (self.bytes^[self.ip + 3] shl 8) + self.bytes^[self.ip + 4]
+                            )
+                    )))
+                  );
               Inc(self.ip, 5);
             end;
 
@@ -1166,7 +1108,7 @@ type
 
             bcINV:
             begin
-              TExternalFunction(self.extern_methods^.GetFunc(Cardinal(PMem(self.stack.popv)^)))(
+              TExternalFunction(self.extern_methods^.GetFunc(TSVMMem(self.stack.popv).GetW))(
                 @self.stack);
               Inc(self.ip);
             end;
@@ -1186,20 +1128,24 @@ type
             bcCTHR:
             begin
               self.stack.push(TSVMThread.Create(self.bytes, self.consts,
-                self.extern_methods, self.mem, Cardinal(PMem(self.stack.popv)^),
+                self.extern_methods, self.mem, TSVMMem(self.stack.popv).GetW,
                 self.stack.popv));
               Inc(self.ip);
             end;
 
             bcSTHR:
             begin
+              {$WARNINGS OFF}
               TSVMThread(self.stack.popv).Suspend;
+              {$WARNINGS ON}
               Inc(self.ip);
             end;
 
             bcRTHR:
             begin
+              {$WARNINGS OFF}
               TSVMThread(self.stack.popv).Resume;
+              {$WARNINGS ON}
               Inc(self.ip);
             end;
 
@@ -1212,7 +1158,7 @@ type
             bcTR:
             begin
               p := self.stack.popv;
-              try_blocks.add(Cardinal(PMem(p)^), Cardinal(PMem(self.stack.popv)^));
+              try_blocks.add(TSVMMem(self.stack.popv).GetW, TSVMMem(self.stack.popv).GetW);
               Inc(self.ip);
             end;
 
@@ -1223,550 +1169,64 @@ type
 
             bcTRR:
             begin
-              self.ip := try_blocks.TR_Catch(Exception.Create(PMem(self.stack.peek)^));
+              self.ip := try_blocks.TR_Catch(Exception.Create(TSVMMem(self.stack.popv).GetS));
             end;
-
-            {** for word's **}
-
-            bcEQ_W:
-            begin
-              p := self.stack.popv;
-              if Cardinal(PMem(p)^) = Cardinal(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcBG_W:
-            begin
-              p := self.stack.popv;
-              if Cardinal(PMem(p)^) > Cardinal(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcBE_W:
-            begin
-              p := self.stack.popv;
-              if Cardinal(PMem(p)^) >= Cardinal(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcNOT_W:
-            begin
-              PMem(self.stack.peek)^ := not Cardinal(PMem(self.stack.peek)^);
-              Inc(self.ip);
-            end;
-
-            bcAND_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) and Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcOR_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) or Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcXOR_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) xor Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcSHR_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) shr Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcSHL_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) shl Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcINC_W:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := Cardinal(PMem(p)^) + 1;
-              Inc(self.ip);
-            end;
-
-            bcDEC_W:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := Cardinal(PMem(p)^) - 1;
-              Inc(self.ip);
-            end;
-
-            bcADD_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) + Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcSUB_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) - Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcMUL_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) * Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcDIV_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) / Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcMOD_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) mod Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcIDIV_W:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Cardinal(PMem(p)^) div Cardinal(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-	    bcMV_W:
-	    begin
-              p := self.stack.popv;
-	      PMem(p)^ := Cardinal(PMem(self.stack.popv)^);
-	      Inc(self.ip);
-	    end;
-
-	    bcMVBP_W:
-	    begin
-              p := self.stack.popv;
-	      PMem(Pointer(Cardinal(PMem(p)^)))^ := Cardinal(PMem(self.stack.popv)^);
-	      Inc(self.ip);
-	    end;
-
-            {** for integer's **}
-
-            bcEQ_I:
-            begin
-              p := self.stack.popv;
-              if Int64(PMem(p)^) = Int64(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcBG_I:
-            begin
-              p := self.stack.popv;
-              if Int64(PMem(p)^) > Int64(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcBE_I:
-            begin
-              p := self.stack.popv;
-              if Int64(PMem(p)^) >= Int64(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcNOT_I:
-            begin
-              PMem(self.stack.peek)^ := not Int64(PMem(self.stack.peek)^);
-              Inc(self.ip);
-            end;
-
-            bcAND_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) and Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcOR_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) or Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcXOR_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) xor Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcSHR_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) shr Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcSHL_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) shl Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcNEG_I:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := -Int64(PMem(p)^);
-              Inc(self.ip);
-            end;
-
-            bcINC_I:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := Int64(PMem(p)^) + 1;
-              Inc(self.ip);
-            end;
-
-            bcDEC_I:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := Int64(PMem(p)^) - 1;
-              Inc(self.ip);
-            end;
-
-            bcADD_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) + Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcSUB_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) - Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcMUL_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) * Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcDIV_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) / Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcMOD_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) mod Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcIDIV_I:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Int64(PMem(p)^) div Int64(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-	        bcMV_I:
-	        begin
-              p := self.stack.popv;
-	          PMem(p)^ := Int64(PMem(self.stack.popv)^);
-	          Inc(self.ip);
-	        end;
-
-	        bcMVBP_I:
-	        begin
-              p := self.stack.popv;
-	          PMem(Pointer(Cardinal(PMem(p)^)))^ := Int64(PMem(self.stack.popv)^);
-	          Inc(self.ip);
-	        end;
-
-            {** for float's **}
-
-            bcEQ_D:
-            begin
-              p := self.stack.popv;
-              if Double(PMem(p)^) = Double(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcBG_D:
-            begin
-              p := self.stack.popv;
-              if Double(PMem(p)^) > Double(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcBE_D:
-            begin
-              p := self.stack.popv;
-              if Double(PMem(p)^) >= Double(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcNEG_D:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := -Double(PMem(p)^);
-              Inc(self.ip);
-            end;
-
-            bcINC_D:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := Double(PMem(p)^) + 1;
-              Inc(self.ip);
-            end;
-
-            bcDEC_D:
-            begin
-              p := self.stack.peek;
-              PMem(p)^ := Double(PMem(p)^) - 1;
-              Inc(self.ip);
-            end;
-
-            bcADD_D:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Double(PMem(p)^) + Double(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcSUB_D:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Double(PMem(p)^) - Double(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcMUL_D:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Double(PMem(p)^) * Double(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcDIV_D:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Double(PMem(p)^) / Double(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcMOD_D:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Frac(Double(PMem(p)^) / Double(PMem(self.stack.popv)^));
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcIDIV_D:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := Trunc(Double(PMem(p)^) / Double(PMem(self.stack.popv)^));
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-	    bcMV_D:
-	    begin
-              p := self.stack.popv;
-	      PMem(p)^ := Double(PMem(self.stack.popv)^);
-	      Inc(self.ip);
-	    end;
-
-	    bcMVBP_D:
-	    begin
-              p := self.stack.popv;
-	      PMem(Pointer(Cardinal(PMem(p)^)))^ := Double(PMem(self.stack.popv)^);
-	      Inc(self.ip);
-	    end;
 
             {** for string's **}
-
-            bcEQ_S:
-            begin
-              p := self.stack.popv;
-              if String(PMem(p)^) = String(PMem(self.stack.popv)^) then
-                self.stack.push(NewMemV(-1))
-              else
-                self.stack.push(NewMemV(0));
-              Inc(self.ip);
-            end;
-
-            bcADD_S:
-            begin
-              p := self.stack.popv;
-              PMem(p)^ := String(PMem(p)^) + String(PMem(self.stack.popv)^);
-              self.stack.push(p);
-              Inc(self.ip);
-            end;
-
-            bcMV_S:
-	    begin
-              p := self.stack.popv;
-	      PMem(p)^ := String(PMem(self.stack.popv)^);
-	      Inc(self.ip);
-	    end;
-
-	    bcMVBP_S:
-	    begin
-              p := self.stack.popv;
-	      PMem(Pointer(Cardinal(PMem(p)^)))^ := String(PMem(self.stack.popv)^);
-	      Inc(self.ip);
-	    end;
-
-            bcSTRL:
-            begin// strlen;
-              self.stack.push(NewMemV(Length(String(PMem(self.stack.popv)^))));
-	      Inc(self.ip);
-            end;
 
             bcSTRD:
             begin// strdel;
               p := self.stack.popv;
-              S := String(PMem(p)^);
-              Delete(s,Cardinal(PMem(self.stack.popv)^),Cardinal(PMem(self.stack.popv)^));
-              PMem(p)^ := s;
-              S := '';
-              Inc(self.ip);
-            end;
-
-            bcSTCHATP:// push str[x]
-            begin
-              p := self.stack.popv;
-              self.stack.push(NewMemV(String(PMem(p)^)[Cardinal(PMem(self.stack.popv)^)]));
-	      Inc(self.ip);
-            end;
-
-            bcSTCHATK:  // pop str[x]
-            begin
-              p := self.stack.popv;
-              S := PMem(p)^;
-              p2 := self.stack.popv;
-              S[PMem(self.stack.popv)^] := PMem(p2)^;
-              PMem(p)^ := S;
+              S := String(TSVMMem(p).GetS);
+              Delete(s,TSVMMem(self.stack.popv).GetW, TSVMMem(self.stack.popv).GetW);
+              TSVMMem(p).SetS(s);
               S := '';
               Inc(self.ip);
             end;
 
             bcCHORD:
             begin
-              PMem(self.stack.peek)^ := Ord(Char(PMem(self.stack.peek)^));
+              self.stack.push(TSVMMem.CreateFW(Ord(TSVMMem(self.stack.popv).GetS[1])));
 	      Inc(self.ip);
             end;
 
             bcORDCH:
             begin
-              PMem(self.stack.peek)^ := Chr(Byte(PMem(self.stack.peek)^));
-	      Inc(self.ip);
+              self.stack.push(TSVMMem.CreateFS(Chr(TSVMMem(self.stack.popv).GetW)));
+              Inc(self.ip);
             end;
 
             {*** [!] directly memory operations ***}
 
             bcALLC:  //alloc memory
             begin
-              self.stack.push(GetMem(PMem(self.stack.popv)^));
+              self.stack.push(GetMem(TSVMMem(self.stack.popv).GetW));
               Inc(self.ip);
             end;
 
             bcRALLC: //realloc memory
             begin
               p := self.stack.popv; //new sz
-              self.stack.push(ReAllocMemory(self.stack.popv, PMem(p)^));
+              self.stack.push(ReAllocMemory(self.stack.popv, TSVMMem(p).GetW));
             end;
 
             bcDISP:  //dispose memory
             begin
               p := self.stack.popv; //sz
-              FreeMem(self.stack.popv, PMem(p)^);
+              FreeMem(self.stack.popv, TSVMMem(p).GetW);
               Inc(self.ip);
             end;
 
             bcGTB: //get byte
             begin
-              self.stack.push(NewMemV(PByte(self.stack.popv)^));
+              self.stack.push(TSVMMem.CreateFW(PByte(self.stack.popv)^));
               Inc(self.ip);
             end;
 
             bcSTB:   //set byte
             begin
               p := self.stack.popv; //dest
-              PByte(p)^ := PMem(self.stack.popv)^;
+              PByte(p)^ := TSVMMem(self.stack.popv).GetW;
               Inc(self.ip);
             end;
 
@@ -1774,7 +1234,7 @@ type
             begin
               p := self.stack.popv; //sz
               p2 := self.stack.popv; //dest
-              Move(self.stack.popv^, p2^, PMem(p)^);
+              Move(self.stack.popv^, p2^, TSVMMem(p).GetW);
               Inc(self.ip);
             end;
 
@@ -1783,7 +1243,7 @@ type
               p := self.stack.popv; //stream
               new(PCardinal(p2));
               Move(p^, p2^, SizeOf(Cardinal));
-              PMem(self.stack.popv)^ := PCardinal(p2)^;
+              TSVMMem(self.stack.popv).SetW(PCardinal(p2)^);
               dispose(PCardinal(p2));
               Inc(self.ip);
             end;
@@ -1792,7 +1252,7 @@ type
             begin
               p := self.stack.popv; //stream
               new(PCardinal(p2));
-              PCardinal(p2)^ := Cardinal(PMem(self.stack.popv)^);
+              PCardinal(p2)^ := TSVMMem(self.stack.popv).GetW;
               Move(p2^, p^, SizeOf(Cardinal));
               dispose(PCardinal(p2));
               Inc(self.ip);
@@ -1803,7 +1263,7 @@ type
               p := self.stack.popv; //stream
               new(PInt64(p2));
               Move(p^, p2^, SizeOf(Int64));
-              PMem(self.stack.popv)^ := PInt64(p2)^;
+              TSVMMem(self.stack.popv).SetI(PInt64(p2)^);
               dispose(PInt64(p2));
               Inc(self.ip);
             end;
@@ -1812,7 +1272,7 @@ type
             begin
               p := self.stack.popv; //stream
               new(PInt64(p2));
-              PInt64(p2)^ := Int64(PMem(self.stack.popv)^);
+              PInt64(p2)^ := TSVMMem(self.stack.popv).GetI;
               Move(p2^, p^, SizeOf(Int64));
               dispose(PInt64(p2));
               Inc(self.ip);
@@ -1823,7 +1283,7 @@ type
               p := self.stack.popv; //stream
               new(PDouble(p2));
               Move(p^, p2^, SizeOf(Double));
-              PMem(self.stack.popv)^ := PDouble(p2)^;
+              TSVMMem(self.stack.popv).SetD(PDouble(p2)^);
               dispose(PDouble(p2));
               Inc(self.ip);
             end;
@@ -1832,7 +1292,7 @@ type
             begin
               p := self.stack.popv; //stream
               new(PDouble(p2));
-              PDouble(p2)^ := Double(PMem(self.stack.popv)^);
+              PDouble(p2)^ := TSVMMem(self.stack.popv).GetD;
               Move(p2^, p^, SizeOf(Double));
               dispose(PDouble(p2));
               Inc(self.ip);
@@ -1842,15 +1302,15 @@ type
             begin
               p := self.stack.popv; //stream
               p2 := self.stack.popv; //str len
-              SetLength(s, PMem(p2)^);
-              Move(p^, PByte(@s[1])^, PMem(p2)^);
+              SetLength(s, TSVMMem(p2).GetW);
+              Move(p^, PByte(@s[1])^, TSVMMem(p2).GetW);
               Inc(self.ip);
             end;
 
             bcWSBP:   //write string
             begin
               p := self.stack.popv; //stream
-              s := PMem(self.stack.popv)^; //str
+              s := TSVMMem(self.stack.popv).GetS; //str
               Move(PByte(@s[1])^, p, Length(s));
               Inc(self.ip);
             end;
@@ -1858,17 +1318,25 @@ type
             bcTHREXT:
             begin
               break;
+            end;
+
+            bcDBP:
+            begin
+              TDbgCallBack(DbgCallBack)(@self);
+              //TExternalFunction(self.extern_methods^.methods[0])(@self);
+              Inc(self.ip);
             end
 
             else
               VMError('Error: not supported operation, byte 0x' + IntToHex(self.bytes^[self.ip], 2) +
                 ', at #' + IntToStr(self.ip));
           end;
+          end;
       {$IfNDef BuildInLibrary}
       except
         on E: Exception do
         begin
-          self.stack.push(NewMemV(E.Message));
+          self.stack.push(TSVMMem.CreateFS(E.Message));
           try
             self.ip := self.try_blocks.TR_Catch(E);
           except
@@ -1883,11 +1351,23 @@ type
   end;
 
   procedure TSVM.Run;
+  {$IfDef DebugVer}
+  var
+    c: Cardinal;
+  {$EndIf}
   begin
     extern_methods^.Parse(self.bytes, mainclasspath);
     consts^.Parse(self.bytes);
     self.ip := 0;
     self.end_ip := length(self.bytes^);
+    {$IfDef DebugVer}
+      c := 0;
+      while c < Length(consts^.constants) do
+       begin
+         writeln('ConstID: ', c, ', Val: ', TSVMMem(consts^.constants[c]).GetS);
+         inc(c);
+       end;
+    {$EndIf}
     self.RunThread;
   end;
 
@@ -1922,15 +1402,21 @@ type
 function SVM_Create:PSVM; stdcall;
 begin
   New(Result);
+  new(Result^.bytes);
   New(Result^.consts);
   New(Result^.extern_methods);
   New(Result^.mem);
+  Result^.stack.init;
+  Result^.cbstack.init;
+  Result^.grabber.init;
 end;
 
 procedure SVM_Free(SVM:PSVM); stdcall;
 begin
   Dispose(SVM^.consts);
   Dispose(SVM^.extern_methods);
+  Dispose(SVM^.mem);
+  Dispose(SVM^.bytes);
   Dispose(SVM);
 end;
 
@@ -1940,14 +1426,20 @@ begin
   SVM^.extern_methods^.SetFunc(Length(SVM^.extern_methods^.methods)-1, ExtFunc);
 end;
 
-procedure SVM_Run(SVM:PSVM; MainClassPath:PChar; pb:PByteArr); stdcall;
+procedure SVM_SetDbgCallBack(SVM:PSVM; DbgCB:Pointer); stdcall;
 begin
-  if MainClassPath <> nil then
-   SVM^.mainclasspath := StrPas(MainClassPath)
-  else
-   SVM^.mainclasspath := ParamStr(0);
-  SVM^.bytes := pb;
+  DbgCallBack := DbgCB;
+end;
+
+procedure SVM_Run(SVM:PSVM); stdcall;
+begin
   SVM^.Run;
+end;
+
+procedure SVM_LoadExeFromFile(SVM:PSVM; MainClassPath:PString); stdcall;
+begin
+  SVM^.mainclasspath := MainClassPath^;
+  SVM^.LoadByteCodeFromFile(SVM^.mainclasspath);
 end;
 
 procedure SVM_CheckErr(SVM:PSVM; E:Exception); stdcall;
@@ -1957,15 +1449,18 @@ end;
 
 procedure SVM_Continue(SVM:PSVM); stdcall;
 begin
+  Inc(SVM^.ip);
   SVM^.RunThread;
 end;
 
-exports SVM_Create   name '_SVM_CREATE';
-exports SVM_Free     name '_SVM_FREE';
-exports SVM_Run      name '_SVM_RUN';
-exports SVM_RegAPI   name '_SVM_REGAPI';
-exports SVM_CheckErr name '_SVM_CHECKERR';
-exports SVM_Continue name '_SVM_CONTINUE';
+exports SVM_Create          name '_SVM_CREATE';
+exports SVM_Free            name '_SVM_FREE';
+exports SVM_LoadExeFromFile name '_SVM_LOADEXEFROMFILE';
+exports SVM_Run             name '_SVM_RUN';
+exports SVM_RegAPI          name '_SVM_REGAPI';
+exports SVM_SetDbgCallBack  name '_SVM_DEBUGCALLBACK';
+exports SVM_CheckErr        name '_SVM_CHECKERR';
+exports SVM_Continue        name '_SVM_CONTINUE';
 
 begin
 end.
@@ -1994,13 +1489,18 @@ var
 begin
   if ParamCount<1 then
    begin
+     writeln('MASH!');
      writeln('Stack-based virtual machine.');
-     writeln('Using: ',ExtractFileName(ParamStr(0)),' <svmexe file>');
+     writeln('Version: 1.4');
+	 writeln('Using: ',ExtractFileName(ParamStr(0)),' <svmexe file>');
    end;
   new(svm.bytes);
   new(svm.consts);
   new(svm.extern_methods);
   new(svm.mem);
+  svm.stack.init;
+  svm.cbstack.init;
+  svm.grabber.init;
   svm.LoadByteCodeFromFile(ParamStr(1));
   CheckHeader(svm.bytes);
   CutLeftBytes(svm.bytes,10);

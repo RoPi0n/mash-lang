@@ -26,13 +26,19 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
+        <HostApplicationFilename Value="C:\Users\Админ\Desktop\svm\src\src\svm\svm_core.exe"/>
+        <CommandLineParams Value="&quot;C:\Users\Админ\Desktop\svm\src\tests\tst_code3.vmc&quot;"/>
       </local>
     </RunParams>
-    <Units Count="1">
+    <Units Count="2">
       <Unit0>
         <Filename Value="svm_core.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
+      <Unit1>
+        <Filename Value="svm_grabber.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit1>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -57,6 +63,9 @@
         <StripSymbols Value="True"/>
         <UseExternalDbgSyms Value="True"/>
       </Debugging>
+      <Options>
+        <ExecutableType Value="Library"/>
+      </Options>
     </Linking>
   </CompilerOptions>
   <Debugging>
