@@ -2,9 +2,9 @@ uses <bf>
 uses <crt>
 
 proc PrintArr(.array):
-  for (var .i = 0; .i < arrlen(.array); .i++):
+  for (var .i = 0; .i < len(.array); .i++):
     Print(.array[.i])
-    if .i + 1 < arrlen(.array):
+    if .i + 1 < len(.array):
       Print(", ")
     else:
       PrintLn("")

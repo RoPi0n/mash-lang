@@ -1,21 +1,17 @@
-uses <bf.mash>
-uses <crt.mash>
-
-proc Err():
-  raise "Error"
-end
+uses <bf>
+uses <crt>
 
 proc main():
-  PrintLn("Start")
+  println("Start")
+  var a
   try:
-    PrintLn("Trying to do something.")
-    Err()
+    println("Trying to do something...")
+    a = 10
   catch:
-    var e = getError()
-    PrintLn($e)
+    println(getError())
   finally:
-    PrintLn("Finally")
+    println("Finally")
   end
-  PrintLn("End")
-  InputLn()
+  println("End")
+  inputln()
 end
