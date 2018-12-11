@@ -633,7 +633,7 @@ type
 
   procedure TTRBlocks.add(CP, EP: TInstructionPointer);
   begin
-    setlength(self.trblocks, length(self.trblocks) + 1);
+    SetLength(self.trblocks, length(self.trblocks) + 1);
     with self.trblocks[length(self.trblocks) - 1] do
     begin
       CatchPoint := CP;
@@ -646,7 +646,7 @@ type
     if Length(self.trblocks) > 0 then
     begin
       Result := self.trblocks[length(self.trblocks) - 1].CatchPoint;
-      setlength(self.trblocks, length(self.trblocks) - 1);
+      SetLength(self.trblocks, length(self.trblocks) - 1);
     end
     else
       raise E;
@@ -1158,7 +1158,7 @@ type
             bcTR:
             begin
               p := self.stack.popv;
-              try_blocks.add(TSVMMem(self.stack.popv).GetW, TSVMMem(self.stack.popv).GetW);
+              try_blocks.add(TSVMMem(p).GetW, TSVMMem(self.stack.popv).GetW);
               Inc(self.ip);
             end;
 
