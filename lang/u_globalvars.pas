@@ -17,9 +17,16 @@ var
   Constants: TConstantManager;
   RTTI_Enable: boolean = true;
   ARGC_Enable: boolean = true;
-  EnableOptimization: boolean = True;
+  EnableOptimization: boolean = true;
+  OptimizationLvl: cardinal = 1;
+  Debug_Enable: boolean = false;
+  Debug_InfoGen: boolean = false;
   FastPrep_Defines: TStringList;
   AppMode: TSVMAppMode = amConsole;
+  Hints_Enable: boolean = false;
+
+  Current_CodeLine: cardinal = 1;
+  Current_CodeFile: string = '';
 
 implementation
 

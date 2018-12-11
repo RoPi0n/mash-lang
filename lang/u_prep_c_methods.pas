@@ -65,7 +65,7 @@ begin
   CB.mName := pn;
   Result := pn + ':';
   ProcEnterList.Add(pn);
-  LocalVarPref := LocalVarPref + pn + '.';
+  LocalVarPref := {LocalVarPref + }pn + '.';
   Delete(s, 1, pos('(', s));
   Delete(s, pos(')', s), length(s));
   s := Trim(s);

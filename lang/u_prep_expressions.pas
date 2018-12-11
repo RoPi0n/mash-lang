@@ -234,6 +234,10 @@ begin
     Result := Result + sLineBreak + PushIt(IntToStr(CountEnumItems(s)), varmgr) +
       sLineBreak + PushIt('1', varmgr) + sLineBreak + 'newa';
     // to return
+
+    if PushTemporary then
+      Result := Result + sLineBreak + 'gpm';
+
     Delete(s, 1, 1);
     Delete(s, Length(s), 1);
     s := Trim(s);
@@ -244,7 +248,7 @@ begin
         // [2] : val
         PushIt(Trim(CutNextArg(s)), varmgr, False) + sLineBreak +
         // [1] : indx
-        'swp' + sLineBreak + PushIt(IntToStr(c), varmgr) + sLineBreak +
+        'swp' + sLineBreak + PushIt(IntToStr(c), varmgr, PushTemporary) + sLineBreak +
         // [0] : @arr
         'swp' + sLineBreak + 'peekai';
       // peekai
@@ -259,20 +263,15 @@ begin
   begin
     bf := '__p_reg_ptr_op_reg';
     varmgr.DefVar(Bf);
-    Result := Result + sLineBreak + 'new' + sLineBreak + 'gpm' +
-      sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) + sLineBreak +
+    Result := Result + sLineBreak + 'new';
+    if PushTemporary then
+     Result := Result + sLineBreak + 'gpm';
+    Result := Result + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) + sLineBreak +
       'movp' + sLineBreak + 'push ' + GetVar('$' + Bf, varmgr);
   end;
 
   if copy(bf, 1, 1) = '?' then //we need to push object by pointer!
-  begin
-    bf := '__p_reg_ptr_op_reg';
-    varmgr.DefVar(Bf);
-    Result := Result + sLineBreak + 'new' + sLineBreak + 'peek ' +
-      GetVar('$' + Bf, varmgr) + sLineBreak + 'pop' + sLineBreak +
-      'push ' + GetVar('$' + Bf, varmgr) + sLineBreak + 'gvbp' +
-      sLineBreak + 'push ' + GetVar('$' + Bf, varmgr);
-  end;
+   Result := Result + sLineBreak {+ 'push ' + GetVar('$' + Bf, varmgr) + sLineBreak} + 'gvbp';
 end;
 
 
@@ -325,26 +324,8 @@ begin
       sLineBreak + 'copy' + sLineBreak + 'gpm' + sLineBreak +
       'swp' + sLineBreak + 'pop'
   else
-    PrpError('Invalid call "' + bf + '".');
-
-  if copy(bf, 1, 1) = '@' then //we need to push pointer to object!
-  begin
-    bf := '__p_reg_ptr_op_reg';
-    varmgr.DefVar(Bf);
-    Result := Result + sLineBreak + 'new' + sLineBreak + 'gpm' +
-      sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) + sLineBreak +
-      'movp' + sLineBreak + 'push ' + GetVar('$' + Bf, varmgr);
-  end;
-
-  if copy(bf, 1, 1) = '?' then //we need to push object by pointer!
-  begin
-    bf := '__p_reg_ptr_op_reg';
-    varmgr.DefVar(Bf);
-    Result := Result + sLineBreak + 'new' + sLineBreak + 'peek ' +
-      GetVar('$' + Bf, varmgr) + sLineBreak + 'pop' + sLineBreak +
-      'push ' + GetVar('$' + Bf, varmgr) + sLineBreak + 'gvbp' +
-      sLineBreak + 'push ' + GetVar('$' + Bf, varmgr);
-  end;
+    Result := PushIt(s, varmgr);
+    //PrpError('Invalid call "' + bf + '".');
 end;
 
 function IsExpr(s: string): boolean;
@@ -375,19 +356,23 @@ begin
 
     if (not in_str) and (in_br = 0) and (in_rbr = 0) then
     begin
+      if Length(s) > 1 then
+        if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or
+          (s[1] + s[2] = '<<') or (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or
+          (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') or
+          (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
+          (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
+          (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
+          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') then
+        begin
+          Result := True;
+          break;
+        end;
       if s[1] in ['+', '-', '*', '/', '\', '%', '&', '|', '^', '~', '>', '<', '='] then
       begin
         Result := True;
         break;
       end;
-      if Length(s) > 1 then
-        if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or
-          (s[1] + s[2] = '<<') or (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or
-          (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') then
-        begin
-          Result := True;
-          break;
-        end;
     end;
     Delete(s, 1, 1);
   end;
@@ -421,13 +406,17 @@ begin
 
     if (not in_str) and (in_br = 0) and (in_rbr = 0) then
     begin
-      if s[1] in ['+', '-', '*', '/', '\', '%', '&', '|', '^', '~', '>', '<', '='] then
-        break;
       if Length(s) > 1 then
         if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or (s[1] + s[2] = '<<') or
           (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or
-          (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') then
+          (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') or
+          (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
+          (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
+          (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
+          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') then
           break;
+      if s[1] in ['+', '-', '*', '/', '\', '%', '&', '|', '^', '~', '>', '<', '='] then
+        break;
       if (in_br < 0) or (in_rbr < 0) then
         break;
     end;
@@ -449,7 +438,11 @@ begin
   begin
     if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or (s[1] + s[2] = '<<') or
       (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or (s[1] + s[2] = '==') or
-      (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') then
+      (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') or
+      (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
+      (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
+      (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
+      (s[1] + s[2] = '++') or (s[1] + s[2] = '--') then
     begin
       Result := s[1] + s[2];
       Delete(s, 1, 2);
@@ -956,7 +949,9 @@ begin
     {if IsVar(Bf, varmgr) or IsArr(Bf) then
     begin}
       Bf := Trim(GetNextExprOp(s));
-      Result := (Bf = '=') or (Bf = '?=') or (Bf = '@=');
+      Result := (Bf = '=') or (Bf = '?=') or (Bf = '@=') or (Bf = '+=') or (Bf = '-=') or
+                (Bf = '*=') or (Bf = '/=') or (Bf = '\=') or (Bf = '%=') or (Bf = '&=') or
+                (Bf = '|=') or (Bf = '^=') or (Bf = '++') or (Bf = '--');
     {end;
   end;}
 end;
@@ -1082,6 +1077,34 @@ begin
         + PopIt(Bf, varmgr)
     else
       Result := PushIt(s, varmgr) + sLineBreak + PopIt(Bf, varmgr);
+  end
+  else
+  if (Op = '++') or (Op = '--') then
+   begin
+     Result := Result + sLineBreak + PushIt(Bf, varmgr) + sLineBreak;
+     case Op[1] of
+      '+': Result := Result + 'inc';
+      '-': Result := Result + 'dec';
+     end;
+     Result := Result + sLineBreak + 'pop';
+     if Length(Trim(s)) > 0 then
+      PrpError('Invalid construction: "' + Bf + ' ' + Op + ' ' + s +'".');
+   end
+  else
+  begin
+    Result := Result + sLineBreak + PushIt(s, varmgr) + sLineBreak + PushIt(Bf, varmgr) + sLineBreak;
+    case Op[1] of
+     '+': Result := Result + 'add';
+     '-': Result := Result + 'sub';
+     '*': Result := Result + 'mul';
+     '/': Result := Result + 'div';
+     '\': Result := Result + 'idiv';
+     '%': Result := Result + 'mod';
+     '&': Result := Result + 'and';
+     '|': Result := Result + 'or';
+     '^': Result := Result + 'xor';
+    end;
+    Result := Result + sLineBreak + 'pop';
   end;
 end;
 

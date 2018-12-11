@@ -58,10 +58,6 @@ type
     bcEQ,     // [top] == [top-1] ? [top] = 1 : [top] = 0
     bcBG,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
     bcBE,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-    bcLAND,   // [top] = [top] and [top-1]
-    bcLOR,    // [top] = [top] or [top-1]
-    bcLXOR,   // [top] = [top] xor [top-1]
-    bcLNOT,   // [top] = not [top]
 
     bcNOT,    // [top] = ![top]
     bcAND,    // [top] = [top] and [top-1]
@@ -92,9 +88,10 @@ type
     bcMD,     // double [top]
     bcRM,     // rem @[top]
     bcNA,     // [top] = @new array[  [top]  ] of pointer
+    bcTF,     // [top] = typeof( [top] )
+    bcSF,     // [top] = sizeof( [top] )
 
     {** array's **}
-    bcSF,     // sizeof( [top] as object )
     bcAL,     // length( [top] as array )
     bcSL,     // setlength( [top] as array, {stack} )
 
@@ -125,82 +122,8 @@ type
     bcTRS,    // success exit from try/catch block
     bcTRR,    // raise exception, message = [top]
 
-    {** for word's **}
-    bcEQ_W,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcBG_W,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
-    bcBE_W,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-
-    bcNOT_W,    // [top] = ![top]
-    bcAND_W,    // [top] = [top] and [top-1]
-    bcOR_W,     // [top] = [top] or  [top-1]
-    bcXOR_W,    // [top] = [top] xor [top-1]
-    bcSHR_W,    // [top] = [top] shr [top-1]
-    bcSHL_W,    // [top] = [top] shl [top-1]
-
-    bcINC_W,    // [top]++
-    bcDEC_W,    // [top]--
-    bcADD_W,    // [top] = [top] + [top-1]
-    bcSUB_W,    // [top] = [top] - [top-1]
-    bcMUL_W,    // [top] = [top] * [top-1]
-    bcDIV_W,    // [top] = [top] / [top-1]
-    bcMOD_W,    // [top] = [top] % [top-1]
-    bcIDIV_W,   // [top] = [top] \ [top-1]
-
-    bcMV_W,     // [top]^ = [top-1]^
-    bcMVBP_W,   // [top]^^ = [top-1]^
-
-    {** for integer's **}
-    bcEQ_I,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcBG_I,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
-    bcBE_I,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-
-    bcNOT_I,    // [top] = ![top]
-    bcAND_I,    // [top] = [top] and [top-1]
-    bcOR_I,     // [top] = [top] or  [top-1]
-    bcXOR_I,    // [top] = [top] xor [top-1]
-    bcSHR_I,    // [top] = [top] shr [top-1]
-    bcSHL_I,    // [top] = [top] shl [top-1]
-
-    bcNEG_I,    // [top] = -[top]
-    bcINC_I,    // [top]++
-    bcDEC_I,    // [top]--
-    bcADD_I,    // [top] = [top] + [top-1]
-    bcSUB_I,    // [top] = [top] - [top-1]
-    bcMUL_I,    // [top] = [top] * [top-1]
-    bcDIV_I,    // [top] = [top] / [top-1]
-    bcMOD_I,    // [top] = [top] % [top-1]
-    bcIDIV_I,   // [top] = [top] \ [top-1]
-
-    bcMV_I,     // [top]^ = [top-1]^
-    bcMVBP_I,   // [top]^^ = [top-1]^
-
-    {** for digit's with floating point **}
-    bcEQ_D,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcBG_D,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
-    bcBE_D,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
-
-    bcNEG_D,    // [top] = -[top]
-    bcINC_D,    // [top]++
-    bcDEC_D,    // [top]--
-    bcADD_D,    // [top] = [top] + [top-1]
-    bcSUB_D,    // [top] = [top] - [top-1]
-    bcMUL_D,    // [top] = [top] * [top-1]
-    bcDIV_D,    // [top] = [top] / [top-1]
-    bcMOD_D,    // [top] = [top] % [top-1]
-    bcIDIV_D,   // [top] = [top] \ [top-1]
-
-    bcMV_D,     // [top]^ = [top-1]^
-    bcMVBP_D,   // [top]^^ = [top-1]^
-
     {** for string's **}
-    bcEQ_S,
-    bcADD_S,
-    bcMV_S,
-    bcMVBP_S,
-    bcSTRL,     // strlen
     bcSTRD,     // strdel
-    bcSTCHATP,  // push str[x]
-    bcSTCHATK,  // peek str[x]
     bcCHORD,
     bcORDCH,
 
@@ -220,7 +143,9 @@ type
     bcRSBP,  //read string
     bcWSBP,  //write string
 
-    bcTHREXT //stop code execution
+    bcTHREXT,//stop code execution
+
+    bcDBP    //debug method call
     );
 
 procedure TCodeSection.ParseSection;
@@ -355,18 +280,6 @@ begin
     if Tk(s, 1) = 'idiv' then
       Outp.WriteByte(byte(bcIDIV))
     else
-    if Tk(s, 1) = 'land' then
-      Outp.WriteByte(byte(bcLAND))
-    else
-    if Tk(s, 1) = 'lor' then
-      Outp.WriteByte(byte(bcLOR))
-    else
-    if Tk(s, 1) = 'lxor' then
-      Outp.WriteByte(byte(bcLXOR))
-    else
-    if Tk(s, 1) = 'lnot' then
-      Outp.WriteByte(byte(bcLNOT))
-    else
     if Tk(s, 1) = 'mov' then
       Outp.WriteByte(byte(bcMV))
     else
@@ -396,6 +309,9 @@ begin
     else
     if Tk(s, 1) = 'newa' then
       Outp.WriteByte(byte(bcNA))
+    else
+    if Tk(s, 1) = 'typeof' then
+      Outp.WriteByte(byte(bcTF))
     else
     if Tk(s, 1) = 'sizeof' then
       Outp.WriteByte(byte(bcSF))
@@ -448,188 +364,8 @@ begin
     if Tk(s, 1) = 'trr' then
       Outp.WriteByte(byte(bcTRR))
     else
-    if Tk(s, 1) = 'eqw' then
-      Outp.WriteByte(byte(bcEQ_W))
-    else
-    if Tk(s, 1) = 'bgw' then
-      Outp.WriteByte(byte(bcBG_W))
-    else
-    if Tk(s, 1) = 'bew' then
-      Outp.WriteByte(byte(bcBE_W))
-    else
-    if Tk(s, 1) = 'notw' then
-      Outp.WriteByte(byte(bcNOT_W))
-    else
-    if Tk(s, 1) = 'andw' then
-      Outp.WriteByte(byte(bcAND_W))
-    else
-    if Tk(s, 1) = 'orw' then
-      Outp.WriteByte(byte(bcOR_W))
-    else
-    if Tk(s, 1) = 'xorw' then
-      Outp.WriteByte(byte(bcXOR_W))
-    else
-    if Tk(s, 1) = 'shrw' then
-      Outp.WriteByte(byte(bcSHR_W))
-    else
-    if Tk(s, 1) = 'shlw' then
-      Outp.WriteByte(byte(bcSHL_W))
-    else
-    if Tk(s, 1) = 'eqi' then
-      Outp.WriteByte(byte(bcEQ_I))
-    else
-    if Tk(s, 1) = 'bgi' then
-      Outp.WriteByte(byte(bcBG_I))
-    else
-    if Tk(s, 1) = 'bei' then
-      Outp.WriteByte(byte(bcBE_I))
-    else
-    if Tk(s, 1) = 'noti' then
-      Outp.WriteByte(byte(bcNOT_I))
-    else
-    if Tk(s, 1) = 'andi' then
-      Outp.WriteByte(byte(bcAND_I))
-    else
-    if Tk(s, 1) = 'ori' then
-      Outp.WriteByte(byte(bcOR_I))
-    else
-    if Tk(s, 1) = 'xori' then
-      Outp.WriteByte(byte(bcXOR_I))
-    else
-    if Tk(s, 1) = 'shri' then
-      Outp.WriteByte(byte(bcSHR_I))
-    else
-    if Tk(s, 1) = 'shli' then
-      Outp.WriteByte(byte(bcSHL_I))
-    else
-    if Tk(s, 1) = 'eqd' then
-      Outp.WriteByte(byte(bcEQ_D))
-    else
-    if Tk(s, 1) = 'bgd' then
-      Outp.WriteByte(byte(bcBG_D))
-    else
-    if Tk(s, 1) = 'bed' then
-      Outp.WriteByte(byte(bcBE_D))
-    else
-    if Tk(s, 1) = 'incw' then
-      Outp.WriteByte(byte(bcINC_W))
-    else
-    if Tk(s, 1) = 'decw' then
-      Outp.WriteByte(byte(bcDEC_W))
-    else
-    if Tk(s, 1) = 'addw' then
-      Outp.WriteByte(byte(bcADD_W))
-    else
-    if Tk(s, 1) = 'subw' then
-      Outp.WriteByte(byte(bcSUB_W))
-    else
-    if Tk(s, 1) = 'mulw' then
-      Outp.WriteByte(byte(bcMUL_W))
-    else
-    if Tk(s, 1) = 'divw' then
-      Outp.WriteByte(byte(bcDIV_W))
-    else
-    if Tk(s, 1) = 'modw' then
-      Outp.WriteByte(byte(bcMOD_W))
-    else
-    if Tk(s, 1) = 'idivw' then
-      Outp.WriteByte(byte(bcIDIV_W))
-    else
-    if Tk(s, 1) = 'mvw' then
-      Outp.WriteByte(byte(bcMV_W))
-    else
-    if Tk(s, 1) = 'mvbpw' then
-      Outp.WriteByte(byte(bcMVBP_W))
-    else
-    if Tk(s, 1) = 'negi' then
-      Outp.WriteByte(byte(bcNEG_I))
-    else
-    if Tk(s, 1) = 'inci' then
-      Outp.WriteByte(byte(bcINC_I))
-    else
-    if Tk(s, 1) = 'deci' then
-      Outp.WriteByte(byte(bcDEC_I))
-    else
-    if Tk(s, 1) = 'addi' then
-      Outp.WriteByte(byte(bcADD_I))
-    else
-    if Tk(s, 1) = 'subi' then
-      Outp.WriteByte(byte(bcSUB_I))
-    else
-    if Tk(s, 1) = 'muli' then
-      Outp.WriteByte(byte(bcMUL_I))
-    else
-    if Tk(s, 1) = 'divi' then
-      Outp.WriteByte(byte(bcDIV_I))
-    else
-    if Tk(s, 1) = 'modi' then
-      Outp.WriteByte(byte(bcMOD_I))
-    else
-    if Tk(s, 1) = 'idivi' then
-      Outp.WriteByte(byte(bcIDIV_I))
-    else
-    if Tk(s, 1) = 'mvi' then
-      Outp.WriteByte(byte(bcMV_I))
-    else
-    if Tk(s, 1) = 'mvbpi' then
-      Outp.WriteByte(byte(bcMVBP_I))
-    else
-    if Tk(s, 1) = 'negd' then
-      Outp.WriteByte(byte(bcNEG_D))
-    else
-    if Tk(s, 1) = 'incd' then
-      Outp.WriteByte(byte(bcINC_D))
-    else
-    if Tk(s, 1) = 'decd' then
-      Outp.WriteByte(byte(bcDEC_D))
-    else
-    if Tk(s, 1) = 'addd' then
-      Outp.WriteByte(byte(bcADD_D))
-    else
-    if Tk(s, 1) = 'subd' then
-      Outp.WriteByte(byte(bcSUB_D))
-    else
-    if Tk(s, 1) = 'muld' then
-      Outp.WriteByte(byte(bcMUL_D))
-    else
-    if Tk(s, 1) = 'divd' then
-      Outp.WriteByte(byte(bcDIV_D))
-    else
-    if Tk(s, 1) = 'modd' then
-      Outp.WriteByte(byte(bcMOD_D))
-    else
-    if Tk(s, 1) = 'idivd' then
-      Outp.WriteByte(byte(bcIDIV_D))
-    else
-    if Tk(s, 1) = 'mvd' then
-      Outp.WriteByte(byte(bcMV_D))
-    else
-    if Tk(s, 1) = 'mvbpd' then
-      Outp.WriteByte(byte(bcMVBP_D))
-    else
-    if Tk(s, 1) = 'eqs' then
-      Outp.WriteByte(byte(bcEQ_S))
-    else
-    if Tk(s, 1) = 'adds' then
-      Outp.WriteByte(byte(bcADD_S))
-    else
-    if Tk(s, 1) = 'mvs' then
-      Outp.WriteByte(byte(bcMV_S))
-    else
-    if Tk(s, 1) = 'mvbps' then
-      Outp.WriteByte(byte(bcMVBP_S))
-    else
-    if Tk(s, 1) = 'strl' then
-      Outp.WriteByte(byte(bcSTRL))
-    else
     if Tk(s, 1) = 'strd' then
       Outp.WriteByte(byte(bcSTRD))
-    else
-    if Tk(s, 1) = 'stchatp' then
-      Outp.WriteByte(byte(bcSTCHATP))
-    else
-    if Tk(s, 1) = 'stchatk' then
-      Outp.WriteByte(byte(bcSTCHATK))
     else
     if Tk(s, 1) = 'chord' then
       Outp.WriteByte(byte(bcCHORD))
@@ -681,6 +417,9 @@ begin
     else
     if Tk(s, 1) = 'threxit' then
       Outp.WriteByte(byte(bcTHREXT))
+    else
+    if Tk(s, 1) = 'dbgbreakpoint' then
+      Outp.WriteByte(byte(bcDBP))
     else
     if Length(s) > 0 then
       AsmError('Invalid token in line: "' + s + '"');

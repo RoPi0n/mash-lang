@@ -121,6 +121,14 @@ begin
     'jp' + sLineBreak + ForNum + '_for_end:' + sLineBreak, ForNum + '_for_end'));
 end;
 
+
+function GenDbgBreakPoint(varmgr: TVarManager): string;
+begin
+  Result := sLineBreak + PushIt('"' + Current_CodeFile + '"', varmgr) +
+            sLineBreak + PushIt(IntToStr(Current_CodeLine), varmgr) +
+            sLineBreak + 'dbgbreakpoint';
+end;
+
 procedure PreprocessDefinitions(s: string; varmgr: TVarManager);
 var
   sl: TStringList;
@@ -236,6 +244,8 @@ var
   sl: TStringList;
   c: cardinal;
   s1: string;
+  bfcf: string;
+  bfcl: cardinal;
 begin
   Result := '';
   s := Trim(s);
@@ -259,6 +269,12 @@ begin
           IncludedFiles.Add(s);
           sl := TStringList.Create;
           sl.LoadFromFile(s);
+
+          bfcf := Current_CodeFile;
+          Current_CodeFile := s;
+          bfcl := Current_CodeLine;
+          Current_CodeLine := 1;
+
           if sl.Count > 0 then
           begin
             for c := 0 to sl.Count - 1 do
@@ -271,6 +287,10 @@ begin
           end;
           Result := sl.Text + sLineBreak;
           FreeAndNil(sl);
+
+          Current_CodeFile := bfcf;
+          Current_CodeLine := bfcl;
+
         end;
       end;
       '<':
@@ -298,6 +318,12 @@ begin
           IncludedFiles.Add(s);
           sl := TStringList.Create;
           sl.LoadFromFile(s);
+
+          bfcf := Current_CodeFile;
+          Current_CodeFile := s;
+          bfcl := Current_CodeLine;
+          Current_CodeLine := 1;
+
           if sl.Count > 0 then
           begin
             for c := 0 to sl.Count - 1 do
@@ -312,6 +338,10 @@ begin
           end;
           Result := sl.Text + sLineBreak;
           FreeAndNil(sl);
+
+          Current_CodeFile := bfcf;
+          Current_CodeLine := bfcl;
+
         end;
       end;
       else
@@ -426,14 +456,17 @@ begin
     Result := PreprocessEnum(s)
   else
   {** Endp **}
-  if Tk(s, 1) = 'endp' then
+  {if Tk(s, 1) = 'endp' then
   begin
     Delete(s, 1, length('endp'));
     if pos('.', LocalVarPref) > 0 then
-      Delete(LocalVarPref, 1, pos('.', LocalVarPref));
+     Delete(LocalVarPref, 1, pos('.', LocalVarPref))
+    else
+    if Length(LocalVarPref) > 0 then
+     LocalVarPref := '';
     Result := 'jr';
   end
-  else
+  else}
   if Tk(s, 1) = 'super' then
   begin
     Result := 'pushc super.' + Tk(s, 2) + sLineBreak + 'gpm' + sLineBreak + 'jc';
@@ -1415,6 +1448,11 @@ begin
   end
   else
     Result := s;
+
+  if (Length(Trim(Result)) > 0) and Debug_Enable then
+   begin
+     Result := Result + GenDbgBreakPoint(varmgr);
+   end;
 end;
 
 procedure InitPreprocessor(varmgr: TVarManager);

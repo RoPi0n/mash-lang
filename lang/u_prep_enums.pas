@@ -18,7 +18,7 @@ implementation
 function IsEnumVals(s: string): boolean; // var a = [1, 2, 3, 4, 5]
 begin
   Result := False;
-  if Length(s) > 2 then
+  if Length(s) >= 2 then
     Result := (s[1] = '[') and (s[length(s)] = ']');
 end;
 

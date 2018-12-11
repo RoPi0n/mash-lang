@@ -30,14 +30,22 @@ begin
     case CB.bType of
       btProc:
       begin
-        if pos('.', LocalVarPref) > 0 then
-          Delete(LocalVarPref, 1, pos('.', LocalVarPref));
+        {if pos('.', LocalVarPref) > 0 then
+          Delete(LocalVarPref, 1, pos('.', LocalVarPref))
+        else
+        if Length(LocalVarPref) > 0 then
+         }LocalVarPref := '';
+
         Result := CB.bEndCode + ':' + sLineBreak + 'jr';
       end;
       btFunc:
       begin
-        if pos('.', LocalVarPref) > 0 then
-          Delete(LocalVarPref, 1, pos('.', LocalVarPref));
+        {if pos('.', LocalVarPref) > 0 then
+          Delete(LocalVarPref, 1, pos('.', LocalVarPref))
+        else
+        if Length(LocalVarPref) > 0 then
+         }LocalVarPref := '';
+
         Result := CB.bEndCode + ':' + sLineBreak + 'jr';
         if CB.bMeta <> '+' then
           PrpError('Declarate function without return.');

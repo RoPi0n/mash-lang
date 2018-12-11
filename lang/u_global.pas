@@ -20,8 +20,12 @@ procedure AsmInfo(m: string);
 
 var
   RgAPICnt: cardinal = 0;
+  GlobalCommentBegin: boolean = False;
 
 implementation
+
+uses
+  u_globalvars;
 
 {** Methods **}
 
@@ -52,28 +56,45 @@ begin
   Result := '';
   while Length(s) > 0 do
   begin
-    if s[1] = '"' then
-      ConstStr := not ConstStr;
-    if ConstStr then
+    if not GlobalCommentBegin then
     begin
-      Result := Result + s[1];
-      Delete(s, 1, 1);
-    end
-    else
-    if copy(s, 1, 2) = '  ' then
-      Delete(s, 1, 1)
-    else
-    begin
-      if s[1] = '/' then
-        if Length(s) > 1 then
-          if s[2] = '/' then
-            break;
+      if s[1] = '"' then
+        ConstStr := not ConstStr;
+      if ConstStr then
+      begin
+        Result := Result + s[1];
+        Delete(s, 1, 1);
+      end
+      else
+      if copy(s, 1, 2) = '  ' then
+        Delete(s, 1, 1)
+      else
+      begin
+        if copy(s, 1, 2) = '//' then
+         break;
 
-      Result := Result + LowerCase(s[1]);
-      if s[1] in ['?', '=', '@'] then
+        if copy(s, 1, 2) = '/*' then
+         begin
+           GlobalCommentBegin := true;
+           break;
+         end;
+
+        Result := Result + LowerCase(s[1]);
+        if s[1] in ['?', '=', '@'] then
+        begin
+          Delete(s, 1, 1);
+          s := Trim(s);
+        end
+        else
+          Delete(s, 1, 1);
+      end;
+    end
+   else
+    begin
+      if copy(s, 1, 2) = '*/' then
        begin
-         Delete(s, 1, 1);
-         s := Trim(s);
+         GlobalCommentBegin := false;
+         Delete(s, 1, 2);
        end
       else
        Delete(s, 1, 1);
@@ -122,7 +143,8 @@ end;
 
 procedure AsmInfo(m: string);
 begin
-  writeln('Info: ', m);
+  if Hints_Enable then
+    writeln('Info: ', m);
 end;
 
 end.
