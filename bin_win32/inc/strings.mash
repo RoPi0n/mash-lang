@@ -2,6 +2,8 @@
 
 uses <bf>
 
+// Base functions.
+
 proc c_Ord(.char):
   push .char
   chord
@@ -16,25 +18,10 @@ proc c_Chr(.wrd):
 end
 
 
-proc s_At(.s, .index):
-  push .index
-  push .s
-  stchatp
-  gpm
-end
-
-
-proc s_Set(.s, .index, .char):
-  push .index
-  push .char
-  push .s
-  stchatk
-end
-
-
 proc s_Len(.s):
   push .s
-  strl
+  alen
+  //strl
   gpm
 end
 
@@ -55,18 +42,40 @@ func s_Copy(.s, .from, .count):
 end
 
 
+// String reverse function.
+
 func s_Reverse(.s):
-  var .r = copy(.s), .i, .l = s_len(.r), .ch
+  var .i, .l, .prf, .r, .t, .t2
+  .l ?= s_len(.s)
   if .l > 0:
-    for(.i ?= 1; .i < (.l \ 2); inc .i):
-      .ch ?= s_at(.r, .l - .i + 1)
-      s_set(.r, .l - .i + 1, s_at(.r, .i))
-      s_set(.r, .i, .ch)
+    if (.l % 2) <> 0:
+      .prf ?= .s[1]
+      .s ?= copy(.s)
+      s_del(.s, 1, 1)
+    else:
+      .prf ?= ""
     end
+    .t ?= s_copy(.s, 1, .l \ 2 - 1)
+    .t2 ?= s_copy(.s, .l \ 2 + 1, .l)
+
+    .l = s_len(.t)
+    .i ?= 0
+    while .i < .l:
+      .r ?= .t[.i + 1]
+      .t[.i + 1] ?= .t2[.l - .i])
+      .t2[.l - .i] ?= .r
+      inc .i
+    end
+
+    .r ?= .t + .t2 + .prf
+    return .r
+  else:
+    return ""
   end
-  return .r
 end
 
+
+// Substring copy functions.
 
 func s_LeftStr(.s, .count):
   return s_copy(.s, 1, .count)
@@ -78,10 +87,12 @@ func s_RightStr(.s, .count):
 end
 
 
+// Pos & PosEx - find substring start (and N start) functions.
+
 func s_Pos(.sb, .s):
   var .p, .t, .t2, .l, .sub_l, .b
 
-  .l ?= s_len(.s)
+  .l ?= s_len(.s) + 2
   .sub_l ?= s_len(.sb)
 
   .b ?= false
@@ -93,19 +104,22 @@ func s_Pos(.sb, .s):
 
     .b = false
 
-    if s_at(.sb, 1) == s_at(.s, .p):
+    if .sb[1] == .s[.p]:
       .b = true
-      .t2 ?= copy(.p)
-      for (.t ?= 2; .t < .sub_l; inc .t):
-        inc .t2
-        if ~(s_at(.sb, .t) == s_at(.s, .t2)):
-          .b = false
-          break
-        end
-      end
+      if len(.sb) > 1:
+        .t2 ?= copy(.p)
 
-      if ~.b:
-        .p = .t2
+        for (.t ?= 2; .t < .sub_l; inc .t):
+          inc .t2
+          if .sb[.t] <> .s[.t2]:
+            .b = false
+            break
+          end
+        end
+
+        if .b == false:
+          .p = .t2
+        end
       end
     end
 
@@ -118,7 +132,7 @@ end
 func s_PosEx(.sb, .s, .num):
   var .p, .t, .t2, .l, .sub_l, .b
 
-  .l ?= s_len(.s)
+  .l ?= s_len(.s) + 2
   .sub_l ?= s_len(.sb)
 
   .b ?= false
@@ -134,19 +148,23 @@ func s_PosEx(.sb, .s, .num):
 
     .b = false
 
-    if s_at(.sb, 1) == s_at(.s, .p):
+    if .sb[1] == .s[.p]:
       .b = true
-      .t2 ?= copy(.p)
-      for (.t ?= 2; .t < .sub_l; inc .t):
-        inc .t2
-        if ~(s_at(.sb, .t) == s_at(.s, .t2)):
-          .b = false
-          break
-        end
-      end
+      if len(.sb) > 1:
+        .b = true
+        .t2 ?= copy(.p)
 
-      if ~.b:
-        .p = .t2
+        for (.t ?= 2; .t < .sub_l; inc .t):
+          inc .t2
+          if .sb[.t] <> .s[.t2]:
+            .b = false
+            break
+          end
+        end
+
+        if .b == false:
+          .p = .t2
+        end
       end
     end
 
@@ -156,10 +174,12 @@ func s_PosEx(.sb, .s, .num):
 end
 
 
+// String trimming functions.
+
 func s_TrimLeft(.s):
   var .r = copy(.s)
   while s_len(.r) > 0:
-    if s_at(.r, 1) == " ":
+    if .r[1] == " ":
       s_del(.r, 1, 1)
     else:
       break
@@ -172,7 +192,7 @@ end
 func s_TrimRight(.s):
   var .r = copy(.s)
   while s_len(.r) > 0:
-    if s_at(.r, s_len(.r)) == " ":
+    if .r[s_len(.r)] == " ":
       s_del(.r, s_len(.r), 1)
     else:
       break
@@ -190,14 +210,35 @@ func s_Trim(.s):
 end
 
 
-enum s_ReplaceFlags [srfReplaceFirst, srfReplaceAll, srfIgnoreCase]
+// Substring replase function.
+
+enum s_ReplaceFlags [srfReplaceAll, srfIgnoreCase]
 
 func s_Replace(.s, .from, .to, .flags):
   var .r = copy(.s), .p
-  .p ?= s_Pos(.from, .r)
+  if In(srfIgnoreCase, .flags):
+    .p ?= s_Pos(StrUpper(.from), StrUpper(.r))
+  else:
+    .p ?= s_Pos(.from, .r)
+  end
   while .p > 0:
-    //.r
-    .p = s_Pos(.from, .r)
+    .s ?= s_Copy(.r, .p + s_Len(.from), s_Len(.r))
+    .r = s_Copy(.r, 1, .p - 2) + .to + .s
+    if In(srfIgnoreCase, .flags):
+      .p = s_Pos(StrUpper(.from), StrUpper(.r))
+    else:
+      .p = s_Pos(.from, .r)
+    end
+  end
+  if In(srfReplaceAll, .flags):
+    if In(srfIgnoreCase, .flags):
+      .p = s_Pos(.from, StrUpper(.r))
+    else:
+      .p = s_Pos(.from, .r)
+    end
+    if .p > 0:
+      .r = s_Replace(.r, .from, .to, .flags)
+    end
   end
   return .r
 end

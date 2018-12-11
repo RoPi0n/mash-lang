@@ -8,8 +8,6 @@ import Halt         "bf.lib" "HALT"
 import Sleep        "bf.lib" "SLEEP"
 import _StrUpper    "bf.lib" "STRUPPER"
 import _StrLower    "bf.lib" "STRLOWER"
-import _ChrUpper    "bf.lib" "CHRUPPER"
-import _ChrLower    "bf.lib" "CHRLOWER"
 import _Now         "bf.lib" "CURRENTDATETIME"
 import Randomize    "bf.lib" "RANDOMIZE"
 import _Random      "bf.lib" "RANDOM"
@@ -34,21 +32,33 @@ proc ExitThread():
   threxit
 end
 
-func new(.value):
+func new(.obj):
   var .v = new
-  .v = .value
+  .v = .obj
   return .v
 end
 
-func copy(.value):
-  push .value
+proc copy(.obj):
+  push .obj
   copy
   gpm
-  pop .value
-  return .value
 end
 
-func ArrLen(.array):
+proc SizeOf(.obj):
+  push .obj
+  sizeof
+  gpm
+end
+
+enum Types [TypeNull, TypeWord, TypeInt, TypeReal, TypeStr, TypeArray]
+
+proc TypeOf(.obj):
+  push .obj
+  typeof
+  gpm
+end
+
+func Len(.array):
   push .array
   alen
   gpm
@@ -57,7 +67,7 @@ func ArrLen(.array):
   return .len
 end
 
-proc SetArrLen(.array, .newlen):
+proc SetLen(.array, .newlen):
   push .array
   push .newlen
   salen
@@ -74,10 +84,26 @@ proc Free(.simple_object):
   rem
 end
 
+{_ifdef_ argcounter}
+
+proc Rem(...):
+  var .t
+  .t ?= argcount
+  while .t > 0:
+    rem
+    dec .t
+  end
+end
+
+{_end_}
+
 proc FreeClass(.object):
   .object->StructFree()
-  SetArrLen(.object, 0)
+  SetLen(.object, 0)
+  Free(.object)
 end
+
+{_ifdef_ argcounter}
 
 proc opx(...):
   var .i, .k, .t = argcount \ 2
@@ -89,13 +115,17 @@ proc opx(...):
   end
 end
 
+{_end_}
+
 func In(.v, .array):
   var .i, .len
-  .len ?= arrlen(.array) - 1
-  for (.i ?= 0; .i < .len; inc .i):
+  .i ?= 0
+  .len ?= len(.array)
+  while .i < .len:
     if .array[.i] == .v:
       return true
     end
+    inc .i
   end
   return false
 end
@@ -160,16 +190,6 @@ end
 
 proc StrLower():
   _StrLower()
-  gpm
-end
-
-proc ChrUpper():
-  _ChrUpper()
-  gpm
-end
-
-proc ChrLower():
-  _ChrLower()
   gpm
 end
 
