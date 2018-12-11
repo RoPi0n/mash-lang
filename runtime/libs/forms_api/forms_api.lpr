@@ -3,9 +3,8 @@ library forms_api;
 {$mode objfpc}{$H+}
 
 uses
-  SysUtils, Classes, Forms, Graphics, Interfaces, lform_class, SyncObjs;
+  SysUtils, Classes, Forms, Graphics, Interfaces, lform_class, SyncObjs, svm_api in '..\svm_api.pas';
 
-{$I ..\adp.inc}
 
 {** TApplication **}
 
@@ -45,7 +44,7 @@ exports  _Application_Terminate name  '_Application_Terminate';
 
 procedure _Application_LoadIconFromStream(Stack:PStack); cdecl;
 begin
-  Application.Icon.LoadFromStream(TMemoryStream(Pointer(Cardinal(PMem(Stack^.popv)^))));
+  Application.Icon.LoadFromStream(TMemoryStream(Pointer(Cardinal(TSVMMem(Stack^.popv).GetW))));
 end;
 exports  _Application_LoadIconFromStream name  '_Application_LoadIconFromStream';
 
@@ -53,84 +52,84 @@ exports  _Application_LoadIconFromStream name  '_Application_LoadIconFromStream'
 
 procedure _Form_SetWidth(Stack:PStack); cdecl;
 begin
-  TLForm(Stack^.popv).Width := PMem(Stack^.popv)^;
+  TLForm(Stack^.popv).Width := TSVMMem(Stack^.popv).GetW;
 end;
 exports  _Form_SetWidth name  '_Form_SetWidth';
 
 
 procedure _Form_SetHeight(Stack:PStack); cdecl;
 begin
-  TLForm(Stack^.popv).Height := PMem(Stack^.popv)^;
+  TLForm(Stack^.popv).Height := TSVMMem(Stack^.popv).GetW;
 end;
 exports  _Form_SetHeight name  '_Form_SetHeight';
 
 
 procedure _Form_GetWidth(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).Width));
+  Stack^.push(TSVMMem.CreateFW(TLForm(Stack^.popv).Width));
 end;
 exports  _Form_GetWidth name  '_Form_GetWidth';
 
 
 procedure _Form_GetHeight(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).Height));
+  Stack^.push(TSVMMem.CreateFW(TLForm(Stack^.popv).Height));
 end;
 exports  _Form_GetHeight name  '_Form_GetHeight';
 
 
 procedure _Form_SetLeft(Stack:PStack); cdecl;
 begin
-  TLForm(Stack^.popv).Left := PMem(Stack^.popv)^;
+  TLForm(Stack^.popv).Left := TSVMMem(Stack^.popv).GetW;
 end;
 exports  _Form_SetLeft name  '_Form_SetLeft';
 
 
 procedure _Form_SetTop(Stack:PStack); cdecl;
 begin
-  TLForm(Stack^.popv).Top := PMem(Stack^.popv)^;
+  TLForm(Stack^.popv).Top := TSVMMem(Stack^.popv).GetW;
 end;
 exports  _Form_SetTop name  '_Form_SetTop';
 
 
 procedure _Form_GetLeft(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).Left));
+  Stack^.push(TSVMMem.CreateFW(TLForm(Stack^.popv).Left));
 end;
 exports  _Form_GetLeft name  '_Form_GetLeft';
 
 
 procedure _Form_GetTop(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).Top));
+  Stack^.push(TSVMMem.CreateFW(TLForm(Stack^.popv).Top));
 end;
 exports  _Form_GetTop name  '_Form_GetTop';
 
 
 procedure _Form_SetColor(Stack:PStack); cdecl;
 begin
-  TLForm(Stack^.popv).Color := PMem(Stack^.popv)^;
+  TLForm(Stack^.popv).Color := TSVMMem(Stack^.popv).GetW;
 end;
 exports  _Form_SetColor name  '_Form_SetColor';
 
 
 procedure _Form_GetColor(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).Color));
+  Stack^.push(TSVMMem.CreateFW(TLForm(Stack^.popv).Color));
 end;
 exports  _Form_GetColor name  '_Form_GetColor';
 
 
 procedure _Form_SetCaption(Stack:PStack); cdecl;
 begin
-  TLForm(Stack^.popv).Caption := string(PMem(Stack^.popv)^);
+  TLForm(Stack^.popv).Caption := string(TSVMMem(Stack^.popv).GetS);
 end;
 exports  _Form_SetCaption name  '_Form_SetCaption';
 
 
 procedure _Form_GetCaption(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).Caption));
+  Stack^.push(TSVMMem.CreateFS(TLForm(Stack^.popv).Caption));
 end;
 exports  _Form_GetCaption name  '_Form_GetCaption';
 
@@ -157,9 +156,9 @@ begin
   F := TLForm(Stack^.popv);
   E := F.GetEv;
   if E <> nil then
-   Stack^.push(new_svmval(E.GetEvType))
+   Stack^.push(TSVMMem.CreateFW(E.GetEvType))
   else
-   Stack^.push(new_svmval(EVT_Null));
+   Stack^.push(TSVMMem.CreateFW(EVT_Null));
 end;
 exports  _Form_CheckEvent name  '_Form_CheckEvent';
 
@@ -170,23 +169,23 @@ var
 begin
   F := TLForm(Stack^.popv);
   if F.LastEv = nil then
-   Stack^.push(new_svmval(EVT_Null))
+   Stack^.push(TSVMMem.CreateFW(EVT_Null))
   else
-   Stack^.push(new_svmval(F.LastEv.GetEvType));
+   Stack^.push(TSVMMem.CreateFW(F.LastEv.GetEvType));
 end;
 exports  _Form_GetLastEvent name  '_Form_GetLastEvent';
 
 
 procedure _Form_LastEventArgCount(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).LastEv.ArgCount));
+  Stack^.push(TSVMMem.CreateFW(TLForm(Stack^.popv).LastEv.ArgCount));
 end;
 exports  _Form_LastEventArgCount name  '_Form_LastEventArgCount';
 
 
 procedure _Form_LastEventArgAt(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TLForm(Stack^.popv).LastEv.GetArg(PMem(Stack^.popv)^)));
+  Stack^.push(TLForm(Stack^.popv).LastEv.GetArg(TSVMMem(Stack^.popv).GetW));
 end;
 exports  _Form_LastEventArgAt name  '_Form_LastEventArgAt';
 
@@ -203,7 +202,7 @@ var
   p:Pointer;
 begin
   p := Stack^.popv;
-  Stream := TMemoryStream(Pointer(Cardinal(PMem(Stack^.popv)^)));
+  Stream := TMemoryStream(Pointer(Cardinal(TSVMMem(Stack^.popv).GetW)));
   Stream.Position := 0;
   TLForm(p).Icon.LoadFromStream(Stream);
 end;
@@ -213,28 +212,28 @@ exports  _Form_LoadIconFromStream name  '_Form_LoadIconFromStream';
 
 procedure _Canvas_MoveTo(Stack:PStack); cdecl;
 begin
-  TCanvas(Stack^.popv).MoveTo(PMem(Stack^.popv)^,PMem(Stack^.popv)^);
+  TCanvas(Stack^.popv).MoveTo(TSVMMem(Stack^.popv).GetW,TSVMMem(Stack^.popv).GetW);
 end;
 exports  _Canvas_MoveTo name  '_Canvas_MoveTo';
 
 
 procedure _Canvas_LineTo(Stack:PStack); cdecl;
 begin
-  TCanvas(Stack^.popv).LineTo(PMem(Stack^.popv)^,PMem(Stack^.popv)^);
+  TCanvas(Stack^.popv).LineTo(TSVMMem(Stack^.popv).GetW,TSVMMem(Stack^.popv).GetW);
 end;
 exports  _Canvas_LineTo name  '_Canvas_LineTo';
 
 
 procedure _Canvas_SetPenColor(Stack:PStack); cdecl;
 begin
-  TCanvas(Stack^.popv).Pen.Color := PMem(Stack^.popv)^;
+  TCanvas(Stack^.popv).Pen.Color := TSVMMem(Stack^.popv).GetW;
 end;
 exports  _Canvas_SetPenColor name  '_Canvas_SetPenColor';
 
 
 procedure _Canvas_GetPenColor(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TCanvas(Stack^.popv).Pen.Color));
+  Stack^.push(TSVMMem.CreateFW(TCanvas(Stack^.popv).Pen.Color));
 end;
 exports  _Canvas_GetPenColor name  '_Canvas_GetPenColor';
 

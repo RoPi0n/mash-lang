@@ -43,5 +43,10 @@ object LForm: TLForm
   OnUnDock = FormUnDock
   OnUTF8KeyPress = FormUTF8KeyPress
   OnWindowStateChange = FormWindowStateChange
-  LCLVersion = '1.6.4.0'
+  LCLVersion = '1.8.2.0'
+  object GrabberTimer: TTimer
+    OnTimer = GrabberTimerTimer
+    left = 229
+    top = 62
+  end
 end

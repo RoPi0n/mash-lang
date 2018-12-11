@@ -7,10 +7,10 @@ interface
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs,
   Types, LMessages, LCLType, ExtCtrls,
-  SyncObjs;
+  SyncObjs, svm_api in '..\svm_api.pas';
 
 const
-  EventsStoring = 1024 * 10;
+  EventsStoring = 1024 * 64;
 
   EVT_Null = 0;
   EVT_FormActivate = 1;
@@ -65,8 +65,8 @@ type
   public
     constructor Create(EvType: byte; EvID: word);
     destructor Destroy; override;
-    procedure PushArg(v: variant);
-    function GetArg(indx: byte): variant;
+    procedure PushArg(v: TSVMMem);
+    function GetArg(indx: byte): TSVMMem;
     function ArgCount: byte;
     function GetEvType: byte;
   end;
@@ -168,18 +168,14 @@ begin
   inherited;
 end;
 
-procedure TLFEvent.PushArg(v: variant);
-var
-  pv: PVariant;
+procedure TLFEvent.PushArg(v: TSVMMem);
 begin
-  new(pv);
-  pv^ := v;
-  Self.Args.Add(pv);
+  Self.Args.Add(v);
 end;
 
-function TLFEvent.GetArg(indx: byte): variant;
+function TLFEvent.GetArg(indx: byte): TSVMMem;
 begin
-  Result := PVariant(Self.Args[indx])^;
+  Result := TSVMMem(Self.Args[indx]);
 end;
 
 function TLFEvent.ArgCount: byte;
@@ -324,16 +320,16 @@ procedure TLForm.FormContextPopup(Sender: TObject; MousePos: TPoint;
   var Handled: boolean);
 begin
   Ev := TLFEvent.Create(6, GlobalEventCounter);
-  Ev.PushArg(MousePos.x);
-  Ev.PushArg(MousePos.y);
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.x));
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.y));
   PushEvent(Ev);
 end;
 
 procedure TLForm.FormDblClick(Sender: TObject);
 begin
   Ev := TLFEvent.Create(7, GlobalEventCounter);
-  Ev.PushArg(Mouse.CursorPos.x);
-  Ev.PushArg(Mouse.CursorPos.y);
+  Ev.PushArg(TSVMMem.CreateFW(Mouse.CursorPos.x));
+  Ev.PushArg(TSVMMem.CreateFW(Mouse.CursorPos.y));
   PushEvent(Ev);
 end;
 
@@ -352,8 +348,8 @@ end;
 procedure TLForm.FormDockDrop(Sender: TObject; Source: TDragDockObject; X, Y: integer);
 begin
   Ev := TLFEvent.Create(10, GlobalEventCounter);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
   PushEvent(Ev);
 end;
 
@@ -361,17 +357,17 @@ procedure TLForm.FormDockOver(Sender: TObject; Source: TDragDockObject;
   X, Y: integer; State: TDragState; var Accept: boolean);
 begin
   Ev := TLFEvent.Create(11, GlobalEventCounter);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
-  Ev.PushArg(State);
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
+  Ev.PushArg(TSVMMem.CreateFW(Cardinal(State)));
   PushEvent(Ev);
 end;
 
 procedure TLForm.FormDragDrop(Sender, Source: TObject; X, Y: integer);
 begin
   Ev := TLFEvent.Create(12, GlobalEventCounter);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
   PushEvent(Ev);
 end;
 
@@ -379,8 +375,8 @@ procedure TLForm.FormDragOver(Sender, Source: TObject; X, Y: integer;
   State: TDragState; var Accept: boolean);
 begin
   Ev := TLFEvent.Create(13, GlobalEventCounter);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
   PushEvent(Ev);
 end;
 
@@ -390,15 +386,15 @@ var
 begin
   Ev := TLFEvent.Create(14, GlobalEventCounter);
   for i := 0 to length(FileNames) - 1 do
-   Ev.PushArg(FileNames[i]);
+   Ev.PushArg(TSVMMem.CreateFS(FileNames[i]));
   PushEvent(Ev);
 end;
 
 procedure TLForm.FormEndDock(Sender, Target: TObject; X, Y: integer);
 begin
   Ev := TLFEvent.Create(15, GlobalEventCounter);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
   PushEvent(Ev);
 end;
 
@@ -406,8 +402,8 @@ procedure TLForm.FormGetSiteInfo(Sender: TObject; DockClient: TControl;
   var InfluenceRect: TRect; MousePos: TPoint; var CanDock: boolean);
 begin
   Ev := TLFEvent.Create(16, GlobalEventCounter);
-  Ev.PushArg(MousePos.x);
-  Ev.PushArg(MousePos.y);
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.x));
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.y));
   PushEvent(Ev);
 end;
 
@@ -427,21 +423,21 @@ end;
 procedure TLForm.FormKeyDown(Sender: TObject; var Key: word; Shift: TShiftState);
 begin
   Ev := TLFEvent.Create(19, GlobalEventCounter);
-  Ev.PushArg(Key);
+  Ev.PushArg(TSVMMem.CreateFW(Key));
   PushEvent(Ev);
 end;
 
 procedure TLForm.FormKeyPress(Sender: TObject; var Key: char);
 begin
   Ev := TLFEvent.Create(20, GlobalEventCounter);
-  Ev.PushArg(Key);
+  Ev.PushArg(TSVMMem.CreateFS(Key));
   PushEvent(Ev);
 end;
 
 procedure TLForm.FormKeyUp(Sender: TObject; var Key: word; Shift: TShiftState);
 begin
   Ev := TLFEvent.Create(21, GlobalEventCounter);
-  Ev.PushArg(Key);
+  Ev.PushArg(TSVMMem.CreateFW(Key));
   PushEvent(Ev);
 end;
 
@@ -449,9 +445,9 @@ procedure TLForm.FormMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: integer);
 begin
   Ev := TLFEvent.Create(22, GlobalEventCounter);
-  Ev.PushArg(Button);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
+  Ev.PushArg(TSVMMem.CreateFW(Cardinal(Button)));
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
   PushEvent(Ev);
 end;
 
@@ -470,8 +466,8 @@ end;
 procedure TLForm.FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
 begin
   Ev := TLFEvent.Create(25, GlobalEventCounter);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
   PushEvent(Ev);
 end;
 
@@ -479,9 +475,9 @@ procedure TLForm.FormMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: integer);
 begin
   Ev := TLFEvent.Create(26, GlobalEventCounter);
-  Ev.PushArg(Button);
-  Ev.PushArg(x);
-  Ev.PushArg(y);
+  Ev.PushArg(TSVMMem.CreateFW(Cardinal(Button)));
+  Ev.PushArg(TSVMMem.CreateFW(x));
+  Ev.PushArg(TSVMMem.CreateFW(y));
   PushEvent(Ev);
 end;
 
@@ -489,9 +485,9 @@ procedure TLForm.FormMouseWheel(Sender: TObject; Shift: TShiftState;
   WheelDelta: integer; MousePos: TPoint; var Handled: boolean);
 begin
   Ev := TLFEvent.Create(27, GlobalEventCounter);
-  Ev.PushArg(WheelDelta);
-  Ev.PushArg(MousePos.x);
-  Ev.PushArg(MousePos.y);
+  Ev.PushArg(TSVMMem.CreateFW(WheelDelta));
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.x));
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.y));
   PushEvent(Ev);
 end;
 
@@ -499,8 +495,8 @@ procedure TLForm.FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
   MousePos: TPoint; var Handled: boolean);
 begin
   Ev := TLFEvent.Create(28, GlobalEventCounter);
-  Ev.PushArg(MousePos.x);
-  Ev.PushArg(MousePos.y);
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.x));
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.y));
   PushEvent(Ev);
 end;
 
@@ -508,8 +504,8 @@ procedure TLForm.FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
   MousePos: TPoint; var Handled: boolean);
 begin
   Ev := TLFEvent.Create(29, GlobalEventCounter);
-  Ev.PushArg(MousePos.x);
-  Ev.PushArg(MousePos.y);
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.x));
+  Ev.PushArg(TSVMMem.CreateFW(MousePos.y));
   PushEvent(Ev);
 end;
 
@@ -522,8 +518,8 @@ end;
 procedure TLForm.FormShortCut(var Msg: TLMKey; var Handled: boolean);
 begin
   Ev := TLFEvent.Create(31, GlobalEventCounter);
-  Ev.PushArg(Msg.CharCode);
-  Ev.PushArg(Msg.Msg);
+  Ev.PushArg(TSVMMem.CreateFW(Msg.CharCode));
+  Ev.PushArg(TSVMMem.CreateFW(Msg.Msg));
   PushEvent(Ev);
 end;
 
@@ -536,9 +532,9 @@ end;
 procedure TLForm.FormShowHint(Sender: TObject; HintInfo: PHintInfo);
 begin
   Ev := TLFEvent.Create(33, GlobalEventCounter);
-  Ev.PushArg(HintInfo^.HintStr);
-  Ev.PushArg(HintInfo^.HintPos.x);
-  Ev.PushArg(HintInfo^.HintPos.y);
+  Ev.PushArg(TSVMMem.CreateFS(HintInfo^.HintStr));
+  Ev.PushArg(TSVMMem.CreateFW(HintInfo^.HintPos.x));
+  Ev.PushArg(TSVMMem.CreateFW(HintInfo^.HintPos.y));
   PushEvent(Ev);
 end;
 
@@ -558,7 +554,7 @@ end;
 procedure TLForm.FormUTF8KeyPress(Sender: TObject; var UTF8Key: TUTF8Char);
 begin
   Ev := TLFEvent.Create(36, GlobalEventCounter);
-  Ev.PushArg(UTF8Key);
+  Ev.PushArg(TSVMMem.CreateFS(UTF8Key));
   PushEvent(Ev);
 end;
 
