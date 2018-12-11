@@ -1,8 +1,6 @@
 library Streams;
 
-uses SysUtils, Classes;
-
-{$I ..\adp.inc}
+uses SysUtils, Classes, svm_api in '..\svm_api.pas';
 
 {STREAM}
 
@@ -13,12 +11,12 @@ end;
 
 procedure _Stream_Seek(Stack:PStack); cdecl;
 begin
-  TStream(Stack^.popv).Seek(PMem(Stack^.popv)^, TSeekOrigin(PMem(Stack^.popv)^));
+  TStream(Stack^.popv).Seek(TSVMMem(Stack^.popv).GetW, TSeekOrigin(TSVMMem(Stack^.popv).GetW));
 end;
 
 procedure _Stream_GetCaretPos(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TStream(Stack^.popv).Position));
+  Stack^.push(TSVMMem.CreateFW(TStream(Stack^.popv).Position));
 end;
 
 procedure _Stream_WriteFromMemoryStream(Stack:PStack); cdecl;
@@ -28,7 +26,7 @@ var
 begin
   Dest := TStream(Stack^.popv);
   Src := TMemoryStream(Stack^.popv);
-  Dest.Write(PByte(Cardinal(Src.Memory)+Src.Position)^, PMem(Stack^.popv)^);
+  Dest.Write(PByte(Cardinal(Src.Memory) + Src.Position)^, TSVMMem(Stack^.popv).GetW);
 end;
 
 procedure _Stream_ReadFromMemoryStream(Stack:PStack); cdecl;
@@ -38,12 +36,12 @@ var
 begin
   Dest := TStream(Stack^.popv);
   Src := TMemoryStream(Stack^.popv);
-  Dest.Read(PByte(Cardinal(Src.Memory)+Src.Position)^, PMem(Stack^.popv)^);
+  Dest.Read(PByte(Cardinal(Src.Memory) + Src.Position)^, TSVMMem(Stack^.popv).GetW);
 end;
 
 procedure _Stream_CopyFromStream(Stack:PStack); cdecl;
 begin
-  TStream(Stack^.popv).CopyFrom(TStream(Stack^.popv), PMem(Stack^.popv)^);
+  TStream(Stack^.popv).CopyFrom(TStream(Stack^.popv), TSVMMem(Stack^.popv).GetW);
 end;
 
 procedure _Stream_WriteByte(Stack:PStack); cdecl;
@@ -51,7 +49,7 @@ var
   Dest:TStream;
 begin
   Dest := TStream(Stack^.popv);
-  Dest.WriteByte(PMem(Stack^.popv)^);
+  Dest.WriteByte(TSVMMem(Stack^.popv).GetW);
 end;
 
 procedure _Stream_WriteWord(Stack:PStack); cdecl;
@@ -60,7 +58,7 @@ var
   Val:Cardinal;
 begin
   Dest := TStream(Stack^.popv);
-  Val := PMem(Stack^.popv)^;
+  Val := TSVMMem(Stack^.popv).GetW;
   Dest.Write(Val, SizeOf(Val));
 end;
 
@@ -70,7 +68,7 @@ var
   Val:Int64;
 begin
   Dest := TStream(Stack^.popv);
-  Val := PMem(Stack^.popv)^;
+  Val := TSVMMem(Stack^.popv).GetI;
   Dest.Write(Val, SizeOf(Val));
 end;
 
@@ -80,7 +78,7 @@ var
   Val:Double;
 begin
   Dest := TStream(Stack^.popv);
-  Val := PMem(Stack^.popv)^;
+  Val := TSVMMem(Stack^.popv).GetD;
   Dest.Write(Val, SizeOf(Val));
 end;
 
@@ -90,7 +88,7 @@ var
   Val:String;
 begin
   Dest := TStream(Stack^.popv);
-  Val := PMem(Stack^.popv)^;
+  Val := TSVMMem(Stack^.popv).GetS;
   Dest.Write(Val[1], Length(Val));
 end;
 
@@ -99,7 +97,7 @@ var
   Dest:TStream;
 begin
   Dest := TStream(Stack^.popv);
-  PMem(Stack^.popv)^ := Dest.ReadByte;
+  TSVMMem(Stack^.popv).SetW(Dest.ReadByte);
 end;
 
 procedure _Stream_ReadWord(Stack:PStack); cdecl;
@@ -108,8 +106,8 @@ var
   Val:Cardinal;
 begin
   Dest := TStream(Stack^.popv);
-  Val := PMem(Stack^.popv)^;
   Dest.Read(Val, SizeOf(Val));
+  TSVMMem(Stack^.popv).SetW(Val);
 end;
 
 procedure _Stream_ReadInt(Stack:PStack); cdecl;
@@ -118,8 +116,8 @@ var
   Val:Int64;
 begin
   Dest := TStream(Stack^.popv);
-  Val := PMem(Stack^.popv)^;
   Dest.Read(Val, SizeOf(Val));
+  TSVMMem(Stack^.popv).SetI(Val);
 end;
 
 procedure _Stream_ReadFloat(Stack:PStack); cdecl;
@@ -128,8 +126,8 @@ var
   Val:Double;
 begin
   Dest := TStream(Stack^.popv);
-  Val := PMem(Stack^.popv)^;
   Dest.Read(Val, SizeOf(Val));
+  TSVMMem(Stack^.popv).SetD(Val);
 end;
 
 procedure _Stream_ReadStr(Stack:PStack); cdecl;
@@ -141,15 +139,15 @@ var
 begin
   Dest := TStream(Stack^.popv);
   Val := Stack^.popv;
-  Len := PMem(Stack^.popv)^;
+  Len := TSVMMem(Stack^.popv).GetW;
   SetLength(S, Len);
   Dest.Read(S[1], Len);
-  PMem(Val)^ := S;
+  TSVMMem(Stack^.popv).SetS(S);
 end;
 
 procedure _Stream_GetSize(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(TStream(Stack^.popv).Size));
+  Stack^.push(TSVMMem.CreateFW(TStream(Stack^.popv).Size));
 end;
 
 procedure _Stream_Clear(Stack:PStack); cdecl;
@@ -186,23 +184,22 @@ end;
 
 procedure _MemoryStream_LoadFromFile(Stack:PStack); cdecl;
 begin
-  TMemoryStream(Stack^.popv).LoadFromFile(PMem(Stack^.popv)^);
+  TMemoryStream(Stack^.popv).LoadFromFile(TSVMMem(Stack^.popv).GetS);
 end;
 
 procedure _MemoryStream_SaveToFile(Stack:PStack); cdecl;
 begin
-  TMemoryStream(Stack^.popv).SaveToFile(PMem(Stack^.popv)^);
+  TMemoryStream(Stack^.popv).SaveToFile(TSVMMem(Stack^.popv).GetS);
 end;
 
 {FILESTREAM}
 
 procedure _FileStream_Create(Stack:PStack); cdecl;
 var
-  p1,p2:PMem;
+  p:TSVMMem;
 begin
-  p1 := Stack^.popv;
-  p2 := Stack^.popv;
-  Stack^.push(TFileStream.Create(p1^, p2^));
+  p := TSVMMem(Stack^.popv);
+  Stack^.push(TFileStream.Create(p.GetS, TSVMMem(Stack^.popv).GetW));
 end;
 
 procedure _FileStream_Free(Stack:PStack); cdecl;
