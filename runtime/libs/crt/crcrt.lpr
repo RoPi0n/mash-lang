@@ -2,9 +2,7 @@ library crcrt;
 {$mode objfpc}{$H+}
 
 uses
-  crt;
-
-{$I ..\adp.inc}
+  crt, svm_api in '..\svm_api.pas';
 
 procedure _CursorBig(Stack:PStack); cdecl;
 begin
@@ -28,7 +26,7 @@ end;
 
 procedure _GotoXY32(Stack:PStack); cdecl;
 begin
-  crt.GotoXY32(PMem(Stack^.popv)^,PMem(Stack^.popv)^);
+  crt.GotoXY32(TSVMMem(Stack^.popv).GetW, TSVMMem(Stack^.popv).GetW);
 end;
 
 procedure _InsLine(Stack:PStack); cdecl;
@@ -38,38 +36,42 @@ end;
 
 procedure _KeyPressed(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(crt.KeyPressed));
+  Stack^.push(TSVMMem.Create);
+  TSVMMem(Stack^.peek).SetB(crt.KeyPressed);
 end;
 
 procedure _ReadKey(Stack:PStack); cdecl;
 var c:char;
 begin
- c:=#0;
+ c := #0;
  try
-  c:=ReadKey;
+   c := ReadKey;
  finally
-  Stack^.push(new_svmval(c));
+   Stack^.push(TSVMMem.CreateFS(c));
  end;
 end;
 
 procedure _Sound(Stack:PStack); cdecl;
 begin
-  crt.Sound(PMem(Stack^.popv)^);
+  crt.Sound(TSVMMem(Stack^.popv).GetW);
 end;
 
 procedure _WhereX32(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(crt.WhereX32));
+  Stack^.push(TSVMMem.CreateFW(crt.WhereX32));
 end;
 
 procedure _WhereY32(Stack:PStack); cdecl;
 begin
-  Stack^.push(new_svmval(crt.WhereY32));
+  Stack^.push(TSVMMem.CreateFW(crt.WhereY32));
 end;
 
 procedure _Window32(Stack:PStack); cdecl;
 begin
-  crt.Window32(PMem(Stack^.popv)^,PMem(Stack^.popv)^,PMem(Stack^.popv)^,PMem(Stack^.popv)^);
+  crt.Window32(TSVMMem(Stack^.popv).GetW,
+               TSVMMem(Stack^.popv).GetW,
+			   TSVMMem(Stack^.popv).GetW,
+			   TSVMMem(Stack^.popv).GetW);
 end;
 
 procedure _ClrEol(Stack:PStack); cdecl;
@@ -85,100 +87,105 @@ end;
 ////////////////////////////////////////////////
 procedure _GetDirectVideo(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(DirectVideo));
+  Stack^.push(TSVMMem.Create);
+  TSVMMem(Stack^.peek).SetB(DirectVideo);
 end;
 
 procedure _GetLastMode(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(LastMode));
+  Stack^.push(TSVMMem.CreateFW(LastMode));
 end;
 
 procedure _GetTextAttr(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(TextAttr));
+  Stack^.push(TSVMMem.CreateFW(TextAttr));
 end;
 
 procedure _GetWindMax(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(WindMax));
+  Stack^.push(TSVMMem.CreateFW(WindMax));
 end;
 
 procedure _GetWindMaxX(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(WindMaxX));
+  Stack^.push(TSVMMem.CreateFW(WindMaxX));
 end;
 
 procedure _GetWindMaxY(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(WindMaxY));
+  Stack^.push(TSVMMem.CreateFW(WindMaxY));
 end;
 
 procedure _GetWindMin(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(WindMin));
+  Stack^.push(TSVMMem.CreateFW(WindMin));
 end;
 
 procedure _GetWindMinX(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(WindMinX));
+  Stack^.push(TSVMMem.CreateFW(WindMinX));
 end;
 
 procedure _GetWindMinY(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(WindMinY));
+  Stack^.push(TSVMMem.CreateFW(WindMinY));
 end;
 
 procedure _GetCheckBreak(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(CheckBreak));
+  Stack^.push(TSVMMem.Create);
+  TSVMMem(Stack^.peek).SetB(CheckBreak);
 end;
 
 procedure _GetCheckEOF(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(CheckEOF));
+  Stack^.push(TSVMMem.Create);
+  TSVMMem(Stack^.peek).SetB(CheckEOF);
 end;
 
 procedure _GetCheckSnow(Stack:PStack); cdecl;
 begin
- Stack^.push(new_svmval(CheckSnow));
+  Stack^.push(TSVMMem.Create);
+  TSVMMem(Stack^.peek).SetB(CheckSnow);
 end;
-
-
 
 procedure _PRINT(Stack:PStack); cdecl;
 var s:string;
 begin
- s:=(PMem(Stack^.popv)^);
- write(s);
+  s := TSVMMem(Stack^.popv).GetS;
+  Write(s);
 end;
 
 procedure _PRINTLN(Stack:PStack); cdecl;
 var s:string;
 begin
- s:=(PMem(Stack^.popv)^);
- writeln(s);
+  s := TSVMMem(Stack^.popv).GetS;
+  WriteLn(s);
 end;
 
 procedure _PRINTFORMAT(Stack:PStack); cdecl;
-var s:string; //str, attr
+var
+  s:string; //str, attr
 begin
- s:=PMem(Stack^.popv)^;
- crt.TextAttr:=PMem(Stack^.popv)^;
- write(s);
+  s := TSVMMem(Stack^.popv).GetS;
+  crt.TextAttr := TSVMMem(Stack^.popv).GetW;
+  Write(s);
 end;
 
 procedure _INPUT(Stack:PStack); cdecl;
-var s:string;
+var
+  s:string;
 begin
- read(s);
- Stack^.push(new_svmval(s));
+  Read(s);
+  Stack^.push(TSVMMem.CreateFS(s));
 end;
 
 procedure _INPUTLN(Stack:PStack); cdecl;
-var s:string;
+var
+  s:string;
 begin
- readln(s);
- Stack^.push(new_svmval(s));
+  ReadLn(s);
+  Stack^.push(TSVMMem.CreateFS(s));
 end;
 
 exports _GetDirectVideo name 'GETDIRECTVIDEO';
@@ -193,7 +200,6 @@ exports _GetWindMinY name 'GETWINDMINY';
 exports _GetCheckBreak name 'GETCHECKBREAK';
 exports _GetCheckEOF name 'GETCHECKEOF';
 exports _GetCheckSnow name 'GETCHECKSNOW';
-
 
 exports  _CursorBig name 'CURSORBIG';
 exports  _CursorOff name 'CURSOROFF';
