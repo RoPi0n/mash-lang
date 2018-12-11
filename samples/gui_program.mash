@@ -1,7 +1,7 @@
 uses <bf>
 uses <threads>
 uses <crt>
-uses <forms>
+uses "forms.mash"
 
 str _Caption "Test form"
 //stream _Icon "Icon.ico"
@@ -12,31 +12,40 @@ var Form1, Canvas, Form1_Thr
 
 var MouseDowned = false
 
-proc Form1_CheckEvent(.Event):
-  if .Event == EVT_FormMouseDown:
-    MouseDowned = true
-  end
-
-  if .Event == EVT_FormMouseUp:
-    MouseDowned = false
-  end
-
-  if .Event == EVT_FormMouseMove:
-    var .x, .y
-    .x ?= _Form_LastEventArgAt(Form1, 1)
-    .y ?= _Form_LastEventArgAt(Form1, 0)
-
-    if MouseDowned:
-      _Canvas_LineTo(Canvas, .x, .y)
-    else:
-      _Canvas_MoveTo(Canvas, .x, .y)
+func Form1_CheckEvent(.Event):
+  switch .Event:
+    case EVT_FormMouseDown:
+      MouseDowned = true
+      return true
     end
 
-    Free(.x)
-    Free(.y)
+    case EVT_FormMouseUp:
+      MouseDowned = false
+      return true
+    end
+
+    case EVT_FormMouseMove:
+      var .x, .y
+      .x ?= _Form_LastEventArgAt(Form1, 1)
+      .y ?= _Form_LastEventArgAt(Form1, 0)
+
+      if MouseDowned:
+        _Canvas_LineTo(Canvas, .x, .y)
+      else:
+        _Canvas_MoveTo(Canvas, .x, .y)
+      end
+
+      Free(.x)
+      Free(.y)
+
+      return true
+    end
+
+    case EVT_FormCloseQuery:
+      Halt()
+    end
   end
-
-
+  return false
 end
 
 proc Form1_Thread(.ThreadContext, .Arg):
@@ -53,10 +62,13 @@ proc Form1_Thread(.ThreadContext, .Arg):
   var Event
   while true:
     Event ?= _Form_CheckEvent(Form1)
-    Form1_CheckEvent(Event)
+    if Form1_CheckEvent(Event):
+      Sleep(0)
+    else:
+      Sleep(1)
+    end
     Free(Event)
-    Sleep(1)
-    gc
+    gc()
   end
 end
 

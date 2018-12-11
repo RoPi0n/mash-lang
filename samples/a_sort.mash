@@ -1,28 +1,30 @@
 uses <bf>
 uses <crt>
 
-// Quick sorting algorithm.
-// Written on Mash!
+/*
+ *  Quick sorting algorithm.
+ *  Written on Mash!
+ */
 
 proc QSort(.arr, .left, .right):
   var .i = .left, .j = .right, .tmp, .pivot = .arr[(.left + .right) \ 2]
   .tmp ?= 0
 
-  while .i <= .j:
+  while .i < (.j + 1):
     while .arr[.i] < .pivot:
-      inc .i
+      .i++
     end
 
     while .arr[.j] > .pivot:
-      dec .j
+      .j--
     end
 
-    if .i <= .j:
+    if .i < (.j + 1):
       .tmp = .arr[.i]
       .arr[.i] = .arr[.j]
       .arr[.j] = .tmp
-      inc .i
-      dec .j
+      .i++
+      .j--
     end
   end
 
@@ -36,16 +38,18 @@ proc QSort(.arr, .left, .right):
 end
 
 
-// Bubble sorting algorithm.
-// Written on Mash!
+/*
+ *  Bubble sorting algorithm.
+ *  Written on Mash!
+ */
 
 proc BSort(.array):
   var .size, .i, .j, .tmp, .flag = new
-  .size ?= arrlen(.array)
+  .size ?= len(.array)
   .tmp ?= temp()
-  for(var .i = 0; .i < (.size - 1); inc .i):
+  for(var .i = 0; .i < (.size - 1); .i++):
     .flag = true
-    for(.j ?= 0; .j < (.size - 1); inc .j):
+    for(.j ?= 0; .j < (.size - 1); .j++):
       if .array[.j + 1] < .array[.j]:
         .tmp = .array[.j + 1]
         .array[.j + 1] = .array[.j]
@@ -61,13 +65,14 @@ proc BSort(.array):
 end
 
 
-// Print array into console.
-// Written on Mash!
+/*
+ *  Print array into console.
+ *  Written on Mash!
+ */
 
 proc PrintArray(.array):
-  for (var .i = 0; .i < arrlen(.array); inc .i):
-    Print(.array[.i])
-    Print(" ")
+  for (var .i = copy(0); .i < len(.array); inc .i):
+    Print(.array[.i], " ")
   end
   PrintLn(" ")
 end
@@ -75,27 +80,27 @@ end
 
 
 proc main():
-  var arr = new[10000]
+  var arr = new[100000]
 
-  Randomize()
-
-  for (var i = 9999; i >= 0; dec i):
-    arr[9999-i] ?= new(i)
+  for (var i = 0; i < 100000; i++):
+    arr[99999 - i] ?= copy(i)
   end
 
   var t1 = TickCnt()
-  QSort(arr, 0, 9999)
+  QSort(arr, 0, 99999)
   var t2 = TickCnt() - t1
-  PrintLn("Time of sorting: " + i2s(t2) + " ms.")
+  PrintLn("Time of sorting: " + t2 + " ms.")
 
   var arr2 = new[100]
 
-  for (var i = 99; i >= 0; dec i):
-    arr2[99-i] ?= new(i)
+  for (var i = 0; i < 100; i++):
+    arr2[99 - i] ?= copy(i)
   end
 
   BSort(arr2)
+
   PrintArray(arr2)
 
+  gc()
   InputLn()
 end
