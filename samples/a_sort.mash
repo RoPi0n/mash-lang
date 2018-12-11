@@ -6,6 +6,8 @@ uses <crt>
  *  Written on Mash!
  */
 
+{_mode_ argcounter-}
+
 proc QSort(.arr, .left, .right):
   var .i = .left, .j = .right, .tmp, .pivot = .arr[(.left + .right) \ 2]
   .tmp ?= 0
@@ -37,6 +39,7 @@ proc QSort(.arr, .left, .right):
   end
 end
 
+{_mode_ argcounter+}
 
 /*
  *  Bubble sorting algorithm.
