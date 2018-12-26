@@ -18,7 +18,7 @@ function TkPos(tk, s: string): cardinal;
 procedure PrpError(m: string);
 procedure PrpWarn(m: string);
 function IsVar(s: string; varmgr: TVarManager): boolean;
-function GetVar(s: string; varmgr: TVarManager): string;
+function GetVar(s: string; varmgr: TVarManager; IsPrepared: boolean = false): string;
 function PreprocessVarAction(varexpr, action: string; varmgr: TVarManager): string;
 function GetFullVarName(s: string): string;
 function GetCurrentMethodName: string;
@@ -36,7 +36,7 @@ var
   SwBlCounter: cardinal = 0;
   CsBlCounter: cardinal = 0;
   BlockStack: TList;
-  ConstDefs: TStringList;
+  ConstDefs, GlobalVars: TStringList;
   //VarDefs: TStringList;
   ClassStack: TList;
   ClassTable: TStringList;
@@ -101,20 +101,30 @@ begin
       Delete(s, 1, 1);
       s := LocalVarPref + s;
     end;
+
     Result := (CheckName(s) or (varmgr.DefinedVars.IndexOf(s) <> -1)) and
-      (ConstDefs.IndexOf(s) = -1);
+              (ConstDefs.IndexOf(s) = -1) or (GlobalVars.IndexOf(s) <> -1);
   end;
 end;
 
-function GetVar(s: string; varmgr: TVarManager): string;
+function GetVar(s: string; varmgr: TVarManager; IsPrepared: boolean = false): string;
 begin
   if s[1] = '$' then
     Delete(s, 1, 1);
 
+  if (not IsPrepared) then
+   begin
   if s[1] = '.' then
   begin
     Delete(s, 1, 1);
     s := {'$' + }LocalVarPref + s;
+  end;
+
+  if GlobalVars.IndexOf(s) = -1 then
+   begin
+     s := LocalVarPref + s;
+   end;
+
   end;
 
   if IsVar(s, varmgr) then
@@ -134,11 +144,16 @@ function GetFullVarName(s: string): string;
 begin
   if copy(s, 1, 1) = '$' then
     Delete(s, 1, 1);
+
+  if GlobalVars.IndexOf(s) = -1 then
+   s := LocalVarPref + s;
+
   if copy(s, 1, 1) = '.' then
   begin
     Delete(s, 1, 1);
     s := LocalVarPref + s;
   end;
+
   Result := s;
 end;
 
@@ -147,18 +162,18 @@ var
   CB: TCodeBlock;
   i: integer;
 begin
-  i := 1;
+  i := BlockStack.Count - 1;
   Result := 'global code';
-  if BlockStack.Count > 0 then
-    repeat
-      CB := TCodeBlock(BlockStack[BlockStack.Count - i]);
+  while i > 0 do
+   begin
+      CB := TCodeBlock(BlockStack[i]);
       if CB.bType in [btFunc, btProc] then
       begin
         Result := CB.mName;
         break;
       end;
-      Inc(i);
-    until BlockStack.Count - i = 0;
+      Dec(i);
+   end;
 end;
 
 function CutNextArg(var s: string): string;

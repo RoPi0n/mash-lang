@@ -103,7 +103,8 @@ type
     bcGC,     // run grabber
 
     {** constant's **}
-    bcPHC,    // push const
+    bcPHC,    // push copy of const
+    bcPHCP,   // push pointer to original const
 
     {** external call's **}
     bcPHEXMP, // push pointer to external method
@@ -167,7 +168,7 @@ begin
       Dec(p1);
     end;
     if (Tk(s, 1) = 'push') or (Tk(s, 1) = 'peek') or (Tk(s, 1) = 'pushc') or
-      (Tk(s, 1) = 'pushm') then
+      (Tk(s, 1) = 'pushm') or (Tk(s, 1) = 'pushcp') then
       Inc(p1, 5)
     else
     if Length(s) > 0 then
@@ -183,25 +184,36 @@ begin
       Outp.WriteByte(byte(bcPH));
       St_WriteCardinal(Outp, StrToQWord(Tk(s, 2)));
       s := '';
-    end;
+    end
+    else
     if Tk(s, 1) = 'peek' then
     begin
       Outp.WriteByte(byte(bcPK));
       St_WriteCardinal(Outp, StrToQWord(Tk(s, 2)));
       s := '';
-    end;
+    end
+    else
     if Tk(s, 1) = 'pushc' then
     begin
       Outp.WriteByte(byte(bcPHC));
       St_WriteCardinal(Outp, Constants.GetAddr(Tk(s, 2)));
       s := '';
-    end;
+    end
+    else
     if Tk(s, 1) = 'pushm' then
     begin
       Outp.WriteByte(byte(bcPHEXMP));
       St_WriteCardinal(Outp, Constants.GetAddr(Tk(s, 2)));
       s := '';
-    end;
+    end
+    else
+    if Tk(s, 1) = 'pushcp' then
+    begin
+      Outp.WriteByte(byte(bcPHCP));
+      St_WriteCardinal(Outp, Constants.GetAddr(Tk(s, 2)));
+      s := '';
+    end
+    else
     if Tk(s, 1) = 'pop' then
       Outp.WriteByte(byte(bcPP))
     else

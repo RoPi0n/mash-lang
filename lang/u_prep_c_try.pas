@@ -37,8 +37,8 @@ var
 begin
   TryNum := '__gen_try' + IntToStr(TryBlCounter);
   Inc(TryBlCounter);
-  Result := 'pushc ' + TryNum + '_finally' + sLineBreak + 'gpm' +
-    sLineBreak + 'pushc ' + TryNum + '_catch' + sLineBreak + 'gpm' +
+  Result := 'pushcp ' + TryNum + '_finally' +
+    sLineBreak + 'pushcp ' + TryNum + '_catch' +
     sLineBreak + 'tr';
   BlockStack.Add(TCodeBlock.Create(btTry, '-', 'trs' + sLineBreak +
     TryNum + '_catch:' + sLineBreak + 'gpm', TryNum + '_finally'));
@@ -60,6 +60,7 @@ function GenCatch: string;
 var
   CB: TCodeBlock;
 begin
+  Result := '';
   if BlockStack.Count > 0 then
   begin
     CB := TCodeBlock(BlockStack[BlockStack.Count - 1]);
@@ -91,6 +92,7 @@ function GenFinally: string;
 var
   CB: TCodeBlock;
 begin
+  Result := '';
   if BlockStack.Count > 0 then
   begin
     CB := TCodeBlock(BlockStack[BlockStack.Count - 1]);

@@ -219,28 +219,27 @@ begin
   // Allocation
 
   mname := '__class_' + MClass.CName + '_allocator';
-  Result := mname + ':' + sLineBreak + TempPushIt(IntToStr(MClass.AllocSize), varmgr) +
-    sLineBreak + TempPushIt('1', varmgr) + sLineBreak + 'newa' + sLineBreak;
+  Result := mname + ':' + sLineBreak + PushIt(IntToStr(MClass.AllocSize), varmgr, true, true) +
+    sLineBreak + PushIt('1', varmgr, true, true) + sLineBreak + 'newa' + sLineBreak;
 
   // Introspection
   if RTTI_Enable then
    Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.CName + sLineBreak +
-             'swp' + sLineBreak + 'pushc ' + ClassChildPref + 'type' + sLineBreak +
-             'gpm' + sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
+             'swp' + sLineBreak + 'pushcp ' + ClassChildPref + 'type' + sLineBreak +
+             'swp' + sLineBreak + 'peekai' + sLineBreak;
 
   // StructFree()
   Result := Result + 'pcopy' + sLineBreak + 'pushc ' + '__class_' +
-    MClass.CName + '_structure_free' + sLineBreak + 'swp' + sLineBreak +
-    'pushc ' + ClassChildPref + 'structfree' + sLineBreak + 'gpm' +
-    sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
+    MClass.CName + '_rem' + sLineBreak + 'swp' + sLineBreak +
+    'pushcp ' + ClassChildPref + 'rem' + sLineBreak + 'swp' +
+    sLineBreak + 'peekai' + sLineBreak;
 
   c := 0;
   while c < MClass.Methods.Count do
   begin
-    Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.MethodsLinks[c]
-      {MClass.CName + '__' + MClass.Methods[c]} + sLineBreak + 'swp' +
-      sLineBreak + 'pushc ' + ClassChildPref + MClass.Methods[c] +
-      sLineBreak + 'gpm' + sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
+    Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.MethodsLinks[c] +
+      sLineBreak + 'swp' + sLineBreak + 'pushcp ' + ClassChildPref + MClass.Methods[c] +
+      sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
     Inc(c);
   end;
 
@@ -248,28 +247,28 @@ begin
 
   // Clear memory
 
-  mname := '__class_' + MClass.CName + '_structure_free';
+  mname := '__class_' + MClass.CName + '_rem';
   Result := Result + sLineBreak + mname + ':';
 
   // Introspection
   if RTTI_Enable then
-   Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' + ClassChildPref + 'type' + sLineBreak +
-             'gpm' + sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'rem';
+   Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushcp ' + ClassChildPref + 'type' + sLineBreak +
+             'swp' + sLineBreak + 'pushai' + sLineBreak + 'rem';
 
-  Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
-    ClassChildPref + 'structfree' + sLineBreak + 'gpm' + sLineBreak +
+  Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushcp ' +
+    ClassChildPref + 'rem' + sLineBreak +
     'swp' + sLineBreak + 'pushai' + sLineBreak + 'rem';
 
   c := 0;
   while c < MClass.Methods.Count do
   begin
-    Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushc ' +
-      ClassChildPref + MClass.Methods[c] + sLineBreak + 'gpm' +
-      sLineBreak + 'swp' + sLineBreak + 'pushai' + sLineBreak + 'rem';
+    Result := Result + sLineBreak + 'pcopy' + sLineBreak + 'pushcp ' +
+      ClassChildPref + MClass.Methods[c] + sLineBreak + 'swp' +
+      sLineBreak + 'pushai' + sLineBreak + 'rem';
     Inc(c);
   end;
 
-  Result := Result {+ sLineBreak + 'gpm'} + sLineBreak + 'pop' +
+  Result := Result + sLineBreak + 'rem' + //sLineBreak + 'pop' +
     sLineBreak + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
 end;
 

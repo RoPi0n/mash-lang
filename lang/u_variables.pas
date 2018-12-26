@@ -39,15 +39,16 @@ begin
     AsmError('Invalid variable name "' + Name + '".');
   if DefinedVars.IndexOf(Name) = -1 then
     DefinedVars.Add(Name);
-  //else
-  // AsmError('Trying to redefine variable "'+name+'".');
+  {else
+   AsmError('Trying to redefine variable "'+name+'".');}
 end;
 
 function TVarManager.Get(Name: string): cardinal;
 begin
+  DefVar(Name);
   Result := DefinedVars.IndexOf(Name);
-  if Result = -1 then
-    AsmError('Invalid variable call "' + Name + '".');
+//  if Result = -1 then
+//   AsmError('Invalid variable call "' + Name + '".');
 end;
 
 end.

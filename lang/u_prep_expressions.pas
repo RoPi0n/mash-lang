@@ -19,17 +19,20 @@ function GetExprInBraces(s: string): string;
 function PreprocessExpression(s: string; varmgr: TVarManager): string;
 function IsEqExpr(s: string; varmgr: TVarManager): boolean;
 function ParseEqExpr(s: string; varmgr: TVarManager): string;
-function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True): string;
+function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True;
+  PushCP: boolean = False): string;
 function PopIt(s: string; varmgr: TVarManager): string;
 function TempPushIt(s: string; varmgr: TVarManager): string;
 function IsOpNew(s: string): boolean;
 function PreprocessOpNew(s: string; varmgr: TVarManager): string;
-function PreprocessCall(s: string; varmgr: TVarManager; SwapMode:boolean = false): string;
+function PreprocessCall(s: string; varmgr: TVarManager;
+  SwapMode: boolean = False): string;
 function PreprocessArrAction(arrexpr, action: string; varmgr: TVarManager): string;
 
 implementation
 
-function PreprocessCall(s: string; varmgr: TVarManager; SwapMode:boolean = false): string;
+function PreprocessCall(s: string; varmgr: TVarManager;
+  SwapMode: boolean = False): string;
 var
   bf, pn: string;
   sl: TStringList;
@@ -86,15 +89,15 @@ begin
     sl.Delete(sl.Count - 1);
 
     if SwapMode then
-     Result := Result + sLineBreak + 'swp';
+      Result := Result + sLineBreak + 'swp';
   end;
   FreeAndNil(sl);
 
   if ARGC_Enable then
-   begin
-     Result := Result + sLineBreak + PushIt(IntToStr(Argc), varmgr) +
-               sLineBreak + PopIt('argcount', varmgr);
-   end;
+  begin
+    Result := Result + sLineBreak + PushIt(IntToStr(Argc), varmgr) +
+      sLineBreak + PopIt('argcount', varmgr);
+  end;
 
   {if IsClassProcCallingAddr(s) then
    begin
@@ -115,15 +118,7 @@ begin
   while c > 0 do
   begin
     s := GetArrLvlVal(arrexpr, c);
-    if IsArr(s) then
-      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
-    else
-    if IsVar(s, varmgr) then
-      Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
-    else
-    if IsConst(s) then
-      Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
-    else
+
     if IsExpr(s) then
       Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
     else
@@ -140,14 +135,22 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
-          sLineBreak + 'gpm';
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc'
       else
         Result := Result + sLineBreak + 'invoke';
     end
+    else
+    if IsArr(s) then
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+    else
+    if IsVar(s, varmgr) then
+      Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
+    else
+    if IsConst(s) then
+      Result := Result + sLineBreak + 'pushcp ' + GetConst(s)
     {else
       PrpError('Error in operation with [<index>] -> "' + s + '".')};
     Dec(c);
@@ -179,7 +182,8 @@ begin
     PrpError('Invalid call "' + bf + '".');
 end;
 
-function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True): string;
+function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True;
+  PushCP: boolean = False): string;
 var
   bf: string;
   c: cardinal;
@@ -208,7 +212,7 @@ begin
     if IsArr(s) then
       Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
     else
-      Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+      Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
 
     if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
       Result := Result + sLineBreak + 'jc'
@@ -221,9 +225,14 @@ begin
   else
   if IsConst(s) then
   begin
-    Result := Result + sLineBreak + 'pushc ' + GetConst(s);
-    if PushTemporary then
-      Result := Result + sLineBreak + 'gpm';
+    if PushCP then
+      Result := Result + sLineBreak + 'pushcp ' + GetConst(s)
+    else
+    begin
+      Result := Result + sLineBreak + 'pushc ' + GetConst(s);
+      if PushTemporary then
+        Result := Result + sLineBreak + 'gpm';
+    end;
   end
   else
   if IsArr(s) then
@@ -231,8 +240,9 @@ begin
   else
   if IsEnumVals(s) then
   begin
-    Result := Result + sLineBreak + PushIt(IntToStr(CountEnumItems(s)), varmgr) +
-      sLineBreak + PushIt('1', varmgr) + sLineBreak + 'newa';
+    Result := Result + sLineBreak + PushIt(IntToStr(CountEnumItems(s)),
+      varmgr, True, True) + sLineBreak + PushIt('1', varmgr, True, True) +
+      sLineBreak + 'newa';
     // to return
 
     if PushTemporary then
@@ -246,7 +256,7 @@ begin
     begin                              { | copying pointer to array.}
       Result := Result + sLineBreak + 'pcopy' + sLineBreak +
         // [2] : val
-        PushIt(Trim(CutNextArg(s)), varmgr, False) + sLineBreak +
+        PushIt(Trim(CutNextArg(s)), varmgr, PushTemporary) + sLineBreak +
         // [1] : indx
         'swp' + sLineBreak + PushIt(IntToStr(c), varmgr, PushTemporary) + sLineBreak +
         // [0] : @arr
@@ -265,22 +275,23 @@ begin
     varmgr.DefVar(Bf);
     Result := Result + sLineBreak + 'new';
     if PushTemporary then
-     Result := Result + sLineBreak + 'gpm';
-    Result := Result + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) + sLineBreak +
-      'movp' + sLineBreak + 'push ' + GetVar('$' + Bf, varmgr);
+      Result := Result + sLineBreak + 'gpm';
+    Result := Result + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr, true) +
+      sLineBreak + 'movp' + sLineBreak + 'push ' + GetVar('$' + Bf, varmgr, true);
   end;
 
   if copy(bf, 1, 1) = '?' then //we need to push object by pointer!
-   Result := Result + sLineBreak {+ 'push ' + GetVar('$' + Bf, varmgr) + sLineBreak} + 'gvbp';
+    Result := Result + sLineBreak {+ 'push ' + GetVar('$' + Bf, varmgr) + sLineBreak}
+      + 'gvbp';
 end;
 
 
 function TempPushIt(s: string; varmgr: TVarManager): string;
-var
-  bf: string;
+{var
+  bf: string;}
 begin
   s := Trim(s);
-  bf := s;
+  //bf := s;
   Result := '';
   if Copy(s, 1, 1)[1] in ['@', '?'] then
     Delete(s, 1, 1);
@@ -303,7 +314,7 @@ begin
     if IsArr(s) then
       Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
     else
-      Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+      Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
 
     if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
       Result := Result + sLineBreak + 'jc'
@@ -325,7 +336,7 @@ begin
       'swp' + sLineBreak + 'pop'
   else
     Result := PushIt(s, varmgr);
-    //PrpError('Invalid call "' + bf + '".');
+  //PrpError('Invalid call "' + bf + '".');
 end;
 
 function IsExpr(s: string): boolean;
@@ -438,11 +449,11 @@ begin
   begin
     if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or (s[1] + s[2] = '<<') or
       (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or (s[1] + s[2] = '==') or
-      (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') or
-      (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
-      (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
-      (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
-      (s[1] + s[2] = '++') or (s[1] + s[2] = '--') then
+      (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') or (s[1] + s[2] = '+=') or
+      (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or (s[1] + s[2] = '/=') or
+      (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or (s[1] + s[2] = '&=') or
+      (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or (s[1] + s[2] = '++') or
+      (s[1] + s[2] = '--') then
     begin
       Result := s[1] + s[2];
       Delete(s, 1, 2);
@@ -551,20 +562,12 @@ begin
   TokensStack := TStringList.Create;
   s := Trim(s);
 
-  {while Length(s) > 1 do
-   if (s[1] = '(') and (s[Length(s)] = ')') then
-    begin
-      if BracesDelt(s) = 0 then
-       begin
-        Delete(s,1,1);
-        Delete(s,Length(s),1);
-        s := Trim(s);
-       end
-      else
-       break;
-    end
-   else
-    break;}
+  {bf := Trim(GetExprInBraces(s));
+  while (Length(bf) <> Length(s)) and (Length(bf) > 0) do
+   begin
+     s := bf;
+     bf := Trim(GetExprInBraces(s));
+   end;}
 
   if Length(s) > 0 then
     if s[1] in ['-', '+'] then
@@ -667,7 +670,8 @@ begin
       Delete(Bf, Length(Bf), 1);
       TokensStack[c] := Bf;
       Bf := '__m_reg_' + IntToStr(vn);
-      varmgr.DefVar(Bf);
+      if varmgr.DefinedVars.IndexOf(LocalVarPref + Bf) = -1 then
+       varmgr.DefVar(LocalVarPref + Bf);
       Inc(vn);
       Result := Result + sLineBreak + PreprocessExpression(TokensStack[c], varmgr) +
         sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) + sLineBreak + 'pop';
@@ -684,9 +688,10 @@ begin
       if (TokensStack[c] = '*') and (c > 0) and (c + 1 < TokensStack.Count) then
       begin
         Bf := '__m_reg_' + IntToStr(vn);
-        varmgr.DefVar(Bf);
+        if varmgr.DefinedVars.IndexOf(LocalVarPref + Bf) = -1 then
+         varmgr.DefVar(LocalVarPref + Bf);
         Inc(vn);
-        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr, True, True) +
           sLineBreak + TempPushIt(TokensStack[c - 1], varmgr) +
           sLineBreak + 'mul' + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) +
           sLineBreak + 'pop';
@@ -701,9 +706,10 @@ begin
       if (TokensStack[c] = '/') and (c > 0) and (c + 1 < TokensStack.Count) then
       begin
         Bf := '__m_reg_' + IntToStr(vn);
-        varmgr.DefVar(Bf);
+        if varmgr.DefinedVars.IndexOf(LocalVarPref + Bf) = -1 then
+         varmgr.DefVar(LocalVarPref + Bf);
         Inc(vn);
-        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr, True, True) +
           sLineBreak + TempPushIt(TokensStack[c - 1], varmgr) +
           sLineBreak + 'div' + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) +
           sLineBreak + 'pop';
@@ -718,9 +724,10 @@ begin
       if (TokensStack[c] = '%') and (c > 0) and (c + 1 < TokensStack.Count) then
       begin
         Bf := '__m_reg_' + IntToStr(vn);
-        varmgr.DefVar(Bf);
+        if varmgr.DefinedVars.IndexOf(LocalVarPref + Bf) = -1 then
+         varmgr.DefVar(LocalVarPref + Bf);
         Inc(vn);
-        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr, True, True) +
           sLineBreak + TempPushIt(TokensStack[c - 1], varmgr) +
           sLineBreak + 'mod' + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) +
           sLineBreak + 'pop';
@@ -735,9 +742,10 @@ begin
       if (TokensStack[c] = '\') and (c > 0) and (c + 1 < TokensStack.Count) then
       begin
         Bf := '__m_reg_' + IntToStr(vn);
-        varmgr.DefVar(Bf);
+        if varmgr.DefinedVars.IndexOf(LocalVarPref + Bf) = -1 then
+         varmgr.DefVar(LocalVarPref + Bf);
         Inc(vn);
-        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[c + 1], varmgr, True, True) +
           sLineBreak + TempPushIt(TokensStack[c - 1], varmgr) +
           sLineBreak + 'idiv' + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr) +
           sLineBreak + 'pop';
@@ -780,39 +788,39 @@ begin
     begin
       if (TokensStack[0] = '+') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'swp' + sLineBreak + 'add' {+ sLineBreak + 'gpm'};
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'add';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
       else
       if (TokensStack[0] = '-') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'swp' + sLineBreak + 'sub'{ + sLineBreak + 'gpm'};
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'sub';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
       else
       if (TokensStack[0] = '<<') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'swp' + sLineBreak + 'shl' {+ sLineBreak + 'gpm'};
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'shl';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
       else
       if (TokensStack[0] = '>>') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'swp' + sLineBreak + 'shr'{ + sLineBreak + 'gpm'};
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'shr';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
       else
       if (TokensStack[0] = '>=') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
           sLineBreak + 'swp' + sLineBreak + 'be' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
@@ -820,7 +828,7 @@ begin
       else
       if (TokensStack[0] = '<=') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
           sLineBreak + 'be' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
@@ -828,7 +836,7 @@ begin
       else
       if (TokensStack[0] = '<>') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
           sLineBreak + 'eq' + sLineBreak + 'not' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
@@ -836,7 +844,7 @@ begin
       else
       if (TokensStack[0] = '>') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
           sLineBreak + 'swp' + sLineBreak + 'bg' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
@@ -844,7 +852,7 @@ begin
       else
       if (TokensStack[0] = '<') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
           sLineBreak + 'bg' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
@@ -852,7 +860,7 @@ begin
       else
       if (TokensStack[0] = '==') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
           sLineBreak + 'eq' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
@@ -860,24 +868,24 @@ begin
       else
       if (TokensStack[0] = '&') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'and' {+ sLineBreak + 'gpm'};
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'and';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
       else
       if (TokensStack[0] = '|') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'or' {+ sLineBreak + 'gpm'};
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'or';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
       else
       if (TokensStack[0] = '^') then
       begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'swp' + sLineBreak + 'xor' {+ sLineBreak + 'gpm'};
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'xor';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
@@ -885,7 +893,7 @@ begin
       if (TokensStack[0] = '~') then
       begin
         Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'not'{ + sLineBreak + 'gpm'};
+          sLineBreak + 'not';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
       end
@@ -940,18 +948,19 @@ function IsEqExpr(s: string; varmgr: TVarManager): boolean;
 var
   Bf: string;
 begin
-  Result :=  False;
+  Result := False;
 
   {if IsExpr(s) then
   begin}
-    Bf := Trim(CutNextExprToken(s));
-    s := Trim(s);
+  Bf := Trim(CutNextExprToken(s));
+  s := Trim(s);
     {if IsVar(Bf, varmgr) or IsArr(Bf) then
     begin}
-      Bf := Trim(GetNextExprOp(s));
-      Result := (Bf = '=') or (Bf = '?=') or (Bf = '@=') or (Bf = '+=') or (Bf = '-=') or
-                (Bf = '*=') or (Bf = '/=') or (Bf = '\=') or (Bf = '%=') or (Bf = '&=') or
-                (Bf = '|=') or (Bf = '^=') or (Bf = '++') or (Bf = '--');
+  Bf := Trim(GetNextExprOp(s));
+  Result := (Bf = '=') or (Bf = '?=') or (Bf = '@=') or (Bf = '+=') or
+    (Bf = '-=') or (Bf = '*=') or (Bf = '/=') or (Bf = '\=') or
+    (Bf = '%=') or (Bf = '&=') or (Bf = '|=') or (Bf = '^=') or
+    (Bf = '++') or (Bf = '--');
     {end;
   end;}
 end;
@@ -987,19 +996,19 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc' + sLineBreak +
-        PushIt(Bf, varmgr) + sLineBreak + 'mov'
+          PushIt(Bf, varmgr) + sLineBreak + 'mov'
       else
         Result := Result + sLineBreak + 'invoke' + sLineBreak +
-        PushIt(Bf, varmgr) + sLineBreak + 'mov';
+          PushIt(Bf, varmgr) + sLineBreak + 'mov';
     end
     else
     if IsArr(s) then
-      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) + sLineBreak
-        + PushIt(Bf, varmgr) + sLineBreak + 'mov'
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) +
+        sLineBreak + PushIt(Bf, varmgr) + sLineBreak + 'mov'
     else
       Result := PushIt(s, varmgr) + sLineBreak + PushIt(Bf, varmgr) + sLineBreak + 'mov';
   end
@@ -1024,19 +1033,19 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc' + sLineBreak +
-        PushIt(Bf, varmgr) + sLineBreak + 'movbp'
+          PushIt(Bf, varmgr) + sLineBreak + 'movbp'
       else
         Result := Result + sLineBreak + 'invoke' + sLineBreak +
-        PushIt(Bf, varmgr) + sLineBreak + 'movbp';
+          PushIt(Bf, varmgr) + sLineBreak + 'movbp';
     end
     else
     if IsArr(s) then
-      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) + sLineBreak
-        + PushIt(Bf, varmgr) + sLineBreak + 'movbp'
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) +
+        sLineBreak + PushIt(Bf, varmgr) + sLineBreak + 'movbp'
     else
       Result := PushIt(s, varmgr) + sLineBreak + PushIt(Bf, varmgr) +
         sLineBreak + 'movbp';
@@ -1064,7 +1073,7 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc' + sLineBreak + PopIt(Bf, varmgr)
@@ -1073,36 +1082,37 @@ begin
     end
     else
     if IsArr(s) then
-      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) + sLineBreak
-        + PopIt(Bf, varmgr)
+      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) +
+        sLineBreak + PopIt(Bf, varmgr)
     else
       Result := PushIt(s, varmgr) + sLineBreak + PopIt(Bf, varmgr);
   end
   else
   if (Op = '++') or (Op = '--') then
-   begin
-     Result := Result + sLineBreak + PushIt(Bf, varmgr) + sLineBreak;
-     case Op[1] of
+  begin
+    Result := Result + sLineBreak + PushIt(Bf, varmgr) + sLineBreak;
+    case Op[1] of
       '+': Result := Result + 'inc';
       '-': Result := Result + 'dec';
-     end;
-     Result := Result + sLineBreak + 'pop';
-     if Length(Trim(s)) > 0 then
-      PrpError('Invalid construction: "' + Bf + ' ' + Op + ' ' + s +'".');
-   end
+    end;
+    Result := Result + sLineBreak + 'pop';
+    if Length(Trim(s)) > 0 then
+      PrpError('Invalid construction: "' + Bf + ' ' + Op + ' ' + s + '".');
+  end
   else
   begin
-    Result := Result + sLineBreak + PushIt(s, varmgr) + sLineBreak + PushIt(Bf, varmgr) + sLineBreak;
+    Result := Result + sLineBreak + PushIt(s, varmgr) + sLineBreak +
+      PushIt(Bf, varmgr) + sLineBreak;
     case Op[1] of
-     '+': Result := Result + 'add';
-     '-': Result := Result + 'sub';
-     '*': Result := Result + 'mul';
-     '/': Result := Result + 'div';
-     '\': Result := Result + 'idiv';
-     '%': Result := Result + 'mod';
-     '&': Result := Result + 'and';
-     '|': Result := Result + 'or';
-     '^': Result := Result + 'xor';
+      '+': Result := Result + 'add';
+      '-': Result := Result + 'sub';
+      '*': Result := Result + 'mul';
+      '/': Result := Result + 'div';
+      '\': Result := Result + 'idiv';
+      '%': Result := Result + 'mod';
+      '&': Result := Result + 'and';
+      '|': Result := Result + 'or';
+      '^': Result := Result + 'xor';
     end;
     Result := Result + sLineBreak + 'pop';
   end;
@@ -1143,44 +1153,45 @@ begin
         if IsExpr(bf) then
           Result := Result + sLineBreak + PreprocessExpression(bf, varmgr)
         else
-          Result := Result + sLineBreak + PushIt(bf, varmgr);
+          Result := Result + sLineBreak + PushIt(bf, varmgr, True, True);
         Dec(i);
       end;
-      Result := Result + sLineBreak + PushIt(IntToStr(lvl), varmgr) +
+      Result := Result + sLineBreak + PushIt(IntToStr(lvl), varmgr, True, True) +
         sLineBreak + 'newa';
     end
     else
     begin //for classes...
       bf := '';
       if Length(GetProcName(s)) > 0 then
-       begin
-         bf := s;
-         s := Trim(GetProcName(s));
-       end;
+      begin
+        bf := s;
+        s := Trim(GetProcName(s));
+      end;
 
       mc := FindClassRec(s);
       if mc = nil then
-       PrpError('Not exist class object allocation "'+s+'".');
+        PrpError('Not exist class object allocation "' + s + '".');
 
       if ConstDefs.IndexOf('__class_' + s + '_allocator') = -1 then
         ConstDefs.Add('__class_' + s + '_allocator');
 
-      Result := Result + TempPushIt('__class_' + s + '_allocator', varmgr) +
-        sLineBreak + 'jc';
+      Result := Result + 'pushcp ' + '__class_' + s + '_allocator' + sLineBreak + 'jc';
 
       if Length(bf) > 0 then
-       begin
-         i := mc.Methods.IndexOf('create');
-         if i = -1 then
-          PrpError('Calling to class "' + s + '" constructor, but this class haven''t constructor!' + sLineBreak +
-                   'Declarate class "' + s + '" constructor (proc create) or change this allocation construction to fix that error.');
-                                         //.this
-         Result := Result + sLineBreak + 'pcopy' + sLineBreak +
-                   PreprocessCall(bf, varmgr, true) + sLineBreak;
+      begin
+        i := mc.Methods.IndexOf('create');
+        if i = -1 then
+          PrpError('Calling to class "' + s +
+            '" constructor, but this class haven''t constructor!' + sLineBreak +
+            'Declarate class "' + s +
+            '" constructor (proc create) or change this allocation construction to fix that error.');
+        //.this
+        Result := Result + sLineBreak + 'pcopy' + sLineBreak +
+          PreprocessCall(bf, varmgr, True) + sLineBreak;
 
-         Result := Result + 'pushc ' + mc.MethodsLinks[i] +
-                   sLineBreak + 'gpm' + sLineBreak + 'jc';
-       end;
+        Result := Result + 'pushcp ' + mc.MethodsLinks[i] +
+          sLineBreak + 'jc';
+      end;
     end;
   end;
 end;

@@ -181,22 +181,22 @@ begin
         Inc(ChrCounter);
         s := Trim(s);
         if Length(s) = 0 then
-          Result := Result + '.this'
+          Result := Result + 'this'
         else
         if (copy(s, 1, 1)[1] in ['[', ']', ')']) or (copy(s, 1, 2) = '->') then
-          Result := Result + '.this'
+          Result := Result + 'this'
         else
         if copy(s, 1, 1) = '(' then
           begin
             Delete(s, 1, 1);
             s := Trim(s);
-            Result := Result + '(.this';
+            Result := Result + '(this';
             if Copy(s, 1, 1) <> ')' then
              Result := Result + ',';
           end
         else
         begin
-          Result := Result + '.this[' + ClassChildPref;
+          Result := Result + 'this[' + ClassChildPref;
           BraceOpenned := True;
           while Length(s) > 0 do
           begin

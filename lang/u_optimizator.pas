@@ -32,9 +32,9 @@ begin
     s := Lines[i];
     if length(s) > 5 then
       if s[1] = 'p' then
-        if Copy(s, 1, 5) = 'pushc' then
+        if (Copy(s, 1, 5) = 'pushc') or (Copy(s, 1, 6) = 'pushcp') then
         begin
-          Delete(s, 1, 5);
+          Delete(s, 1, pos(' ', s));
           s := Trim(s);
 
           IsWaste := False;

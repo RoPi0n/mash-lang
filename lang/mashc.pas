@@ -45,10 +45,11 @@ var
   Tm, Tm2: cardinal;
   OutFilePath, OutDebugInfoFilePath, s: string;
   dbgig:boolean = false;
+  outasmp:boolean = false;
 begin
   try
   writeln('Mash lang!');
-  writeln('Version: 1.2, Pavel Shiryaev (c) from 2018.');
+  writeln('Version: 1.3, Pavel Shiryaev (c) from 2018.');
   writeln('See more at: https://github.com/RoPi0n/mash-lang');
   if ParamCount = 0 then
   begin
@@ -72,6 +73,7 @@ begin
     writeln(' /mdbgo <file>  - write debug info in <file> (default - change extension to "*.mdbg").');
     writeln(' /outinf+       - enable output hints.');
     writeln(' /outinf-       - disable output hints (default).');
+    writeln(' /oasmp         - out assembly listing of common part of code.');
     halt;
   end;
 
@@ -152,6 +154,9 @@ begin
 
       if s = '/outinf-' then
        Hints_Enable := false;
+
+      if s = '/oasmp' then
+       outasmp := true;
 
       Inc(c);
     end;
@@ -257,6 +262,9 @@ begin
 
     if EnableOptimization then
       OptimizeCode(Code);
+
+    if outasmp then
+      Code.SaveToFile(ChangeFileExt(OutFilePath, '.partof.asm'));
 
     Imports := TImportSection.Create(Code);
     Imports.ParseSection;

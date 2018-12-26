@@ -113,12 +113,12 @@ begin
   ForNum := '__gen_for_' + IntToStr(ForBlCounter);
   Inc(ForBlCounter);
   Result := sLineBreak + Defs + sLineBreak + ForNum + ':' + sLineBreak +
-    'pushc ' + ForNum + '_for_end' + sLineBreak + 'gpm' + sLineBreak +
+    'pushcp ' + ForNum + '_for_end' + sLineBreak +
     Expr + sLineBreak + 'jz' + sLineBreak + 'pop' + sLineBreak;
 
   BlockStack.Add(TCodeBlock.Create(btFor, '', sLineBreak + Ops +
-    sLineBreak + 'pushc ' + ForNum + sLineBreak + 'gpm' + sLineBreak +
-    'jp' + sLineBreak + ForNum + '_for_end:' + sLineBreak, ForNum + '_for_end'));
+    sLineBreak + 'pushcp ' + ForNum + sLineBreak + 'jp' + sLineBreak +
+    ForNum + '_for_end:' + sLineBreak, ForNum + '_for_end'));
 end;
 
 
@@ -375,12 +375,24 @@ begin
   begin
     Delete(s, 1, length('var'));
     s := Trim(s);
-    Result := PreprocessVarDefines(s, varmgr);
-    if GetCurrentMethodName = 'global code' then
+    {if GetCurrentMethodName = 'global code' then
     begin
+      Result := PreprocessVarDefines(s, varmgr, true);
       InitCode.Add(Result);
       Result := '';
-    end;
+    end
+    else
+    Result := PreprocessVarDefines(s, varmgr);}
+
+    if LocalVarPref = '' then
+    begin
+      Result := PreprocessVarDefines(s, varmgr, true);
+      InitCode.Add(Result);
+      Result := '';
+    end
+    else
+    Result := PreprocessVarDefines(s, varmgr);
+
   end
   else
   {** Proc/Func **}
@@ -455,18 +467,6 @@ begin
   if IsEnumDef(s) then
     Result := PreprocessEnum(s)
   else
-  {** Endp **}
-  {if Tk(s, 1) = 'endp' then
-  begin
-    Delete(s, 1, length('endp'));
-    if pos('.', LocalVarPref) > 0 then
-     Delete(LocalVarPref, 1, pos('.', LocalVarPref))
-    else
-    if Length(LocalVarPref) > 0 then
-     LocalVarPref := '';
-    Result := 'jr';
-  end
-  else}
   if Tk(s, 1) = 'super' then
   begin
     Result := 'pushc super.' + Tk(s, 2) + sLineBreak + 'gpm' + sLineBreak + 'jc';
@@ -497,7 +497,7 @@ begin
     if IsArr(s) then
      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
     else
-     Result := Result + sLineBreak + 'pushc ' + GetConst('!'+s) + sLineBreak + 'gpm';
+     Result := Result + sLineBreak + 'pushcp ' + GetConst('!'+s);
 
     if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
       Result := Result + sLineBreak + 'jc'
@@ -799,78 +799,6 @@ begin
       else
         PrpError('Dec "' + s + '"');
       Result := Result + sLineBreak + 'dec';
-      Result := Result + sLineBreak + 'pop';
-    end
-    else
-    if Tk(s, 1) = 'incw' then
-    begin
-      Delete(s, 1, length('incw'));
-      s := Trim(s);
-      if IsVar(s, varmgr) then
-        Result := PreprocessVarAction(s, 'push', varmgr)
-      else
-      if IsConst(s) then
-        PrpError('Inc constant value "' + s + '".')
-      else
-      if IsArr(s) then
-        Result := PreprocessArrAction(s, 'pushai', varmgr)
-      else
-        PrpError('Incw "' + s + '"');
-      Result := Result + sLineBreak + 'incw';
-      Result := Result + sLineBreak + 'pop';
-    end
-    else
-    if Tk(s, 1) = 'decw' then
-    begin
-      Delete(s, 1, length('decw'));
-      s := Trim(s);
-      if IsVar(s, varmgr) then
-        Result := PreprocessVarAction(s, 'push', varmgr)
-      else
-      if IsConst(s) then
-        PrpError('Dec constant value "' + s + '".')
-      else
-      if IsArr(s) then
-        Result := PreprocessArrAction(s, 'pushai', varmgr)
-      else
-        PrpError('Decw "' + s + '"');
-      Result := Result + sLineBreak + 'decw';
-      Result := Result + sLineBreak + 'pop';
-    end
-    else
-    if Tk(s, 1) = 'inci' then
-    begin
-      Delete(s, 1, length('inci'));
-      s := Trim(s);
-      if IsVar(s, varmgr) then
-        Result := PreprocessVarAction(s, 'push', varmgr)
-      else
-      if IsConst(s) then
-        PrpError('Inc constant value "' + s + '".')
-      else
-      if IsArr(s) then
-        Result := PreprocessArrAction(s, 'pushai', varmgr)
-      else
-        PrpError('Inci "' + s + '"');
-      Result := Result + sLineBreak + 'inci';
-      Result := Result + sLineBreak + 'pop';
-    end
-    else
-    if Tk(s, 1) = 'deci' then
-    begin
-      Delete(s, 1, length('deci'));
-      s := Trim(s);
-      if IsVar(s, varmgr) then
-        Result := PreprocessVarAction(s, 'push', varmgr)
-      else
-      if IsConst(s) then
-        PrpError('Dec constant value "' + s + '".')
-      else
-      if IsArr(s) then
-        Result := PreprocessArrAction(s, 'pushai', varmgr)
-      else
-        PrpError('Deci "' + s + '"');
-      Result := Result + sLineBreak + 'deci';
       Result := Result + sLineBreak + 'pop';
     end
     else
@@ -1469,19 +1397,21 @@ begin
   ClassStack := TList.Create;
 
   ClassTable := TStringList.Create;
-  ClassTable.Add('structfree');
+  ClassTable.Add('rem');
   CN := TConstant.Create;
-  CN.c_names.Add(ClassChildPref + 'structfree');
+  CN.c_names.Add(ClassChildPref + 'rem');
   CN.c_type := ctUnsigned64;
   St_WriteCardinal(CN.c_value, 0);
   Constants.Add(CN);
-  ConstDefs.Add(ClassChildPref + 'structfree');
-
+  ConstDefs.Add(ClassChildPref + 'rem');
+  GlobalVars := TStringList.Create;
   if ARGC_Enable then
    begin
      varmgr.DefVar('argcount');
+     GlobalVars.Add('argcount');
    end;
   //VarDefs := TStringList.Create;
+
 end;
 
 procedure FreePreprocessor(varmgr: TVarManager);
@@ -1517,6 +1447,8 @@ begin
   FreeAndNil(ConstDefs);
   //FreeAndNil(InitCode);
   //FreeAndNil(VarDefs);
+
+  FreeAndNil(GlobalVars);
 end;
 
 end.

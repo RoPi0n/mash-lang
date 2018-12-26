@@ -40,7 +40,7 @@ begin
     ExprCode := PreprocessExpression(s, varmgr)
   else
     ExprCode := PushIt(s, varmgr);
-  Result := 'pushc ' + IfNum + '_end' + sLineBreak + 'gpm' + sLineBreak +
+  Result := 'pushcp ' + IfNum + '_end' + sLineBreak +
     ExprCode + sLineBreak + 'jz' + sLineBreak + 'pop';
   BlockStack.Add(TCodeBlock.Create(btIf, '-', IfNum + '_else_end', IfNum + '_end'));
 end;
@@ -69,7 +69,7 @@ begin
     begin
       if CB.bMeta = '+' then
         PrpError('Using operator "else" more than once for one construction "if".');
-      Result := 'pushc ' + CB.bMCode + sLineBreak + 'gpm' + sLineBreak +
+      Result := 'pushcp ' + CB.bMCode + sLineBreak +
         'jp' + sLineBreak + CB.bEndCode + ':';
       CB.bMeta := '+';
     end

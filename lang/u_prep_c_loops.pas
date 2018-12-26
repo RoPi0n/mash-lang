@@ -41,11 +41,11 @@ begin
     ExprCode := PreprocessExpression(s, varmgr)
   else
     ExprCode := PushIt(s, varmgr);
-  Result := WhileNum + ':' + sLineBreak + 'pushc ' + WhileNum + '_end' +
-    sLineBreak + 'gpm' + sLineBreak + ExprCode + sLineBreak + 'jz' +
+  Result := WhileNum + ':' + sLineBreak + 'pushcp ' + WhileNum + '_end' +
+    sLineBreak + ExprCode + sLineBreak + 'jz' +
     sLineBreak + 'pop';
-  BlockStack.Add(TCodeBlock.Create(btWhile, '', 'pushc ' + WhileNum +
-    sLineBreak + 'gpm' + sLineBreak + 'jp' + sLineBreak + WhileNum +
+  BlockStack.Add(TCodeBlock.Create(btWhile, '', 'pushcp ' + WhileNum +
+    sLineBreak + 'jp' + sLineBreak + WhileNum +
     '_end:', WhileNum + '_end'));
 end;
 
@@ -75,8 +75,8 @@ begin
     ExprCode := PreprocessExpression(s, varmgr)
   else
     ExprCode := PushIt(s, varmgr);
-  BlockStack.Add(TCodeBlock.Create(btUntil, '', 'pushc ' + UntilNum +
-    sLineBreak + 'gpm' + sLineBreak + ExprCode + sLineBreak + 'jz' +
+  BlockStack.Add(TCodeBlock.Create(btUntil, '', 'pushcp ' + UntilNum +
+    sLineBreak + ExprCode + sLineBreak + 'jz' +
     sLineBreak + 'pop' + sLineBreak + UntilNum + '_end:', UntilNum + '_end'));
 end;
 

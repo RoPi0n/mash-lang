@@ -159,7 +159,7 @@ begin
         CB := TCodeBlock(BlockStack[BlockStack.Count - i]);
         if CB.bType in [btFor, btWhile, btUntil, btCase] then
         begin
-          Result := 'pushc ' + CB.bEndCode + sLineBreak + 'gpm' + sLineBreak + 'jp';
+          Result := 'pushcp ' + CB.bEndCode + sLineBreak + 'jp';
           break;
         end;
         Inc(i);
@@ -167,7 +167,7 @@ begin
       if Result = '' then
       begin
         CB := TCodeBlock(BlockStack[BlockStack.Count - 1]);
-        Result := 'pushc ' + CB.bEndCode + sLineBreak + 'gpm' + sLineBreak + 'jp';
+        Result := 'pushcp ' + CB.bEndCode + sLineBreak + 'jp';
       end;
     end;
   end

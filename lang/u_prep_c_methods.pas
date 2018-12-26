@@ -72,9 +72,9 @@ begin
 
   if IsClassM then
    if Length(s) > 0 then
-    s := '.this, ' + s
+    s := 'this, ' + s
    else
-    s := '.this';
+    s := 'this';
 
   while length(s) > 0 do
   begin
@@ -96,11 +96,19 @@ begin
     begin
       if bf[1] = '$' then
         Delete(bf, 1, 1);
-      if bf[1] <> '.' then
-        AsmWarn('Receiving arguments in global variable "' + bf +
+
+      if GlobalVars.IndexOf(bf) <> -1 then
+       PrpError('Receiving global variable as argument "' + bf +
           '" in proc "' + pn + '".');
+
       if varmgr.DefinedVars.IndexOf(bf) = -1 then
       begin
+        if GlobalVars.IndexOf(bf) = -1 then
+         begin
+           varmgr.DefVar(LocalVarPref + bf);
+           bf := LocalVarPref + bf;
+         end
+        else
         if bf[1] <> '.' then
         begin
           Delete(bf, 1, 1);
@@ -114,7 +122,7 @@ begin
           bf := {'$' + }LocalVarPref + bf;
         end;
       end;
-      Result := Result + sLineBreak + PreprocessVarAction(bf, 'peek', varmgr) +
+      Result := Result + sLineBreak + 'peek ' + GetVar(bf, varmgr, true) +
         sLineBreak + 'pop';
     end
     else
