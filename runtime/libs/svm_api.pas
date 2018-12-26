@@ -11,7 +11,10 @@ const
   GrabberBlockSize = 1024 * 256;
   
 type
-  
+  TInstructionPointer = cardinal;
+  TByteArr = array of byte;
+  PByteArr = ^TByteArr;
+
   {** Grabber **}
   
   TGrabber = object
@@ -101,6 +104,7 @@ type
   public
     items: array of pointer;
     size, i_pos: cardinal;
+	parent_vm: pointer;
     procedure push(p: pointer);
     function peek: pointer;
     procedure pop;
@@ -111,9 +115,40 @@ type
 
   PStack = ^TStack;
   
-  const
-    StackBlockSize = 256;
+const
+  StackBlockSize = 256;
+
+{** Callback stack **}
   
+const
+  CallBackStackBlockSize = 1024;
+
+type
+  TCallBackStack = object
+  public
+    items: array of TInstructionPointer;
+    i_pos, size: cardinal;
+    procedure init;
+    procedure push(ip: TInstructionPointer);
+    function peek: TInstructionPointer;
+    function popv: TInstructionPointer;
+    procedure pop;
+  end;
+ 
+{** vm **}
+
+  TSVM = object
+  public
+    ip,end_ip: TInstructionPointer;
+    mainclasspath: string;
+    mem: pointer;
+    stack: TStack;
+    cbstack: TCallBackStack;
+    bytes: PByteArr;
+    grabber: TGrabber;
+  end;
+  
+  PSVM = ^TSVM;
   
 implementation
 
@@ -345,7 +380,12 @@ function TSVMMem.GetS:string;
 begin
   Result := '';
   case m_type of
-    svmtWord: Result := IntToStr(PCardinal(m_val)^);
+    svmtWord: begin
+                if (PCardinal(m_val)^ >= 0) and (PCardinal(m_val)^ <= 255) then
+                 Result := Chr(PCardinal(m_val)^)
+                else
+                 Result := IntToStr(PCardinal(m_val)^);
+              end;
     svmtInt:  Result := IntToStr(PInt64(m_val)^);
     svmtReal: Result := FloatToStr(PDouble(m_val)^);
     svmtStr:  Result := PString(m_val)^;
@@ -728,7 +768,7 @@ end;
 procedure TSVMMem.OpDec;
 begin
   case m_type of
-    svmtWord: SetW(GetW - 1);
+    svmtWord: SetI(GetW - 1);
     svmtInt: SetI(GetI - 1);
     svmtReal: SetD(GetD - 1);
     svmtStr:  Error(reVarInvalidOp);
@@ -796,7 +836,7 @@ procedure TSVMMem.OpSub(m:TSVMMem);
 begin
   case m_type of
     svmtWord: case m.m_type of
-                svmtWord: SetW(GetW             - m.GetW);
+                svmtWord: SetI(GetW             - m.GetW);
                 svmtInt:  SetI(GetW             - m.GetI);
                 svmtReal: SetD(GetW             - m.GetD);
                 svmtStr:  SetD(GetW             - StrToFloat(m.GetS));
@@ -868,7 +908,7 @@ procedure TSVMMem.OpMul(m:TSVMMem);
 begin
   case m_type of
     svmtWord: case m.m_type of
-                svmtWord: SetW(GetW             * m.GetW);
+                svmtWord: SetI(GetW             * m.GetW);
                 svmtInt:  SetI(GetW             * m.GetI);
                 svmtReal: SetD(GetW             * m.GetD);
                 svmtStr:  SetD(GetW             * StrToFloat(m.GetS));
@@ -904,19 +944,19 @@ procedure TSVMMem.OpIDiv(m:TSVMMem);
 begin
   case m_type of
     svmtWord: case m.m_type of
-                svmtWord: SetW(GetW             div m.GetW);
-                svmtInt:  SetW(GetW             div m.GetI);
-                svmtReal: SetW(Trunc(GetW       / m.GetD));
-                svmtStr:  SetW(Trunc(GetW       / StrToFloat(m.GetS)));
+                svmtWord: SetI(GetW             div m.GetW);
+                svmtInt:  SetI(GetW             div m.GetI);
+                svmtReal: SetI(Trunc(GetW       / m.GetD));
+                svmtStr:  SetI(Trunc(GetW       / StrToFloat(m.GetS)));
                 else
                   Error(reVarInvalidOp);
               end;
 
     svmtInt:  case m.m_type of
-                svmtWord: SetW(GetI             div m.GetW);
-                svmtInt:  SetW(GetI             div m.GetI);
-                svmtReal: SetW(Trunc(GetI       / m.GetD));
-                svmtStr:  SetW(Trunc(GetI       / StrToFloat(m.GetS)));
+                svmtWord: SetI(GetI             div m.GetW);
+                svmtInt:  SetI(GetI             div m.GetI);
+                svmtReal: SetI(Trunc(GetI       / m.GetD));
+                svmtStr:  SetI(Trunc(GetI       / StrToFloat(m.GetS)));
                 else
                   Error(reVarInvalidOp);
               end;
@@ -998,6 +1038,7 @@ end;
 procedure TSVMMem.ArrSet(index: cardinal; val:pointer);
 begin
   case m_type of
+    svmtWord: PString(m_val)^[index] := Chr(TSVMMem(val).GetW);
     svmtStr: PString(m_val)^[index] := TSVMMem(val).GetS[1];
     svmtArr: PMemArray(m_val)^[index] := val;
     else
@@ -1010,7 +1051,7 @@ begin
   Result := nil;
   case m_type of
     svmtStr: begin
-               Result := TSVMMem.CreateFS(PString(m_val)^[index]);
+               Result := TSVMMem.CreateFW(Ord(PString(m_val)^[index]));
                grabber^.AddTask(Result);
              end;
     svmtArr: Result := PMemArray(m_val)^[index];
@@ -1088,6 +1129,47 @@ begin
   SetLength(items, StackBlockSize);
   size := StackBlockSize;
   i_pos := 0;
+end;
+
+{** Callback stack **}
+
+procedure TCallBackStack.init;
+begin
+  SetLength(items, CallBackStackBlockSize);
+  i_pos := 0;
+  size := CallBackStackBlockSize;
+end;
+
+procedure TCallBackStack.push(ip: TInstructionPointer);
+begin
+  items[i_pos] := ip;
+  inc(i_pos);
+  if i_pos >= size then
+   begin
+     size := size + CallBackStackBlockSize;
+     SetLength(items, size)
+   end;
+end;
+
+function TCallBackStack.popv: TInstructionPointer;
+begin
+  dec(i_pos);
+  Result := items[i_pos];
+end;
+
+function TCallBackStack.peek: TInstructionPointer;
+begin
+  Result := items[i_pos - 1];
+end;
+
+procedure TCallBackStack.pop;
+begin
+  dec(i_pos);
+  if size - i_pos > CallBackStackBlockSize then
+   begin
+     size := size - CallBackStackBlockSize;
+     SetLength(items, size);
+   end;
 end;
 
 end.
