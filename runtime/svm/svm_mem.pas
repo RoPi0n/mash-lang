@@ -280,7 +280,12 @@ function TSVMMem.GetS:string;
 begin
   Result := '';
   case m_type of
-    svmtWord: Result := IntToStr(PCardinal(m_val)^);
+    svmtWord: begin
+                if (PCardinal(m_val)^ >= 0) and (PCardinal(m_val)^ <= 255) then
+                 Result := Chr(PCardinal(m_val)^)
+                else
+                 Result := IntToStr(PCardinal(m_val)^);
+              end;
     svmtInt:  Result := IntToStr(PInt64(m_val)^);
     svmtReal: Result := FloatToStr(PDouble(m_val)^);
     svmtStr:  Result := PString(m_val)^;
@@ -663,7 +668,7 @@ end;
 procedure TSVMMem.OpDec;
 begin
   case m_type of
-    svmtWord: SetW(GetW - 1);
+    svmtWord: SetI(GetW - 1);
     svmtInt: SetI(GetI - 1);
     svmtReal: SetD(GetD - 1);
     svmtStr:  Error(reVarInvalidOp);
@@ -731,7 +736,7 @@ procedure TSVMMem.OpSub(m:TSVMMem);
 begin
   case m_type of
     svmtWord: case m.m_type of
-                svmtWord: SetW(GetW             - m.GetW);
+                svmtWord: SetI(GetW             - m.GetW);
                 svmtInt:  SetI(GetW             - m.GetI);
                 svmtReal: SetD(GetW             - m.GetD);
                 svmtStr:  SetD(GetW             - StrToFloat(m.GetS));
@@ -803,7 +808,7 @@ procedure TSVMMem.OpMul(m:TSVMMem);
 begin
   case m_type of
     svmtWord: case m.m_type of
-                svmtWord: SetW(GetW             * m.GetW);
+                svmtWord: SetI(GetW             * m.GetW);
                 svmtInt:  SetI(GetW             * m.GetI);
                 svmtReal: SetD(GetW             * m.GetD);
                 svmtStr:  SetD(GetW             * StrToFloat(m.GetS));
@@ -839,19 +844,19 @@ procedure TSVMMem.OpIDiv(m:TSVMMem);
 begin
   case m_type of
     svmtWord: case m.m_type of
-                svmtWord: SetW(GetW             div m.GetW);
-                svmtInt:  SetW(GetW             div m.GetI);
-                svmtReal: SetW(Trunc(GetW       / m.GetD));
-                svmtStr:  SetW(Trunc(GetW       / StrToFloat(m.GetS)));
+                svmtWord: SetI(GetW             div m.GetW);
+                svmtInt:  SetI(GetW             div m.GetI);
+                svmtReal: SetI(Trunc(GetW       / m.GetD));
+                svmtStr:  SetI(Trunc(GetW       / StrToFloat(m.GetS)));
                 else
                   Error(reVarInvalidOp);
               end;
 
     svmtInt:  case m.m_type of
-                svmtWord: SetW(GetI             div m.GetW);
-                svmtInt:  SetW(GetI             div m.GetI);
-                svmtReal: SetW(Trunc(GetI       / m.GetD));
-                svmtStr:  SetW(Trunc(GetI       / StrToFloat(m.GetS)));
+                svmtWord: SetI(GetI             div m.GetW);
+                svmtInt:  SetI(GetI             div m.GetI);
+                svmtReal: SetI(Trunc(GetI       / m.GetD));
+                svmtStr:  SetI(Trunc(GetI       / StrToFloat(m.GetS)));
                 else
                   Error(reVarInvalidOp);
               end;
@@ -933,6 +938,7 @@ end;
 procedure TSVMMem.ArrSet(index: cardinal; val:pointer);
 begin
   case m_type of
+    svmtWord: PString(m_val)^[index] := Chr(TSVMMem(val).GetW);
     svmtStr: PString(m_val)^[index] := TSVMMem(val).GetS[1];
     svmtArr: PMemArray(m_val)^[index] := val;
     else
@@ -945,7 +951,7 @@ begin
   Result := nil;
   case m_type of
     svmtStr: begin
-               Result := TSVMMem.CreateFS(PString(m_val)^[index]);
+               Result := TSVMMem.CreateFW(Ord(PString(m_val)^[index]));
                grabber^.AddTask(Result);
              end;
     svmtArr: Result := PMemArray(m_val)^[index];

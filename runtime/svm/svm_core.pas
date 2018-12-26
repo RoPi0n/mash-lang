@@ -1,19 +1,25 @@
 //{$Define BuildInLibrary}
 
-{$IfDef BuildInLibrary}
+{$ifdef BuildInLibrary}
   library svm_core;
-{$Else}
+{$else}
   program svm_core;
-  //{$apptype gui}
   //{$define BuildGUI}
-{$EndIf}
+{$endif}
+
+{$ifdef BuildGUI}
+  {$apptype gui}
+{$endif}
 
 //{$Define DebugVer}
 
 uses
-  {$IfDef UNIX}
+  {$ifdef UNIX}
   cthreads,
-  {$EndIf}
+  {$endif}
+  {$ifdef Windows}
+  windows,
+  {$endif}
   SysUtils,
   dynlibs,
   svm_mem,
@@ -89,7 +95,8 @@ type
     bcGC,     // run grabber
 
     {** constant's **}
-    bcPHC,    // push const
+    bcPHC,    // push copy of const
+    bcPHCP,   // push pointer to original const
 
     {** external call's **}
     bcPHEXMP, // push pointer to external method
@@ -148,19 +155,23 @@ type
   PByteArr = ^TByteArr;
   TDbgCallBack = procedure(p:pointer); cdecl;
   PDbgCallBack = ^TDbgCallBack;
+  TAppType = (atBin, atCns, atGUI);
 
 var
   DbgCallBack: PDbgCallBack = nil;
+  AppType:TAppType = atBin;
 
 {***** Some functions *********************************************************}
   procedure VMError(m: string);
   begin
-    {$ifdef BuildGUI}
-    raise Exception.Create(m);
-    {$else}
-    writeln(m);
-    halt;
-    {$endif}
+    case AppType of
+      atCns: begin
+               writeln(m);
+               halt;
+             end;
+      else
+        raise Exception.Create(m);
+    end;
   end;
 
   procedure CutLeftBytes(pb: PByteArr; cnt: cardinal);
@@ -293,7 +304,8 @@ type
           st.WriteBuffer(pb^[bpos], stl);
           st.Seek(0, soFromBeginning);
           Inc(bpos, stl);
-          self.SetConst(cardinal(length(self.constants)) - consts_count, TSVMMem.CreateFW(Cardinal(Pointer(st))));
+          self.SetConst(cardinal(length(self.constants)) - consts_count,
+                        TSVMMem.CreateFW(Cardinal(Pointer(st))));
         end;
         else
           VMError('Error: resource section format not supported.');
@@ -404,7 +416,7 @@ type
     lb: word;
     sl: byte;
     s: string;
-    ssz, c: cardinal;
+    ssz: cardinal;
   begin
     ssz := length(self.methods);
     libs.Parse(pb, mainclasspath);
@@ -414,7 +426,6 @@ type
         (pb^[2] shl 8) + pb^[3]);
       bpos := 4;
       self.SetSize(methods_count + ssz);
-      c := 0;
       while methods_count > 0 do
       begin
         lb := (pb^[bpos] shl 8) + pb^[bpos + 1];
@@ -428,7 +439,6 @@ type
         end;
         self.SetFunc(cardinal(length(self.methods)) - methods_count,
           GetProcAddress(libs.GetLibH(lb), s));
-        Inc(c);
         Dec(methods_count);
       end;
       CutLeftBytes(pb, bpos);
@@ -449,7 +459,8 @@ type
   public
     items: array of pointer;
     size, i_pos: cardinal;
-    procedure init;
+    parent_vm: pointer;
+    procedure init(vm: pointer);
     procedure push(p: pointer);
     function peek: pointer;
     procedure pop;
@@ -460,11 +471,12 @@ type
 
   PStack = ^TStack;
 
-  procedure TStack.init;
+  procedure TStack.init(vm: pointer);
   begin
     SetLength(items, StackBlockSize);
     i_pos := 0;
     size := StackBlockSize;
+    parent_vm := vm;
   end;
 
   procedure TStack.push(p: pointer);
@@ -662,12 +674,12 @@ type
 type
   TSVM = object
   public
+    ip,end_ip: TInstructionPointer;
     mainclasspath: string;
     mem: PMemory;
     stack: TStack;
     cbstack: TCallBackStack;
     bytes: PByteArr;
-    ip,end_ip: TInstructionPointer;
     grabber: TGrabber;
     consts: PConstSection;
     extern_methods: PImportSection;
@@ -702,7 +714,7 @@ type
     vm^.end_ip := length(bytes^);
     vm^.consts := consts;
     vm^.extern_methods := extern_methods;
-    vm^.stack.init;
+    vm^.stack.init(vm);
     vm^.cbstack.init;
     vm^.grabber.init;
 
@@ -1097,6 +1109,16 @@ type
               Inc(self.ip, 5);
             end;
 
+            bcPHCP:
+            begin
+              self.stack.push(TSVMMem(self.consts^.GetConst(
+                    cardinal((self.bytes^[self.ip + 1] shl 24) + (self.bytes^[self.ip + 2] shl 16) +
+                             (self.bytes^[self.ip + 3] shl 8) + self.bytes^[self.ip + 4]
+                            )
+                    )));
+              Inc(self.ip, 5);
+            end;
+
             bcPHEXMP:
             begin
               self.stack.push(self.extern_methods^.GetFunc(
@@ -1351,10 +1373,8 @@ type
   end;
 
   procedure TSVM.Run;
-  {$IfDef DebugVer}
   var
     c: Cardinal;
-  {$EndIf}
   begin
     extern_methods^.Parse(self.bytes, mainclasspath);
     consts^.Parse(self.bytes);
@@ -1368,6 +1388,15 @@ type
          inc(c);
        end;
     {$EndIf}
+
+    c := ParamCount;
+    while c > 0 do
+     begin
+       self.stack.push(TSVMMem.CreateFS(ParamStr(c)));
+       dec(c);
+     end;
+    self.stack.push(TSVMMem.CreateFW(ParamCount));
+
     self.RunThread;
   end;
 
@@ -1398,7 +1427,7 @@ type
   end;
 
 {***** Main *******************************************************************}
-{$IfDef BuildInLibrary}
+{$ifdef BuildInLibrary}
 function SVM_Create:PSVM; stdcall;
 begin
   New(Result);
@@ -1406,7 +1435,7 @@ begin
   New(Result^.consts);
   New(Result^.extern_methods);
   New(Result^.mem);
-  Result^.stack.init;
+  Result^.stack.init(Result);
   Result^.cbstack.init;
   Result^.grabber.init;
 end;
@@ -1465,7 +1494,7 @@ exports SVM_Continue        name '_SVM_CONTINUE';
 begin
 end.
 
-{$Else}
+{$else}
 
 procedure CheckHeader(pb:PByteArr);
 begin
@@ -1474,11 +1503,29 @@ begin
      if (chr(pb^[0]) = 'S') and (chr(pb^[1]) = 'V') and (chr(pb^[2]) = 'M') and
         (chr(pb^[3]) = 'E') and (chr(pb^[4]) = 'X') and (chr(pb^[5]) = 'E') and
         (chr(pb^[6]) = '_') and (chr(pb^[7]) = 'C') and (chr(pb^[8]) = 'N') and
-        (chr(pb^[9]) = 'S') then Exit;
+        (chr(pb^[9]) = 'S') then
+         begin
+           {$ifdef Windows}
+             {$ifdef BuildGUI}
+               AllocConsole;
+             {$endif}
+           {$endif}
+           AppType := atCns;
+           Exit;
+         end;
      if (chr(pb^[0]) = 'S') and (chr(pb^[1]) = 'V') and (chr(pb^[2]) = 'M') and
         (chr(pb^[3]) = 'E') and (chr(pb^[4]) = 'X') and (chr(pb^[5]) = 'E') and
         (chr(pb^[6]) = '_') and (chr(pb^[7]) = 'G') and (chr(pb^[8]) = 'U') and
-        (chr(pb^[9]) = 'I') then Exit;
+        (chr(pb^[9]) = 'I') then
+         begin
+           {$ifdef Windows}
+             {$ifndef BuildGUI}
+               FreeConsole;
+             {$endif}
+           {$endif}
+           AppType := atGUI;
+           Exit;
+         end;
    end;
   raise Exception.Create('Error: Invalid SVMEXE-file header!');
   halt;
@@ -1498,7 +1545,7 @@ begin
   new(svm.consts);
   new(svm.extern_methods);
   new(svm.mem);
-  svm.stack.init;
+  svm.stack.init(@svm);
   svm.cbstack.init;
   svm.grabber.init;
   svm.LoadByteCodeFromFile(ParamStr(1));
@@ -1506,4 +1553,4 @@ begin
   CutLeftBytes(svm.bytes,10);
   svm.Run;
 end.
-{$EndIf}
+{$endif}
