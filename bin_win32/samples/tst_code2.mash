@@ -1,0 +1,39 @@
+uses <bf>
+uses <crt>
+
+class MyClass:              //Объявление класса MyClass.
+  var a                     //Объявление переменной внутри класса,
+  proc Create               //процедуры (Create - процедура-конструктор)
+  func F                    //и функции.
+end
+
+proc MyClass::Create(a):    //Конструктор класса.
+  $a ?= new(a)              // $ - обращение к дочернему объекту класса.
+end                         // ?= - присваивание указателя.
+
+func MyClass::F():          //Функция, определенная в классе MyClass.
+  return $a * 2             //Возврат значения.
+end
+
+class MyClass2(MyClass):    //Объявление класса MyClass2 - наследника
+  func F                    //от класса MyClass для переопределения F.
+  proc Free
+end
+
+func MyClass2::F():         //Переопределенная функция F.
+  return MyClass::F$() * 2  //Вызов метода другого класса
+end                         //от для экземпляра данного класса.
+
+proc MyClass2::Free():
+  Free($a)
+  $rem()
+end
+
+proc main():
+  var p = new MyClass2(10)  //Создание экземпляра класса MyClass2.
+  println(p->F())           //Результат: 40.
+
+  println(BoolToStr(typeof(10 + "3,14") == typeReal))
+
+  InputLn()
+end

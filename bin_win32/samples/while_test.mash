@@ -1,0 +1,16 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  var a = 0
+  while a < 20:
+    PrintLn(a)
+    inc a
+
+    if a == 10:
+      break
+    end
+  end
+  PrintLn("End")
+  InputLn()
+end

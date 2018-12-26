@@ -1,5 +1,5 @@
-// Mash lang classes unit.
-// Code version: 1.0
+// Mash lang classes unit
+// Code version: 10
 
 uses <bf>
 
@@ -12,23 +12,23 @@ class point:
   proc Create, Free, Set, Compare
 end
 
-proc point::Create(.x, .y):
-  $x ?= new(.x)
-  $y ?= new(.y)
+proc point::Create(x, y):
+  $x ?= new(x)
+  $y ?= new(y)
 end
 
 proc point::Free():
   Free($x)
   Free($y)
-  FreeClass($)
+  $rem()
 end
 
-proc point::Set(.x, .y):
-  $x = .x
-  $y = .y
+proc point::Set(x, y):
+  $x = x
+  $y = y
 end
 
-func point::Compare(.p):
+func point::Compare(p):
   return ($x == p->x) & ($y == p->y)
 end
 
@@ -47,27 +47,27 @@ proc vector::Create():
   $Items[0] ?= new(0)
 end
 
-proc vector::Push_Back(.Object):
+proc vector::Push_Back(Object):
   SetLen($Items, $Items[0] + 2)
   $Items[0]++
-  $Items[$Items[0]] ?= .Object
+  $Items[$Items[0]] ?= Object
 end
 
 func vector::Pop_Back():
-  var .r = $Items[$Items[0]]
+  var r = $Items[$Items[0]]
   SetLen($Items, $Items[0])
   $Items[0]--
-  return .r
+  return r
 end
 
 func vector::Pop_First():
-  var .r = $Items[1]
-  for(var .i = copy(1); .i < $Items[0]; .i++):
-    $Items[.i] ?= $Items[.i + 1]
+  var r = $Items[1]
+  for(var i = copy(1); i < $Items[0]; i++):
+    $Items[i] ?= $Items[i + 1]
   end
   SetLen($Items, $Items[0])
   $Items[0]--
-  return .r
+  return r
 end
 
 func vector::Peek_Back():
@@ -79,8 +79,8 @@ func vector::Peek_First():
 end
 
 proc vector::Rem_First():
-  for(var .i = copy(1); .i < $Items[0]; .i++):
-    $Items[.i] ?= $Items[.i + 1]
+  for(var i = copy(1); i < $Items[0]; i++):
+    $Items[i] ?= $Items[i + 1]
   end
   SetLen($Items, $Items[0])
   $Items[0]--
@@ -91,8 +91,8 @@ proc vector::Rem_Back():
   $Items[0]--
 end
 
-func vector::At(.Index):
-  return $Items[.Index - 1]
+func vector::At(Index):
+  return $Items[Index - 1]
 end
 
 func vector::Size():
@@ -102,7 +102,7 @@ end
 proc vector::Free():
   Free($Items[0])
   Free($Items)
-  FreeClass($)
+  $rem()
 end
 
 ////////////////////////////////////////////////////////////////////////////////

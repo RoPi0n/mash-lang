@@ -1,0 +1,32 @@
+uses <bf>
+uses <crt>
+
+proc PrintArr(array):
+  for (var i = 0; i < len(array); i++):
+    Print(array[i])
+    if i + 1 < len(array):
+      Print(", ")
+    else:
+      PrintLn("")
+    end
+  end
+end
+
+proc main():
+  var a = 10, b = 3.14, c = 20
+
+  a = a * (b + c) / "100"
+  PrintLn(a)   //Выведет: 2,314
+
+  a = "Test" + " string!"
+  PrintLn(a)   //Выведет: Test string!
+
+  a ?= [1, 1*2, 3.14, "Test enumeration!", F(10)]
+  PrintArr(a)  //Выведет: 1, 2, 3,14, Test enumeration!, 20
+
+  InputLn()
+end
+
+func F(x):
+  return x * 2
+end

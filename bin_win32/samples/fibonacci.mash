@@ -1,0 +1,18 @@
+// Imports example.
+import PrintLn "crt.lib" "PRINTLN"
+import InputLn "crt.lib" "INPUTLN"
+
+// Program entry point (because we don't write "uses <bf>").
+proc __EntryPoint():
+  a ?= 0
+  b ?= 1
+  PrintLn(0)
+  PrintLn(1)
+  for(i ?= 0; i < 20; i++):
+    tmp ?= b
+    b += a
+    a ?= tmp
+    PrintLn(b)
+  end
+  InputLn()
+end

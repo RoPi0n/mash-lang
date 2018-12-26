@@ -1,0 +1,17 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  println("Start")
+  var a
+  try:
+    println("Trying to do something...")
+    a = 10
+  catch:
+    println(getError())
+  finally:
+    println("Finally")
+  end
+  println("End")
+  inputln()
+end

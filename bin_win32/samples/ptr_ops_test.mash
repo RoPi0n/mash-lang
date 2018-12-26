@@ -1,0 +1,13 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  var a = 10, b
+  b ?= @a
+  PrintLn(b)
+  b ?= ?b
+  PrintLn(b)
+  b++
+  PrintLn(a)
+  InputLn()
+end

@@ -1,40 +1,40 @@
-// Mash lang threads unit.
-// Code version: 1.0
+// Mash lang threads unit
+// Code version: 10
 
 uses <bf>
 
-proc thread(.method, .arg):
-  push .arg
-  push .method
+proc thread(method, arg):
+  push arg
+  push method
   cthr
 end
 
-proc async(.method, .arg):
-  push .arg
-  push .method
+proc async(method, arg):
+  push arg
+  push method
   cthr
   pcopy
   rthr
 end
 
-proc thr_resume(.thread):
-  push .thread
+proc thr_resume(thr):
+  push thr
   rthr
 end
 
-proc thr_suspend(.thread):
-  push .thread
+proc thr_suspend(thr):
+  push thr
   sthr
 end
 
-proc thr_terminate(.thread):
-  push .thread
+proc thr_terminate(thr):
+  push thr
   tthr
 end
 
-proc thr_kill(.thread):
-  thr_suspend(.thread)
-  thr_terminate(.thread)
+proc thr_kill(thr):
+  thr_suspend(thr)
+  thr_terminate(thr)
 end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,34 +53,34 @@ proc TThread::Execute():
   // method for overriding
 end
 
-proc TThread_Join(.CurrentThreadContext, .TThreadClass):
-  .TThreadClass->Execute()
-  .TThreadClass->Terminated = true
-  if .TThreadClass->FreeOnTerminate:
-    .TThreadClass->Free()
+proc TThread_Join(CurrentThreadContext, TThreadClass):
+  TThreadClass->Execute()
+  TThreadClass->Terminated = true
+  if TThreadClass->FreeOnTerminate:
+    TThreadClass->Free()
   end
 end
 
-proc TThread::Create():
+proc TThread::Create(Resumed):
   $Resumed ?= new(false)
   $Terminated ?= new(false)
   $FreeOnTerminate ?= new(true)
   $ThreadContext ?= thread(TThread_Join, $)
-  if .Resumed:
+  if Resumed:
     $Resume()
   end
 end
 
 proc TThread::Free():
-  Free($Suspended)
+  Free($Resumed)
   Free($Terminated)
   Free($FreeOnTerminate)
-  FreeClass$()
+  $rem()
 end
 
-proc TThread::ReJoin(.Resumed):
+proc TThread::ReJoin(Resumed):
   $ThreadContext ?= thread(TThread_Join, $)
-  if .Resumed:
+  if Resumed:
     $Resume()
   end
 end

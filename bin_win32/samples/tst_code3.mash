@@ -1,0 +1,31 @@
+uses <bf>
+uses <crt>
+uses <strings>
+
+proc main():
+  var s = new("test")
+
+  s[1] ?= "T"
+
+  println(c_Chr(s[1]), LnBreak, s_len(s))
+  s_del(s, 1, 2)
+  println(s)
+
+  s = "The Moscow is a capital of great Russia!"
+  println(s_copy(s, 5, 6))
+  println(s_len(s))
+  println(s_reverse(s))
+  println(s_leftstr(s, 10))
+  println(s_rightstr(s, 7))
+
+  println(s_pos("Moscow", s))
+  println(s_posEx("a", s, 5))
+  println(s)
+  println(s_Replace(s, "Moscow", "Berlin", []))
+  println(s_Replace(s, "a", "_", [srfReplaceAll, srfIgnoreCase]))
+  s = "     test     "
+  s = s_Trim(s)
+  println("[", s, "]")
+
+  inputln()
+end

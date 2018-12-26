@@ -1,0 +1,220 @@
+uses <bf>
+uses <crt>
+uses <classes>
+
+proc PutCh(x, y, char):
+  Crt.gotoXY32(y, x)
+  Print(char)
+end
+
+// game panel
+
+str CharPanel "="
+
+class Panel:
+  var center, size
+
+  proc Create, Free, Draw, MoveLeft, MoveRight
+end
+
+proc Panel::Create(x, y, sz):
+  $center ?= new point(x, y)
+  $size ?= new(sz)
+end
+
+proc Panel::Free():
+  $center -> Free()
+  Free($size)
+  $rem()
+end
+
+proc Panel::Draw():
+  halfBlocks ?= $size \ 2
+  for(i ?= 0; i <= halfBlocks; i++):
+    PutCh($center -> x + i, $center -> y, CharPanel)
+    PutCh($center -> x - i, $center -> y, CharPanel)
+  end
+end
+
+proc Panel::MoveLeft():
+  if ($center -> x - $size \ 2 - 1) > 0:
+    PutCh($center -> x + $size \ 2, $center -> y, " ")
+    PutCh($center -> x - $size \ 2 - 1, $center -> y, CharPanel)
+    $center -> x --
+  end
+end
+
+proc Panel::MoveRight():
+  if ($center -> x - $size \ 2 - 1) < 40:
+    PutCh($center -> x - $size \ 2, $center -> y, " ")
+    PutCh($center -> x + $size \ 2 + 1, $center -> y, CharPanel)
+    $center -> x ++
+  end
+end
+
+// ball
+
+enum movingvector [mvLU, mvRU, mvLD, mvRD]
+
+str CharBall "@"
+
+class Ball:
+  var position, movingvector
+
+  proc Create, Free, Draw, MoveNext
+  func CheckFor
+end
+
+proc Ball::Create(x, y, v):
+  $position ?= new point(x, y)
+  $movingvector ?= new(v)
+end
+
+proc Ball::Free():
+  $position -> Free()
+  Free($movingvector)
+  $rem()
+end
+
+proc Ball::Draw():
+  PutCh($position -> x, $position -> y, CharBall)
+end
+
+func Ball::CheckFor(x, y):
+  switch $movingvector:
+    case mvLU:
+      if (($position -> x == x) & ($position -> y - 1 == y)) | ($position -> y - 1 < 1):
+        $movingvector = mvLD
+      end
+
+      if (($position -> x - 1 == x) & ($position -> y == y)) | ($position -> x - 1 <= 1):
+        $movingvector = mvRU
+      end
+
+      return true
+    end
+
+    case mvRU:
+      if (($position -> x == x) & ($position -> y - 1 == y)) | ($position -> y - 1 < 1):
+        $movingvector = mvRD
+      end
+
+      if (($position -> x + 1 == x) & ($position -> y == y)) | ($position -> x + 1 >= 40):
+        $movingvector = mvLU
+      end
+
+      return true
+    end
+
+    case mvLD:
+      if (($position -> x == x) & ($position -> y + 1 == y)) | ($position -> y + 1 > 20):
+        $movingvector = mvLU
+      end
+
+      if (($position -> x - 1 == x) & ($position -> y == y)) | ($position -> x - 1 <= 1):
+        $movingvector = mvRD
+      end
+
+      return true
+    end
+
+    case mvRD:
+      if (($position -> x == x) & ($position -> y + 1 == y)) | ($position -> y + 1 > 20):
+        $movingvector = mvRU
+      end
+
+      if (($position -> x + 1 == x) & ($position -> y == y)) | ($position -> x + 1 >= 40):
+        $movingvector = mvLD
+      end
+
+      return true
+    end
+
+    else:
+      return false
+  end
+end
+
+proc Ball::MoveNext():
+  PutCh($position -> x, $position -> y, " ")
+
+  switch $movingvector:
+    case mvLU:
+      $position -> x --
+      $position -> y --
+      break
+    end
+
+    case mvRU:
+      $position -> x ++
+      $position -> y --
+      break
+    end
+
+    case mvLD:
+      $position -> x --
+      $position -> y ++
+      break
+    end
+
+    case mvRD:
+      $position -> x ++
+      $position -> y ++
+      break
+    end
+  end
+
+  PutCh($position -> x, $position -> y, CharBall)
+end
+
+var B = new Ball(5, 10, mvRU)
+
+// borders
+
+str CharBorder "#"
+
+var Borders = new vector()
+
+proc InitBorders():
+  for (y ?= 1; y <= 20; y++):
+    Borders -> push_back(new point(0, y))
+    Borders -> push_back(new point(40, y))
+    PutCh(1, y, CharBorder)
+    PutCh(40, y, CharBorder)
+  end
+end
+
+proc MoveBall():
+  c ?= Borders -> Size()
+  f ?= false
+  while c > 0:
+    p ?= Borders -> At(c)
+    if B -> CheckFor(p -> x, p -> y):
+      f = true
+      break
+    end
+    c--
+  end
+
+  B -> MoveNext()
+end
+
+
+proc main():
+  /*p ?= new Panel(20, 10, 5)
+  p->Draw()
+  while true:
+    p -> MoveLeft()
+    Sleep(100)
+  end*/
+
+  InitBorders()
+
+  while true:
+    MoveBall()
+    Sleep(100)
+    gc
+  end
+
+  InputLn()
+end

@@ -1,0 +1,13 @@
+uses <bf>
+uses <crt>
+
+func x():
+  return 10
+end
+
+proc main():
+  for(var a = 0; (a < x()) & (a < 10); a++):
+    PrintLn(a)
+  end
+  InputLn()
+end

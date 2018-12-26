@@ -72,27 +72,23 @@ word Crt.Blink          128
 
 //Some methods
 
-uses <strings>
-
-var LnBreak = c_chr(13) + c_chr(10)
-
 {_ifdef_ argcounter}
 
 proc print(...):
-  var .t
-  .t ?= argcount
-  while .t > 0:
+  var t
+  t ?= argcount
+  while t > 0:
     _print()
-    dec .t
+    dec t
   end
 end
 
 proc println(...):
-  var .t
-  .t ?= argcount
-  while .t > 0:
+  var t
+  t ?= argcount
+  while t > 0:
     _print()
-    dec .t
+    dec t
   end
   _println("")
 end

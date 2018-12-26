@@ -1,0 +1,10 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  var a = (2 + 2) * 2 * 0.1, b = (a*10+1) * 10
+  println(b / 9)
+  a = BoolToStr((10 >= 10) ^ (true & false))
+  println(a)
+  inputln()
+end

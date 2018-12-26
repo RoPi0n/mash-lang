@@ -1,0 +1,32 @@
+uses <bf>
+uses <crt>
+
+class MyPoint:
+  var x, y
+  proc Fill
+  func Summ
+end
+
+proc MyPoint::Fill(x, y):
+  $x ?= new(x)
+  $y ?= new(y)
+end
+
+func MyPoint::Summ():
+  return $x + $y
+end
+
+class MyPoint2(MyPoint):
+  func Summ
+end
+
+func MyPoint2::Summ():
+  return ($x + $y) * 2
+end
+
+proc main():
+  var p = new MyPoint2
+  p->Fill(2, 3)
+  println(p->Summ())
+  inputln()
+end

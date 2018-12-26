@@ -20,8 +20,8 @@ int  false  0
 
 var null = "null"
 
-func BoolToStr(.b):
-  if .b == true:
+func BoolToStr(b):
+  if b == true:
     return "true"
   else:
     return "false"
@@ -32,44 +32,53 @@ proc ExitThread():
   threxit
 end
 
-func new(.obj):
-  var .v = new
-  .v = .obj
-  return .v
+func new(obj):
+  var v = new
+  v = obj
+  return v
 end
 
-proc copy(.obj):
-  push .obj
+proc copy(obj):
+  push obj
   copy
   gpm
+  swp
+  pop
 end
 
-proc SizeOf(.obj):
-  push .obj
+func gpmx(obj):
+  push obj
+  gpm
+  pop
+  return obj
+end
+
+proc SizeOf(obj):
+  push obj
   sizeof
   gpm
 end
 
 enum Types [TypeNull, TypeWord, TypeInt, TypeReal, TypeStr, TypeArray]
 
-proc TypeOf(.obj):
-  push .obj
+proc TypeOf(obj):
+  push obj
   typeof
   gpm
 end
 
-func Len(.array):
-  push .array
+func Len(array):
+  push array
   alen
   gpm
-  var .len
-  pop .len
-  return .len
+  var ln
+  pop ln
+  return ln
 end
 
-proc SetLen(.array, .newlen):
-  push .array
-  push .newlen
+proc SetLen(array, newlen):
+  push array
+  push newlen
   salen
   pop
 end
@@ -79,53 +88,46 @@ proc gc():
   stkdrop
 end
 
-proc Free(.simple_object):
-  push .simple_object
-  rem
-end
+{_ifndef_ argcounter}
 
-{_ifdef_ argcounter}
-
-proc Rem(...):
-  var .t
-  .t ?= argcount
-  while .t > 0:
-    rem
-    dec .t
-  end
+proc Free(simple_object):
+  rem simple_object
 end
 
 {_end_}
 
-proc FreeClass(.object):
-  .object->StructFree()
-  SetLen(.object, 0)
-  Free(.object)
-end
-
 {_ifdef_ argcounter}
+
+proc Free(...):
+  var t
+  t ?= argcount
+  while t > 0:
+    rem
+    dec t
+  end
+end
 
 proc opx(...):
-  var .i, .k, .t = argcount \ 2
-  while .t > 0:
-    pop .i
-    pop .k
-    .i = .i + .k
-    dec .t
+  var i, k, t = argcount \ 2
+  while t > 0:
+    pop i
+    pop k
+    i = i + k
+    dec t
   end
 end
 
 {_end_}
 
-func In(.v, .array):
-  var .i, .len
-  .i ?= 0
-  .len ?= len(.array)
-  while .i < .len:
-    if .array[.i] == .v:
+func In(v, array):
+  var i, ln
+  i ?= 0
+  ln ?= len(array)
+  while i < ln:
+    if array[i] == v:
       return true
     end
-    inc .i
+    inc i
   end
   return false
 end
@@ -135,29 +137,31 @@ func temp():
 end
 
 proc GetError():
-  //err already in stack
-  gpm
+  //err already in stack & already markered
 end
 
 proc Exit():
   jr
 end
 
-proc super.Exit():
-  jr
-end
+var ParamCount, ParamList
 
-proc super.ExitThread():
-  jump !__haltpoint
-end
+proc __EntryPoint():
+  pop ParamCount
+  ParamList ?= new[ParamCount]
 
-__EntryPoint:
+  i ?= 0
+  while i < ParamCount:
+    peek ParamList[i]
+    i++
+  end
+
   Main()
   gc
-jr
+end
 
-proc gpm(.v):
-  push .v
+proc gpm(v):
+  push v
   gpm
 end
 

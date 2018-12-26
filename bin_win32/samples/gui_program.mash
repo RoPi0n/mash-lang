@@ -1,0 +1,83 @@
+uses <bf>
+uses <threads>
+uses <crt>
+uses <forms>
+
+str _Caption "Draw on me!"
+stream _Icon "Icon.ico"
+
+var Form1, Canvas, Form1_Thr
+
+////////////////////////////////////////////////////////////////////////////////
+
+var MouseDowned = false
+
+func Form1_CheckEvent(Event):
+  switch Event:
+    case EVT_FormMouseDown:
+      MouseDowned = true
+      return true
+    end
+
+    case EVT_FormMouseUp:
+      MouseDowned = false
+      return true
+    end
+
+    case EVT_FormMouseMove:
+      var x, y
+      x ?= _Form_LastEventArgAt(Form1, 1)
+      y ?= _Form_LastEventArgAt(Form1, 0)
+
+      if MouseDowned:
+        _Canvas_LineTo(Canvas, x, y)
+      else:
+        _Canvas_MoveTo(Canvas, x, y)
+      end
+
+      Free(x)
+      Free(y)
+
+      return true
+    end
+
+    case EVT_FormCloseQuery:
+      Halt()
+    end
+  end
+  return false
+end
+
+proc Form1_Thread(ThreadContext, Arg):
+  _Form_SetLeft(Form1, 100)
+  _Form_SetTop(Form1, 100)
+  _Form_SetWidth(Form1, 500)
+  _Form_SetHeight(Form1, 500)
+  _Form_SetCaption(Form1, _Caption)
+  Canvas ?= _Form_GetCanvas(Form1)
+  _Canvas_SetPenColor(Canvas, 0)
+
+  _Form_Show(Form1)
+
+  var Event, x = 1000
+  while true:
+    Event ?= _Form_CheckEvent(Form1)
+    if Form1_CheckEvent(Event) & (x > 0):
+      Sleep(0)
+      x--
+    else:
+      Sleep(1)
+      x = 1000
+    end
+    Free(Event)
+    gc()
+  end
+end
+
+proc main():
+  _Application_Initialize()
+  _Application_LoadIconFromStream(_Icon)
+  Form1 ?= _Application_CreateForm()
+  Form1_Thr ?= async(Form1_Thread, 0)
+  _Application_Run()
+end

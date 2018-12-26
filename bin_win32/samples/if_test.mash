@@ -1,0 +1,17 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  if (1 > 0) ^ (2 > 3):
+    PrintLn("Ok")
+    if 1 < 0:
+      PrintLn("Ok #2")
+    else:
+      PrintLn("Not ok #2")
+    end
+  else:
+    PrintLn("Not ok")
+  end
+  PrintLn("End")
+  InputLn()
+end
