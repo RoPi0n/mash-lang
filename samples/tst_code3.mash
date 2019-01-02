@@ -7,7 +7,7 @@ proc main():
 
   s[1] ?= "T"
 
-  println(s, LnBreak, s_len(s))
+  println(c_Chr(s[1]), LnBreak, s_len(s))
   s_del(s, 1, 2)
   println(s)
 

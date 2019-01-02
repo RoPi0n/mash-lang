@@ -3,10 +3,9 @@ uses <crt>
 
 proc main():
   println("Start")
-  var a
   try:
     println("Trying to do something...")
-    a = 10
+    a ?= 10 / 0
   catch:
     println(getError())
   finally:

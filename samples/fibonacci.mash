@@ -4,13 +4,14 @@ import InputLn "crt.lib" "INPUTLN"
 
 // Program entry point (because we don't write "uses <bf>").
 proc __EntryPoint():
-  var a = 0, b = 1, tmp = 0
+  a ?= 0
+  b ?= 1
   PrintLn(0)
   PrintLn(1)
-  for(var i = 0; i < 20; i++):
-    tmp = b
+  for(i ?= 0; i < 20; i++):
+    tmp ?= b
     b += a
-    a = tmp
+    a ?= tmp
     PrintLn(b)
   end
   InputLn()

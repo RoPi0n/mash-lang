@@ -1,0 +1,85 @@
+uses <bf>
+uses <crt>
+
+class TestClass:
+  var a, b
+  proc Create, Free
+  func Hash
+end
+
+proc TestClass::Create(a, b):
+  $a ?= new(a)
+  $b ?= new(b)
+end
+
+proc TestClass::Free():
+  Free($a, $b)
+  $rem()
+end
+
+func TestClass::Hash():
+  return (($a * $b) ^ $a) ^ $b
+end
+
+class HashMap:
+  protected:
+    var objects, hashes
+
+  public:
+    // constructors
+    proc Create, Free
+
+    // methods
+    proc Append
+    func Get
+end
+
+proc HashMap::Create():
+  $objects ?= new[0]
+  $hashes ?= new[0]
+end
+
+proc HashMap::Free():
+  var i, l = len($objects)
+  for(i ?= 0; i < l; i++):
+    $objects[i]->Free()
+    Free($hashes[i])
+  end
+  Free($objects, $hashes)
+  $rem()
+end
+
+proc HashMap::Append(x):
+  SetLen($objects, len($objects) + 1)
+  SetLen($hashes, len($hashes) + 1)
+  $objects[len($objects) - 1] ?= x
+  $hashes[len($hashes) - 1] ?= new(x->hash())
+end
+
+func HashMap::Get(h):
+  var i, l = len($objects)
+  for(i ?= 0; i < l; i++):
+    if $hashes[i] == h:
+      return $objects[i]
+    end
+  end
+  return ""
+end
+
+proc main():
+  var hm = new HashMap()
+  for(var i = copy(0); i < 10000; i++):
+    hm->append(new TestClass(i, i*i))
+  end
+
+  var x = new TestClass(-1, -1)
+
+  hm->append(x)
+  x ?= hm->get(x->hash())
+
+  println(x->a, " ", x->b)
+
+  hm->Free()
+  gc
+  inputln()
+end

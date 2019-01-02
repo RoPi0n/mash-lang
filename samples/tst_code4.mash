@@ -1,10 +1,10 @@
 uses <bf>
 uses <crt>
 
-proc recp(.counter):
-  if .counter < 1000000:
-    .counter++
-    recp(.counter)
+proc recp(counter):
+  if counter < 1000000:
+    counter++
+    recp(counter)
   end
 end
 

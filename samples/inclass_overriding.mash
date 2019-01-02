@@ -7,9 +7,9 @@ class MyPoint:
   func Summ
 end
 
-proc MyPoint::Fill(.x, .y):
-  $x ?= new(.x)
-  $y ?= new(.y)
+proc MyPoint::Fill(x, y):
+  $x ?= new(x)
+  $y ?= new(y)
 end
 
 func MyPoint::Summ():

@@ -1,0 +1,15 @@
+uses <bf>
+uses <streams>
+uses <strings>
+
+stream res "streams_test.mash"
+
+proc main():
+  fs ?= new TFileStream("test.txt", fmCreate)
+  fs->Write("Hello world!", LnBreak, "It's a Mash TFileStream test output!")
+  fs->Free()
+
+  st ?= new TMemoryStream(res)
+  st->SaveToFile("mysrc.mash")
+  st->Free()
+end

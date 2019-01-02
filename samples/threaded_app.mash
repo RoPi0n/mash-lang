@@ -2,8 +2,8 @@ uses <bf>
 uses <crt>
 uses <threads>
 
-proc MyThread(.ThreadContext, .arg):
-  var text = new(.arg)
+proc MyThread(ThreadContext, arg):
+  var text = new(arg)
   while true:
     println(text)
     sleep(1000)

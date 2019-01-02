@@ -1,9 +1,9 @@
 uses <bf>
 uses <crt>
 
-proc PrintArr(.arr):
-  for(var .i = copy(0); .i < len(.arr); .i++):
-    println("arr[", .i, "] = ", .arr[.i])
+proc PrintArr(arr):
+  for(var i = copy(0); i < len(arr); i++):
+    println("arr[", i, "] = ", arr[i])
   end
 end
 

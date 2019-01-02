@@ -1,0 +1,9 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  a ?= 10
+  b ?= a + 100
+  println(b)
+  inputln()
+end

@@ -1,10 +1,10 @@
 uses <bf>
 uses <crt>
 
-proc PrintArray(.array):
-  for (var .i = copy(0); .i < len(.array); .i++):
-    Print(.array[.i])
-    if .i + 1 < len(.array):
+proc PrintArray(array):
+  for (var i = copy(0); i < len(array); i++):
+    Print(array[i])
+    if i + 1 < len(array):
       Print(", ")
     else:
       PrintLn("")

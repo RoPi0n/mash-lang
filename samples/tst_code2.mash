@@ -7,8 +7,8 @@ class MyClass:              //Объявление класса MyClass.
   func F                    //и функции.
 end
 
-proc MyClass::Create(.a):   //Конструктор класса.
-  $a ?= new(.a)             // $ - обращение к дочернему объекту класса.
+proc MyClass::Create(a):    //Конструктор класса.
+  $a ?= new(a)              // $ - обращение к дочернему объекту класса.
 end                         // ?= - присваивание указателя.
 
 func MyClass::F():          //Функция, определенная в классе MyClass.
@@ -26,11 +26,14 @@ end                         //от для экземпляра данного к
 
 proc MyClass2::Free():
   Free($a)
-  FreeClass$()
+  $rem()
 end
 
 proc main():
   var p = new MyClass2(10)  //Создание экземпляра класса MyClass2.
   println(p->F())           //Результат: 40.
+
+  println(BoolToStr(typeof(10 + "3,14") == typeReal))
+
   InputLn()
 end

@@ -1,0 +1,23 @@
+uses <bf>
+uses <crt>
+
+func fib(n):
+  a ?= 0
+  b ?= 1
+  if n > 2:
+    for(i ?= 0; i < n; i++):
+      tmp ?= b
+      b += a
+      a ?= tmp
+    end
+    return b
+  else:
+    return n
+  end
+end
+
+proc main():
+  if ParamCount > 1:
+    println(fib(ParamList[1]))
+  end
+end
