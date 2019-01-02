@@ -19,6 +19,7 @@ type
     Button3: TButton;
     Button4: TButton;
     Button5: TButton;
+    Button6: TButton;
     CheckBox1: TCheckBox;
     CheckBox2: TCheckBox;
     Edit1: TEdit;
@@ -56,6 +57,7 @@ type
     procedure Button3Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
+    procedure Button6Click(Sender: TObject);
     procedure CodeSchemeTimerTimer(Sender: TObject);
     constructor CreateEditor(TabSheet: TTabSheet; StatusBar: TStatusBar;
       OpenOp: TOpenOp; OpenParam: string);
@@ -224,6 +226,11 @@ begin
   else
     SynEdit.Text := StringReplace(SynEdit.Text, Edit2.Text, Edit3.Text,
       [rfIgnoreCase, rfReplaceAll]);
+end;
+
+procedure TEditorFrame.Button6Click(Sender: TObject);
+begin
+  CodeSchemePanel.Width := 0;
 end;
 
 procedure TEditorFrame.FindDlg;

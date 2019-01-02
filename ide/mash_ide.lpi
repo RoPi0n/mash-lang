@@ -39,7 +39,7 @@
         <PackageName Value="LCL"/>
       </Item4>
     </RequiredPackages>
-    <Units Count="6">
+    <Units Count="7">
       <Unit0>
         <Filename Value="mash_ide.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -77,8 +77,14 @@
         <ComponentName Value="DebuggerFrm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="Debugger"/>
       </Unit5>
+      <Unit6>
+        <Filename Value="dbgframe.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="DebuggerFrame"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

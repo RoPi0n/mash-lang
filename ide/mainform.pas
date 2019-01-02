@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynCompletion, Forms, Controls, Graphics,
   Dialogs, Menus, ComCtrls, ExtCtrls, StdCtrls, Buttons, Editor, Global,
-  AboutForm, Process, LazUTF8;
+  AboutForm, dbgframe, Process, LazUTF8, debugger, Windows;
 
 type
 
@@ -17,8 +17,13 @@ type
     Button1: TButton;
     Button2: TButton;
     Button3: TButton;
+    DbgMakeDumpButton: TButton;
+    DbgStartStopButton: TButton;
+    Button4: TButton;
+    DebuggerFrame1: TDebuggerFrame;
     Image1: TImage;
     Image2: TImage;
+    ImageList1: TImageList;
     Label2: TLabel;
     Label3: TLabel;
     LogsPanel: TPanel;
@@ -29,6 +34,11 @@ type
     MenuItem11: TMenuItem;
     MenuItem12: TMenuItem;
     MenuItem13: TMenuItem;
+    MenuItem14: TMenuItem;
+    MenuItem15: TMenuItem;
+    MenuItem16: TMenuItem;
+    MenuItem17: TMenuItem;
+    MenuItem18: TMenuItem;
     MenuItem19: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem20: TMenuItem;
@@ -45,6 +55,8 @@ type
     MenuItem30: TMenuItem;
     MenuItem31: TMenuItem;
     MenuItem32: TMenuItem;
+    MenuItem33: TMenuItem;
+    MenuItem34: TMenuItem;
     MenuItem4: TMenuItem;
     MenuItem5: TMenuItem;
     MenuItem6: TMenuItem;
@@ -53,22 +65,30 @@ type
     MenuItem9: TMenuItem;
     OpenDialog: TOpenDialog;
     PageControl: TPageControl;
+    DebuggerPanel: TPanel;
+    Panel4: TPanel;
     PreviewControlsPanel: TPanel;
     PreviewPanel: TPanel;
     Panel2: TPanel;
     Panel3: TPanel;
     SaveDialog: TSaveDialog;
     Splitter1: TSplitter;
+    Splitter2: TSplitter;
     StatusBar: TStatusBar;
     PreviewPanelTimer: TTimer;
     procedure Button1Click(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
+    procedure DbgStartStopButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormResize(Sender: TObject);
     procedure MenuItem10Click(Sender: TObject);
     procedure MenuItem12Click(Sender: TObject);
     procedure MenuItem13Click(Sender: TObject);
+    procedure MenuItem14Click(Sender: TObject);
+    procedure MenuItem17Click(Sender: TObject);
+    procedure MenuItem18Click(Sender: TObject);
     procedure MenuItem19Click(Sender: TObject);
     procedure MenuItem22Click(Sender: TObject);
     procedure MenuItem23Click(Sender: TObject);
@@ -80,6 +100,8 @@ type
     procedure MenuItem30Click(Sender: TObject);
     procedure MenuItem31Click(Sender: TObject);
     procedure MenuItem32Click(Sender: TObject);
+    procedure MenuItem33Click(Sender: TObject);
+    procedure MenuItem34Click(Sender: TObject);
     procedure MenuItem3Click(Sender: TObject);
     procedure MenuItem5Click(Sender: TObject);
     procedure MenuItem6Click(Sender: TObject);
@@ -91,6 +113,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure BuildFile(fp,flags:string);
     procedure BuildFileAndRun(fp,flags,svm:string);
+    procedure PreviewPanelClick(Sender: TObject);
     procedure PreviewPanelTimerTimer(Sender: TObject);
     procedure ShowPreviewPanel;
   private
@@ -143,6 +166,10 @@ var
 begin
   Tab := TTabSheet.Create(PageControl);
   Tab.Caption := TabName + '  [X]';
+  if LowerCase(Trim(ExtractFileExt(TabName))) = '.mash' then
+   Tab.ImageIndex := 0
+  else
+   Tab.ImageIndex := 2;
   Tab.PageControl := PageControl;
   Editor := TEditorFrame.CreateEditor(Tab, StatusBar, Operation, FilePath);
   Editor.Visible := True;
@@ -227,7 +254,7 @@ begin
         EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
         EdtFrm.Saved := True;
         EdtFrm.UpdateState;
-        BuildFileAndRun(EdtFrm.DefFile,'/cns','svmc.exe');
+        BuildFileAndRun(EdtFrm.DefFile,'/cns /o-','svmc.exe');
       end
      else
       begin
@@ -238,10 +265,49 @@ begin
            EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
            EdtFrm.Saved := True;
            EdtFrm.UpdateState;
-           BuildFileAndRun(EdtFrm.DefFile,'/cns','svmc.exe');
+           BuildFileAndRun(EdtFrm.DefFile,'/cns /o-','svmc.exe');
          end;
       end;
    end;
+end;
+
+procedure TMainFrm.MenuItem33Click(Sender: TObject);
+var
+  EdtFrm:TEditorFrame;
+begin
+  if LogsPanel.Height = 0 then
+   LogsPanel.Height := 196;
+  Self.Repaint;
+  if PageControl.ActivePageIndex >= 0 then
+   begin
+     EdtFrm := GetEditor(PageControl.ActivePage);
+     if FileExists(EdtFrm.DefFile) then
+      begin
+        EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
+        EdtFrm.Saved := True;
+        EdtFrm.UpdateState;
+        BuildFile(EdtFrm.DefFile,'/bin /mdbg+ /o+ /olvl 3');
+        DebugFile(MainFrm, ChangeFileExt(EdtFrm.DefFile, '.vmc'), ChangeFileExt(EdtFrm.DefFile, '.mdbg'));
+      end
+     else
+      begin
+        if SaveDialog.Execute then
+         begin
+           EdtFrm.DefFile := SaveDialog.FileName;
+           PageControl.ActivePage.Caption := ExtractFilePath(SaveDialog.FileName);
+           EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
+           EdtFrm.Saved := True;
+           EdtFrm.UpdateState;
+           BuildFile(EdtFrm.DefFile,'/bin /mdbg+ /o+ /olvl 3');
+           DebugFile(MainFrm, ChangeFileExt(EdtFrm.DefFile, '.vmc'), ChangeFileExt(EdtFrm.DefFile, '.mdbg'));
+         end;
+      end;
+   end;
+end;
+
+procedure TMainFrm.MenuItem34Click(Sender: TObject);
+begin
+  DebuggerPanel.Width := 385;
 end;
 
 procedure TMainFrm.MenuItem3Click(Sender: TObject);
@@ -318,6 +384,7 @@ end;
 
 procedure TMainFrm.FormCreate(Sender: TObject);
 begin
+  DebuggerPanel.Width := 0;
   LogsPanel.Height := 0;
   ShowPreviewPanel;
 end;
@@ -328,11 +395,17 @@ begin
    ShowPreviewPanel;
 end;
 
+function BuildThread(p:pointer): longint;
+begin
+  Result := 0;
+  TProcess(p).Execute;
+end;
+
 procedure TMainFrm.BuildFile(fp,flags:string);
 var
-  fp_vmc:string;
   AProcess: TProcess;
   sl: TStringList;
+  thr: cardinal;
 begin
   LogMemo.Lines.Clear;
   LogMemo.Repaint;
@@ -341,9 +414,21 @@ begin
   sl := TStringList.Create;
   AProcess.Executable := 'mashc.exe';
   AProcess.Parameters.Add(UTF8ToWinCP(fp));
-  AProcess.Parameters.Add(flags);
-  AProcess.Options := AProcess.Options + [poWaitOnExit, poUsePipes, poNoConsole];
-  AProcess.Execute;
+  while pos(' ', flags) > 0 do
+   begin
+     AProcess.Parameters.Add(copy(flags, 1, pos(' ', flags) - 1));
+     Delete(flags, 1, pos(' ', flags));
+   end;
+  if Length(flags) > 0 then
+   AProcess.Parameters.Add(flags);
+  AProcess.Options := AProcess.Options + [poWaitOnExit, poUsePipes, poNoConsole, poStderrToOutPut];
+  BeginThread(nil, 0, @BuildThread, Pointer(AProcess), 0, thr);
+  Sleep(10);
+  while AProcess.Running do
+   begin
+     Application.ProcessMessages;
+     Sleep(10);
+   end;
   sl.LoadFromStream(AProcess.Output);
   LogMemo.Lines.AddStrings(sl);
   FreeAndNil(AProcess);
@@ -372,6 +457,11 @@ begin
    LogMemo.Lines.Add('Failed to launch .vmc file.');
 end;
 
+procedure TMainFrm.PreviewPanelClick(Sender: TObject);
+begin
+
+end;
+
 procedure TMainFrm.PreviewPanelTimerTimer(Sender: TObject);
 begin
   //show it
@@ -398,7 +488,7 @@ begin
         EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
         EdtFrm.Saved := True;
         EdtFrm.UpdateState;
-        BuildFile(EdtFrm.DefFile,'/cns');
+        BuildFile(EdtFrm.DefFile,'/cns /o+ /olvl 3');
       end
      else
       begin
@@ -409,7 +499,7 @@ begin
            EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
            EdtFrm.Saved := True;
            EdtFrm.UpdateState;
-           BuildFile(EdtFrm.DefFile,'/cns');
+           BuildFile(EdtFrm.DefFile,'/cns /o+ /olvl 3');
          end;
       end;
    end;
@@ -428,6 +518,25 @@ end;
 procedure TMainFrm.Button3Click(Sender: TObject);
 begin
   MenuItem3Click(Sender);
+end;
+
+procedure TMainFrm.Button4Click(Sender: TObject);
+begin
+  DebuggerPanel.Width := 0;
+end;
+
+procedure TMainFrm.DbgStartStopButtonClick(Sender: TObject);
+begin
+  if DbgStopIt then
+   begin
+     DebuggerFrame1.DbgStartStopButton.Caption := 'Stop';
+     DbgStopIt := False;
+   end
+  else
+   begin
+     DebuggerFrame1.DbgStartStopButton.Caption := 'Resume';
+     DbgStopIt := True;
+   end
 end;
 
 procedure TMainFrm.MenuItem12Click(Sender: TObject);
@@ -450,7 +559,7 @@ begin
         EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
         EdtFrm.Saved := True;
         EdtFrm.UpdateState;
-        BuildFileAndRun(EdtFrm.DefFile,'/gui','svmg.exe');
+        BuildFileAndRun(EdtFrm.DefFile,'/gui /o-','svmg.exe');
       end
      else
       begin
@@ -461,9 +570,91 @@ begin
            EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
            EdtFrm.Saved := True;
            EdtFrm.UpdateState;
-           BuildFileAndRun(EdtFrm.DefFile,'/gui','svmg.exe');
+           BuildFileAndRun(EdtFrm.DefFile,'/gui /o-','svmg.exe');
          end;
       end;
+   end;
+end;
+
+procedure TMainFrm.MenuItem14Click(Sender: TObject);
+var
+  EdtFrm:TEditorFrame;
+begin
+  if LogsPanel.Height = 0 then
+   LogsPanel.Height := 196;
+  Self.Repaint;
+  if PageControl.ActivePageIndex >= 0 then
+   begin
+     EdtFrm := GetEditor(PageControl.ActivePage);
+     if FileExists(EdtFrm.DefFile) then
+      begin
+        EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
+        EdtFrm.Saved := True;
+        EdtFrm.UpdateState;
+        BuildFile(EdtFrm.DefFile,'/gui /o+ /olvl 3');
+      end
+     else
+      begin
+        if SaveDialog.Execute then
+         begin
+           EdtFrm.DefFile := SaveDialog.FileName;
+           PageControl.ActivePage.Caption := ExtractFilePath(SaveDialog.FileName);
+           EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
+           EdtFrm.Saved := True;
+           EdtFrm.UpdateState;
+           BuildFile(EdtFrm.DefFile,'/gui /o+ /olvl 3');
+         end;
+      end;
+   end;
+end;
+
+procedure TMainFrm.MenuItem17Click(Sender: TObject);
+var
+  EdtFrm:TEditorFrame;
+begin
+  if LogsPanel.Height = 0 then
+   LogsPanel.Height := 196;
+  Self.Repaint;
+  if PageControl.ActivePageIndex >= 0 then
+   begin
+     EdtFrm := GetEditor(PageControl.ActivePage);
+     if FileExists(EdtFrm.DefFile) then
+      begin
+        EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
+        EdtFrm.Saved := True;
+        EdtFrm.UpdateState;
+        BuildFile(EdtFrm.DefFile,'/bin /mdbg+ /o-');
+        DebugFile(MainFrm, ChangeFileExt(EdtFrm.DefFile, '.vmc'), ChangeFileExt(EdtFrm.DefFile, '.mdbg'));
+      end
+     else
+      begin
+        if SaveDialog.Execute then
+         begin
+           EdtFrm.DefFile := SaveDialog.FileName;
+           PageControl.ActivePage.Caption := ExtractFilePath(SaveDialog.FileName);
+           EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
+           EdtFrm.Saved := True;
+           EdtFrm.UpdateState;
+           BuildFile(EdtFrm.DefFile,'/bin /mdbg+ /o-');
+           DebugFile(MainFrm, ChangeFileExt(EdtFrm.DefFile, '.vmc'), ChangeFileExt(EdtFrm.DefFile, '.mdbg'));
+         end;
+      end;
+   end;
+end;
+
+procedure TMainFrm.MenuItem18Click(Sender: TObject);
+var
+  dest, inf:string;
+begin
+  if OpenDialog.Execute then
+   begin
+     dest := OpenDialog.FileName;
+     inf := '';
+     case MessageBox(0, 'Is have debug information file?', 'Prepare debugger...', MB_YESNO) of
+       idYes: if OpenDialog.Execute then inf := OpenDialog.FileName;
+       idNo:;
+     end;
+     DebugFile(MainFrm, dest, inf);
    end;
 end;
 
