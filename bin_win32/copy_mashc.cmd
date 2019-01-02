@@ -1,0 +1,1 @@
+copy ..\..\src\lang\mashc.exe mashc.exe /y
