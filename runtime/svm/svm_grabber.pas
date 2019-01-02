@@ -1,6 +1,6 @@
 unit svm_grabber;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$inline on}
 
 interface
 

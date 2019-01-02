@@ -63,9 +63,6 @@
         <StripSymbols Value="True"/>
         <UseExternalDbgSyms Value="True"/>
       </Debugging>
-      <Options>
-        <ExecutableType Value="Library"/>
-      </Options>
     </Linking>
   </CompilerOptions>
   <Debugging>

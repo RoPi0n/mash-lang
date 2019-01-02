@@ -1,6 +1,6 @@
 unit svm_mem;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$inline on}
 
 interface
 
@@ -120,9 +120,17 @@ end;
 constructor TSVMMem.CreateCopy(m:TSVMMem);
 begin
   inherited;
-  m_val := nil;
-  m_type := m.m_type;
-  SetV(m.m_val^, m.m_type);
+  if m.m_type = svmtArr then
+   begin
+     m_type := svmtArr;
+     m_val := m.m_val;
+   end
+  else
+   begin
+     m_val := nil;
+     m_type := m.m_type;
+     SetV(m.m_val^, m.m_type);
+   end;
 end;
 
 destructor TSVMMem.Destroy;
@@ -131,7 +139,7 @@ begin
   inherited;
 end;
 
-procedure TSVMMem.Clear;
+procedure TSVMMem.Clear; inline;
 begin
   case m_type of
     svmtNull: { nop };
@@ -150,7 +158,7 @@ end;
 
 {** Setters **}
 
-procedure TSVMMem.SetV(const value; t:TSVMType);
+procedure TSVMMem.SetV(const value; t:TSVMType); inline;
 begin
   if (m_val <> nil) and (m_type = t) then
    begin
@@ -190,27 +198,67 @@ begin
    end;
 end;
 
-procedure TSVMMem.SetW(value:cardinal);
+procedure TSVMMem.SetW(value:cardinal); inline;
 begin
-  SetV(value, svmtWord);
+  if (m_val <> nil) and (m_type = svmtWord) then
+   PCardinal(m_val)^ := value
+  else
+   begin
+     if m_val <> nil then
+      FreeMem(m_val);
+
+     m_type := svmtWord;
+     New(PCardinal(m_val));
+     PCardinal(m_val)^ := value;
+   end;
 end;
 
-procedure TSVMMem.SetI(value:int64);
+procedure TSVMMem.SetI(value:int64); inline;
 begin
-  SetV(value, svmtInt);
+  if (m_val <> nil) and (m_type = svmtInt) then
+   PInt64(m_val)^ := value
+  else
+   begin
+     if m_val <> nil then
+      FreeMem(m_val);
+
+     m_type := svmtInt;
+     New(PInt64(m_val));
+     PInt64(m_val)^ := value;
+   end;
 end;
 
-procedure TSVMMem.SetD(value:double);
+procedure TSVMMem.SetD(value:double); inline;
 begin
-  SetV(value, svmtReal);
+    if (m_val <> nil) and (m_type = svmtReal) then
+   PDouble(m_val)^ := value
+  else
+   begin
+     if m_val <> nil then
+      FreeMem(m_val);
+
+     m_type := svmtReal;
+     New(PDouble(m_val));
+     PDouble(m_val)^ := value;
+   end;
 end;
 
-procedure TSVMMem.SetS(value:string);
+procedure TSVMMem.SetS(value:string); inline;
 begin
-  SetV(value, svmtStr);
+  if (m_val <> nil) and (m_type = svmtStr) then
+   PString(m_val)^ := value
+  else
+   begin
+     if m_val <> nil then
+      FreeMem(m_val);
+
+     m_type := svmtStr;
+     New(PString(m_val));
+     PString(m_val)^ := value;
+   end;
 end;
 
-procedure TSVMMem.SetB(b:boolean);
+procedure TSVMMem.SetB(b:boolean); inline;
 var
   i:Int64;
 begin
@@ -219,10 +267,10 @@ begin
   else
    i := 0;
 
-  SetV(i, svmtInt);
+  SetI(i);
 end;
 
-procedure TSVMMem.SetM(m:TSVMMem);
+procedure TSVMMem.SetM(m:TSVMMem); inline;
 begin
   case m.m_type of
     svmtArr: begin
@@ -237,7 +285,7 @@ end;
 
 {** Getters **}
 
-function TSVMMem.GetW:cardinal;
+function TSVMMem.GetW:cardinal; inline;
 begin
   Result := 0;
   case m_type of
@@ -250,7 +298,7 @@ begin
   end;
 end;
 
-function TSVMMem.GetI:int64;
+function TSVMMem.GetI:int64; inline;
 begin
   Result := 0;
   case m_type of
@@ -263,7 +311,7 @@ begin
   end;
 end;
 
-function TSVMMem.GetD:double;
+function TSVMMem.GetD:double; inline;
 begin
   Result := 0;
   case m_type of
@@ -276,7 +324,7 @@ begin
   end;
 end;
 
-function TSVMMem.GetS:string;
+function TSVMMem.GetS:string; inline;
 begin
   Result := '';
   case m_type of
@@ -294,7 +342,7 @@ begin
   end;
 end;
 
-function TSVMMem.GetB:boolean;
+function TSVMMem.GetB:boolean; inline;
 begin
   Result := false;
   case m_type of
@@ -309,7 +357,7 @@ end;
 
 {** Logic operations **}
 
-procedure TSVMMem.OpNot;
+procedure TSVMMem.OpNot; inline;
 begin
   case m_type of
     svmtWord: SetW(not GetW);
@@ -321,7 +369,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpEq(m:TSVMMem);
+procedure TSVMMem.OpEq(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -364,7 +412,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpBg(m:TSVMMem);
+procedure TSVMMem.OpBg(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -407,7 +455,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpBe(m:TSVMMem);
+procedure TSVMMem.OpBe(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -450,7 +498,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpAnd(m:TSVMMem);
+procedure TSVMMem.OpAnd(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -493,7 +541,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpOr(m:TSVMMem);
+procedure TSVMMem.OpOr(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -536,7 +584,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpXor(m:TSVMMem);
+procedure TSVMMem.OpXor(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -579,7 +627,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpShl(m:TSVMMem);
+procedure TSVMMem.OpShl(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -615,7 +663,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpShr(m:TSVMMem);
+procedure TSVMMem.OpShr(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -653,7 +701,7 @@ end;
 
 {** Math operations **}
 
-procedure TSVMMem.OpInc;
+procedure TSVMMem.OpInc; inline;
 begin
   case m_type of
     svmtWord: SetW(GetW + 1);
@@ -665,7 +713,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpDec;
+procedure TSVMMem.OpDec; inline;
 begin
   case m_type of
     svmtWord: SetI(GetW - 1);
@@ -677,7 +725,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpNeg;
+procedure TSVMMem.OpNeg; inline;
 begin
   case m_type of
     svmtWord: SetI(-GetW);
@@ -689,7 +737,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpAdd(m:TSVMMem);
+procedure TSVMMem.OpAdd(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -732,7 +780,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpSub(m:TSVMMem);
+procedure TSVMMem.OpSub(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -768,7 +816,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpDiv(m:TSVMMem);
+procedure TSVMMem.OpDiv(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -804,7 +852,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpMul(m:TSVMMem);
+procedure TSVMMem.OpMul(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -840,7 +888,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpIDiv(m:TSVMMem);
+procedure TSVMMem.OpIDiv(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -862,10 +910,10 @@ begin
               end;
 
     svmtReal: case m.m_type of
-                svmtWord: SetD(Trunc(GetD / m.GetW));
-                svmtInt:  SetD(Trunc(GetD / m.GetI));
-                svmtReal: SetD(Trunc(GetD / m.GetD));
-                svmtStr:  SetD(Trunc(GetD / StrToFloat(m.GetS)));
+                svmtWord: SetI(Trunc(GetD / m.GetW));
+                svmtInt:  SetI(Trunc(GetD / m.GetI));
+                svmtReal: SetI(Trunc(GetD / m.GetD));
+                svmtStr:  SetI(Trunc(GetD / StrToFloat(m.GetS)));
                 else
                   Error(reVarInvalidOp);
               end;
@@ -876,7 +924,7 @@ begin
   end;
 end;
 
-procedure TSVMMem.OpMod(m:TSVMMem);
+procedure TSVMMem.OpMod(m:TSVMMem); inline;
 begin
   case m_type of
     svmtWord: case m.m_type of
@@ -914,47 +962,47 @@ end;
 
 {** Arrays **}
 
-procedure TSVMMem.ArrSetSize(newsize: cardinal);
+procedure TSVMMem.ArrSetSize(newsize: cardinal); inline;
 begin
   case m_type of
-    svmtStr: SetLength(PString(m_val)^, newsize);
     svmtArr: SetLength(PMemArray(m_val)^, newsize);
+    svmtStr: SetLength(PString(m_val)^, newsize);
     else
       Error(reInvalidOp);
   end;
 end;
 
-function  TSVMMem.ArrGetSize: cardinal;
+function  TSVMMem.ArrGetSize: cardinal; inline;
 begin
   Result := 0;
   case m_type of
-    svmtStr: Result := Length(PString(m_val)^);
     svmtArr: Result := Length(PMemArray(m_val)^);
+    svmtStr: Result := Length(PString(m_val)^);
     else
       Error(reInvalidOp);
   end;
 end;
 
-procedure TSVMMem.ArrSet(index: cardinal; val:pointer);
+procedure TSVMMem.ArrSet(index: cardinal; val:pointer); inline;
 begin
   case m_type of
+    svmtArr: PMemArray(m_val)^[index] := val;
     svmtWord: PString(m_val)^[index] := Chr(TSVMMem(val).GetW);
     svmtStr: PString(m_val)^[index] := TSVMMem(val).GetS[1];
-    svmtArr: PMemArray(m_val)^[index] := val;
     else
       Error(reInvalidOp);
   end;
 end;
 
-function  TSVMMem.ArrGet(index: cardinal; grabber:PGrabber): pointer;
+function  TSVMMem.ArrGet(index: cardinal; grabber:PGrabber): pointer; inline;
 begin
   Result := nil;
   case m_type of
+    svmtArr: Result := PMemArray(m_val)^[index];
     svmtStr: begin
                Result := TSVMMem.CreateFW(Ord(PString(m_val)^[index]));
                grabber^.AddTask(Result);
              end;
-    svmtArr: Result := PMemArray(m_val)^[index];
     else
       Error(reInvalidOp);
   end;
@@ -962,7 +1010,7 @@ end;
 
 {** Any **}
 
-function TSVMMem.GetSize:cardinal;
+function TSVMMem.GetSize:cardinal; inline;
 begin
   Result := 0;
   case m_type of

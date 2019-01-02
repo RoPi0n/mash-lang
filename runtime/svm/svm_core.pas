@@ -6,7 +6,7 @@
   program svm_core;
   //{$define BuildGUI}
 {$endif}
-
+{$inline on}
 {$ifdef BuildGUI}
   {$apptype gui}
 {$endif}
@@ -479,7 +479,7 @@ type
     parent_vm := vm;
   end;
 
-  procedure TStack.push(p: pointer);
+  procedure TStack.push(p: pointer); inline;
   begin
     items[i_pos] := p;
     inc(i_pos);
@@ -490,12 +490,12 @@ type
      end;
   end;
 
-  function TStack.peek: pointer;
+  function TStack.peek: pointer; inline;
   begin
     Result := items[i_pos - 1];
   end;
 
-  procedure TStack.pop;
+  procedure TStack.pop; inline;
   begin
     dec(i_pos);
     if size - i_pos > StackBlockSize then
@@ -505,7 +505,7 @@ type
      end;
   end;
 
-  function TStack.popv: pointer;
+  function TStack.popv: pointer; inline;
   begin
     dec(i_pos);
     Result := items[i_pos];
@@ -516,7 +516,7 @@ type
      end;
   end;
 
-  procedure TStack.swp;
+  procedure TStack.swp; inline;
   var
     p: pointer;
   begin
@@ -525,7 +525,7 @@ type
     items[i_pos - 1] := p;
   end;
 
-  procedure TStack.drop;
+  procedure TStack.drop; inline;
   begin
     SetLength(items, StackBlockSize);
     size := StackBlockSize;
@@ -538,7 +538,7 @@ type
   TSizeArr = array of cardinal;
   PSizeArr = ^TSizeArr;
 
-  function NewArr_Sub(size_arr: PSizeArr; lvl: word): TSVMMem;
+  function NewArr_Sub(size_arr: PSizeArr; lvl: word): TSVMMem; inline;
   var
     i, l: cardinal;
   begin
@@ -558,7 +558,7 @@ type
      end;
   end;
 
-  function NewArr(stk: PStack; lvl: word): TSVMMem;
+  function NewArr(stk: PStack; lvl: word): TSVMMem; inline;
   var
     size_arr: TSizeArr;
     i: word;
@@ -597,7 +597,7 @@ type
     size := CallBackStackBlockSize;
   end;
 
-  procedure TCallBackStack.push(ip: TInstructionPointer);
+  procedure TCallBackStack.push(ip: TInstructionPointer); inline;
   begin
     items[i_pos] := ip;
     inc(i_pos);
@@ -608,18 +608,18 @@ type
      end;
   end;
 
-  function TCallBackStack.popv: TInstructionPointer;
+  function TCallBackStack.popv: TInstructionPointer; inline;
   begin
     dec(i_pos);
     Result := items[i_pos];
   end;
 
-  function TCallBackStack.peek: TInstructionPointer;
+  function TCallBackStack.peek: TInstructionPointer; inline;
   begin
     Result := items[i_pos - 1];
   end;
 
-  procedure TCallBackStack.pop;
+  procedure TCallBackStack.pop; inline;
   begin
     dec(i_pos);
     if size - i_pos > CallBackStackBlockSize then
@@ -643,7 +643,7 @@ type
     function TR_Finally: TInstructionPointer;
   end;
 
-  procedure TTRBlocks.add(CP, EP: TInstructionPointer);
+  procedure TTRBlocks.add(CP, EP: TInstructionPointer); inline;
   begin
     SetLength(self.trblocks, length(self.trblocks) + 1);
     with self.trblocks[length(self.trblocks) - 1] do
@@ -653,7 +653,7 @@ type
     end;
   end;
 
-  function TTRBlocks.TR_Catch(E: Exception): TInstructionPointer;
+  function TTRBlocks.TR_Catch(E: Exception): TInstructionPointer; inline;
   begin
     if Length(self.trblocks) > 0 then
     begin
@@ -664,7 +664,7 @@ type
       raise E;
   end;
 
-  function TTRBlocks.TR_Finally: TInstructionPointer;
+  function TTRBlocks.TR_Finally: TInstructionPointer; inline;
   begin
     Result := self.trblocks[length(self.trblocks) - 1].EndPoint;
     setlength(self.trblocks, length(self.trblocks) - 1);
