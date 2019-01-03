@@ -9,6 +9,7 @@ uses
   u_prep_expressions, u_classes, u_prep_codeblock, u_consts, u_writers;
 
 function GenEnd: string;
+function GenExit: string;
 function GenBreak: string;
 function GenReturn(s: string; varmgr: TVarManager): string;
 function IsLabel(s: string): boolean;
@@ -139,6 +140,31 @@ begin
     PrpError('Using operator "end" without openning any code block.');
 end;
 
+function GenExit: string;
+var
+  CB: TCodeBlock;
+  i: integer;
+begin
+  i := 1;
+  Result := '';
+  if BlockStack.Count > 0 then
+  begin
+    repeat
+      CB := TCodeBlock(BlockStack[BlockStack.Count - i]);
+      if CB.bType in [btFunc, btProc] then
+      begin
+        Result := 'jr';
+        break;
+      end;
+      Inc(i);
+    until BlockStack.Count - i = -1;
+    if Result = '' then
+      PrpError('Using operator "exit" outside a method.');
+  end
+  else
+    PrpError('Using operator "exit" outside a method.');
+end;
+
 function GenBreak: string;
 var
   CB: TCodeBlock;
@@ -200,10 +226,10 @@ begin
       Inc(i);
     until BlockStack.Count - i = -1;
     if Result = '' then
-      PrpError('Using return outside a function.');
+      PrpError('Using operator "return" outside a function.');
   end
   else
-    PrpError('Using return outside a function.');
+    PrpError('Using operator "return" outside a function.');
 end;
 
 function IsLabel(s: string): boolean;

@@ -444,6 +444,10 @@ begin
   if s = 'break' then
     Result := GenBreak
   else
+  {** Exit **}
+  if s = 'exit' then
+    Result := GenExit
+  else
   {** Try **}
   if IsTry(s) then
     Result := GenTry
