@@ -197,6 +197,8 @@ begin
      inc(c);
    end;
 
+  PrepLines(Code);
+
   //pre-processing code
   c := 0;
   while c < Code.Count do

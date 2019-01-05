@@ -160,6 +160,9 @@ begin
             IncludedFiles.Add(s);
             for c := 0 to sl.Count - 1 do
               sl[c] := FastPrep(TrimCodeStr(sl[c]));
+
+            PrepLines(sl);
+
             for c := 0 to sl.Count - 1 do
               PreprocessDefinitions(sl[c], varmgr);
           end;
@@ -195,6 +198,9 @@ begin
           begin
             for c := 0 to sl.Count - 1 do
               sl[c] := FastPrep(TrimCodeStr(sl[c]));
+
+            PrepLines(sl);
+
             for c := 0 to sl.Count - 1 do
               PreprocessDefinitions(sl[c], varmgr);
           end;
@@ -279,8 +285,12 @@ begin
           begin
             for c := 0 to sl.Count - 1 do
               sl[c] := PreprocessClassCalls(FastPrep(TrimCodeStr(sl[c])));
+
+            PrepLines(sl);
+
             for c := 0 to sl.Count - 1 do
               sl[c] := PreprocessStr(sl[c], varmgr);
+
             for c := sl.Count - 1 downto 0 do
               if trim(sl[c]) = '' then
                 sl.Delete(c);
@@ -328,6 +338,8 @@ begin
           begin
             for c := 0 to sl.Count - 1 do
               sl[c] := PreprocessClassCalls(FastPrep(TrimCodeStr(sl[c])));
+
+            PrepLines(sl);
 
             for c := 0 to sl.Count - 1 do
               sl[c] := PreprocessStr(sl[c], varmgr);

@@ -13,6 +13,7 @@ type
 
 function CheckName(n: string): boolean;
 function TrimCodeStr(s: string): string;
+procedure PrepLines(sl: TStringList);
 function Tk(s: string; w: word): string;
 procedure AsmError(m: string);
 procedure AsmWarn(m: string);
@@ -100,6 +101,32 @@ begin
        Delete(s, 1, 1);
     end;
   end;
+end;
+
+procedure PrepLines(sl: TStringList);
+var
+  c: cardinal;
+begin
+  for c := sl.Count - 1 downto 0 do
+   if trim(sl[c]) = '' then
+    sl.Delete(c);
+
+  c := 0;
+  while c < sl.Count do
+   begin
+     if (sl[c][length(sl[c])] in [',', '&', '|', '^', '+', '-', '*',
+                                  '/', '\', '%', '=', '.', ';', '?', '@']) and
+        (not ((copy(sl[c], length(sl[c]) - 1, 2) = '++') or (copy(sl[c], length(sl[c]) - 1, 2) = '--'))) or
+        ((copy(sl[c], length(sl[c]) - 1, 2) = '<<') or (copy(sl[c], length(sl[c]) - 1, 2) = '>>') or
+        (copy(sl[c], length(sl[c]) - 1, 2) = '->') or (copy(sl[c], length(sl[c]) - 1, 2) = '::'))then
+      if c + 1 < sl.Count then
+       begin
+         sl[c] := sl[c] + sl[c + 1];
+         sl.Delete(c + 1);
+         dec(c);
+       end;
+     inc(c);
+   end;
 end;
 
 function Tk(s: string; w: word): string;
