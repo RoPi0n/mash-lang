@@ -1,6 +1,6 @@
 unit svm_grabber;
 
-{$mode objfpc}{$H+}{$inline on}
+{$inline on}
 
 interface
 
@@ -32,7 +32,7 @@ implementation
     i_pos := 0;
   end;
 
-  procedure TGrabber.AddTask(p: Pointer);
+  procedure TGrabber.AddTask(p: Pointer); inline;
   begin
     tasks[i_pos] := p;
     inc(i_pos);
@@ -43,7 +43,7 @@ implementation
      end;
   end;
 
-  procedure TGrabber.Run;
+  procedure TGrabber.Run; inline;
   begin
     while i_pos > 0 do
      begin

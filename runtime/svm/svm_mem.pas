@@ -80,14 +80,12 @@ implementation
 
 constructor TSVMMem.Create;
 begin
-  inherited;
   m_val := nil;
   m_type := svmtNull;
 end;
 
 constructor TSVMMem.CreateF(const value; t:TSVMType);
 begin
-  inherited;
   m_val := nil;
   m_type := t;
   SetV(value, t);
@@ -95,7 +93,6 @@ end;
 
 constructor TSVMMem.CreateFS(s:string);
 begin
-  inherited;
   m_val := nil;
   m_type := svmtStr;
   SetS(S);
@@ -103,7 +100,6 @@ end;
 
 constructor TSVMMem.CreateFW(w:cardinal);
 begin
-  inherited;
   m_val := nil;
   m_type := svmtWord;
   SetW(w);
@@ -111,7 +107,6 @@ end;
 
 constructor TSVMMem.CreateArr(size:cardinal = 0);
 begin
-  inherited;
   m_type := svmtArr;
   new(PMemArray(m_val));
   SetLength(PMemArray(m_val)^, size);
@@ -119,7 +114,6 @@ end;
 
 constructor TSVMMem.CreateCopy(m:TSVMMem);
 begin
-  inherited;
   if m.m_type = svmtArr then
    begin
      m_type := svmtArr;
@@ -136,7 +130,6 @@ end;
 destructor TSVMMem.Destroy;
 begin
   Clear;
-  inherited;
 end;
 
 procedure TSVMMem.Clear; inline;

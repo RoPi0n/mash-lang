@@ -383,7 +383,7 @@ type
 
 {***** Import section *********************************************************}
 type
-  TExternalFunction = procedure(st: pointer); cdecl;
+  TExternalFunction = procedure(PStack: pointer); cdecl;
   PExternalFunction = ^TExternalFunction;
 
 type
@@ -1103,8 +1103,8 @@ type
                   TSVMMem.CreateCopy(TSVMMem(self.consts^.GetConst(
                     cardinal((self.bytes^[self.ip + 1] shl 24) + (self.bytes^[self.ip + 2] shl 16) +
                              (self.bytes^[self.ip + 3] shl 8) + self.bytes^[self.ip + 4]
-                            )
-                    )))
+                            ))
+                    ))
                   );
               Inc(self.ip, 5);
             end;
@@ -1124,7 +1124,8 @@ type
               self.stack.push(self.extern_methods^.GetFunc(
                 cardinal((self.bytes^[self.ip + 1] shl 24) +
                 (self.bytes^[self.ip + 2] shl 16) + (self.bytes^[self.ip + 3] shl 8) +
-                self.bytes^[self.ip + 4])));
+                self.bytes^[self.ip + 4])
+                ));
               Inc(self.ip, 5);
             end;
 
