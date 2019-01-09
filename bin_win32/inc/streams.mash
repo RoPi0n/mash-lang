@@ -75,8 +75,7 @@ proc TStream::Create():
 end
 
 proc TStream::Free():
-  _Stream_Free($StreamPtr)
-  $rem()
+  _Stream_Free($StreamPtr, $)
 end
 
 // some methods
@@ -217,8 +216,7 @@ proc TMemoryStream::Create():
 end
 
 proc TMemoryStream::Free():
-  _MemoryStream_Free($StreamPtr)
-  $rem()
+  _MemoryStream_Free($StreamPtr, $)
 end
 
 // some methods
@@ -269,6 +267,5 @@ proc TFileStream::Create(fpath, openmode):
 end
 
 proc TFileStream::Free():
-  _FileStream_Free($StreamPtr)
-  $rem()
+  _FileStream_Free($StreamPtr, $)
 end

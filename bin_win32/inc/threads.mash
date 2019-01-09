@@ -1,7 +1,9 @@
 // Mash lang threads unit
-// Code version: 10
+// Code version: 1.0
 
 uses <bf>
+
+// common methods
 
 proc thread(method, arg):
   push arg
@@ -42,22 +44,22 @@ end
 ////////////////////////////////////////////////////////////////////////////////
 
 class TThread:
-//public
-  var Resumed, Terminated, FreeOnTerminate
-  proc Execute, Create, Free, Suspend, Resume, Terminate, ReJoin
-//should be private
-  var ThreadContext
+  public:
+    var Resumed, Terminated, FreeOnTerminate
+    proc Execute, Create, Free, Suspend, Resume, Terminate, ReJoin
+  protected:
+    var ThreadContext
 end
 
 proc TThread::Execute():
   // method for overriding
 end
 
-proc TThread_Join(CurrentThreadContext, TThreadClass):
-  TThreadClass->Execute()
-  TThreadClass->Terminated = true
-  if TThreadClass->FreeOnTerminate:
-    TThreadClass->Free()
+proc TThread_Join(CurrentThreadContext, ThreadClass):
+  ThreadClass->Execute()
+  ThreadClass->Terminated = true
+  if ThreadClass->FreeOnTerminate:
+    ThreadClass->Free()
   end
 end
 
@@ -72,10 +74,7 @@ proc TThread::Create(Resumed):
 end
 
 proc TThread::Free():
-  Free($Resumed)
-  Free($Terminated)
-  Free($FreeOnTerminate)
-  $rem()
+  Free($Resumed, $Terminated, $FreeOnTerminate, $)
 end
 
 proc TThread::ReJoin(Resumed):

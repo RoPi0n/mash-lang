@@ -163,6 +163,7 @@ end
 proc gpm(v):
   push v
   gpm
+  pop
 end
 
 // API redefine

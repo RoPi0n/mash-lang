@@ -3,13 +3,17 @@
 
 uses <bf>
 
+class class: // for free class-methods declaration
+end          // like:  proc class::MyProc()  -- for that -->  MyClass->MyMethod = class::MyProc
+
 ////////////////////////////////////////////////////////////////////////////////
 // Point
 ////////////////////////////////////////////////////////////////////////////////
 
 class point:
-  var x, y
-  proc Create, Free, Set, Compare
+  public:
+    var x, y
+    proc Create, Free, Set, Compare
 end
 
 proc point::Create(x, y):
@@ -18,9 +22,7 @@ proc point::Create(x, y):
 end
 
 proc point::Free():
-  Free($x)
-  Free($y)
-  $rem()
+  Free($x, $y, $)
 end
 
 proc point::Set(x, y):
@@ -32,14 +34,36 @@ func point::Compare(p):
   return ($x == p->x) & ($y == p->y)
 end
 
+class point3(point):
+  public:
+    var z
+    proc Create, Free
+    func Compare
+end
+
+proc point3::Create(x, y, z):
+  point::Create$(x, y)
+  $z ?= new(z)
+end
+
+proc point3::Free():
+  Free($z)
+  point::Free$()
+end
+
+func point3::Compare(p):
+  return ($z == p->z) & point::Compare$(p)
+end
+
 ////////////////////////////////////////////////////////////////////////////////
 //  Vector
 ////////////////////////////////////////////////////////////////////////////////
 
 class vector:
-  var Items
-  proc Create, Free, Push_Back, Rem_Back, Rem_First
-  func Pop_Back, Pop_First, Peek_Back, Peek_First, At, Size
+  public:
+    var Items
+    proc Create, Free, Push_Back, Rem_Back, Rem_First
+    func Pop_Back, Pop_First, Peek_Back, Peek_First, At, Size
 end
 
 proc vector::Create():
@@ -100,14 +124,5 @@ func vector::Size():
 end
 
 proc vector::Free():
-  Free($Items[0])
-  Free($Items)
-  $rem()
+  Free($Items[0], $Items, $)
 end
-
-////////////////////////////////////////////////////////////////////////////////
-// Simple classes
-////////////////////////////////////////////////////////////////////////////////
-
-class class: // for free class-methods declaration
-end       // like:  proc class::MyProc()  -- for that -->  MyClass->MyMethod = class::MyProc
