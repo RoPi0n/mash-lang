@@ -25,8 +25,7 @@ func MyClass2::F():         //Переопределенная функция F.
 end                         //от для экземпляра данного класса.
 
 proc MyClass2::Free():
-  Free($a)
-  $rem()
+  Free($a, $)
 end
 
 proc main():

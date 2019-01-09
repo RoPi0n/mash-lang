@@ -22,9 +22,8 @@ proc Snake::Create():
 end
 
 proc Snake::Free():
-  Free($MovingVector)
   $Body->Free()
-  $rem()
+  Free($MovingVector, $)
 end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,7 +68,8 @@ end
 proc RandFood():
   food->set(RandomB(39) + 2, RandomB(19) + 2)
   for(i ?= 1; i < snk->Body->Size(); i++):
-    if (food->x == snk->Body->Items[i]->x) & (food->y == snk->Body->Items[i]->y):
+    if (food->x == snk->Body->Items[i]->x) &
+       (food->y == snk->Body->Items[i]->y):
       RandFood()
       break
     end
@@ -91,12 +91,14 @@ proc MoveSnake(x, y):
     tmp->Free()
 
     for(i ?= 1; i < snk->Body->Size(); i++):
-      if (newhead->x == snk->Body->Items[i]->x) & (newhead->y == snk->Body->Items[i]->y):
+      if (newhead->x == snk->Body->Items[i]->x) &
+         (newhead->y == snk->Body->Items[i]->y):
         GameOver()
       end
     end
 
-    if (newhead->x == 1) | (newhead->x == 42) | (newhead->y == 1) | (newhead->y == 22):
+    if (newhead->x == 1) | (newhead->x == 42) |
+       (newhead->y == 1) | (newhead->y == 22):
       GameOver()
     end
   end
@@ -133,7 +135,11 @@ end
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc ControlThread(ThreadContext, Arg):
+class ControlThread(TThread):
+  proc Execute
+end
+
+proc ControlThread::Execute():
   while true:
     k ?= Crt.ReadKey()
 
@@ -171,6 +177,7 @@ proc ControlThread(ThreadContext, Arg):
       end
     end
     Free(k)
+    gc()
   end
 end
 
@@ -179,13 +186,23 @@ end
 proc main():
   snk ?= new snake()
   food ?= new point(0, 0)
-  ControlThr ?= async(ControlThread, 0)
+  ControlThr ?= new ControlThread(true)
   Randomize()
   Crt.ClrScr()
   DrawBorders()
-  PutCh(snk->body->items[1]->x, snk->body->items[1]->y, snake_char)
-  PutCh(snk->body->items[2]->x, snk->body->items[2]->y, snake_char)
-  PutCh(snk->body->items[3]->x, snk->body->items[3]->y, snake_char)
+
+  PutCh(snk->body->items[1]->x,
+        snk->body->items[1]->y,
+        snake_char)
+
+  PutCh(snk->body->items[2]->x,
+        snk->body->items[2]->y,
+        snake_char)
+
+  PutCh(snk->body->items[3]->x,
+        snk->body->items[3]->y,
+        snake_char)
+
   food->set(RandomB(39) + 2, RandomB(19) + 2)
   PutCh(food->x, food->y, food_char)
 
@@ -197,6 +214,6 @@ proc main():
     Crt.CursorOff()
     Sleep(sleeptime)
     GameTick()
-    gc
+    gc()
   end
 end

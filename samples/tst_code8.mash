@@ -2,8 +2,15 @@ uses <bf>
 uses <crt>
 
 proc main():
-  a ?= 10
+  /*a ?= 10
   b ?= a + 100
-  println(b)
+  println(b)*/
+
+  a ?= 10
+  while a < 0:
+    println(a)
+    a--
+  end
+
   inputln()
 end

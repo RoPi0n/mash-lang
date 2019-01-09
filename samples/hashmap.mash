@@ -13,8 +13,7 @@ proc TestClass::Create(a, b):
 end
 
 proc TestClass::Free():
-  Free($a, $b)
-  $rem()
+  Free($a, $b, $)
 end
 
 func TestClass::Hash():
@@ -26,10 +25,8 @@ class HashMap:
     var objects, hashes
 
   public:
-    // constructors
     proc Create, Free
 
-    // methods
     proc Append
     func Get
 end
@@ -45,8 +42,7 @@ proc HashMap::Free():
     $objects[i]->Free()
     Free($hashes[i])
   end
-  Free($objects, $hashes)
-  $rem()
+  Free($objects, $hashes, $)
 end
 
 proc HashMap::Append(x):
@@ -63,10 +59,11 @@ func HashMap::Get(h):
       return $objects[i]
     end
   end
-  return ""
+  return null
 end
 
 proc main():
+  t ?= TickCnt()
   var hm = new HashMap()
   for(var i = copy(0); i < 10000; i++):
     hm->append(new TestClass(i, i*i))
@@ -76,7 +73,7 @@ proc main():
 
   hm->append(x)
   x ?= hm->get(x->hash())
-
+  println("Time of execution: ", TickCnt() - t, " ms.")
   println(x->a, " ", x->b)
 
   hm->Free()
