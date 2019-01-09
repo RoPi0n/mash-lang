@@ -224,20 +224,20 @@ begin
 
   // Introspection
   if RTTI_Enable then
-   Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.CName + sLineBreak +
+   Result := Result + 'pcopy' + sLineBreak + 'pushcp ' + MClass.CName + sLineBreak +
              'swp' + sLineBreak + 'pushcp ' + ClassChildPref + 'type' + sLineBreak +
              'swp' + sLineBreak + 'peekai' + sLineBreak;
 
   // StructFree()
-  Result := Result + 'pcopy' + sLineBreak + 'pushc ' + '__class_' +
+  {Result := Result + 'pcopy' + sLineBreak + 'pushcp ' + '__class_' +
     MClass.CName + '_rem' + sLineBreak + 'swp' + sLineBreak +
     'pushcp ' + ClassChildPref + 'rem' + sLineBreak + 'swp' +
-    sLineBreak + 'peekai' + sLineBreak;
+    sLineBreak + 'peekai' + sLineBreak;}
 
   c := 0;
   while c < MClass.Methods.Count do
   begin
-    Result := Result + 'pcopy' + sLineBreak + 'pushc ' + MClass.MethodsLinks[c] +
+    Result := Result + 'pcopy' + sLineBreak + 'pushcp ' + MClass.MethodsLinks[c] +
       sLineBreak + 'swp' + sLineBreak + 'pushcp ' + ClassChildPref + MClass.Methods[c] +
       sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
     Inc(c);
@@ -247,7 +247,7 @@ begin
 
   // Clear memory
 
-  mname := '__class_' + MClass.CName + '_rem';
+  {mname := '__class_' + MClass.CName + '_rem';
   Result := Result + sLineBreak + mname + ':';
 
   // Introspection
@@ -269,7 +269,7 @@ begin
   end;
 
   Result := Result + sLineBreak + 'rem' + //sLineBreak + 'pop' +
-    sLineBreak + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
+    sLineBreak + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;}
 end;
 
 end.

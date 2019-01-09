@@ -23,10 +23,10 @@ implementation
 constructor TCodeBlock.Create(bt: TBlockEntryType; MT, MC, EC: string);
 begin
   inherited Create;
-  self.bType := bt;
-  self.bMeta := MT;
-  self.bMCode := MC;
-  self.bEndCode := EC;
+  bType := bt;
+  bMeta := MT;
+  bMCode := MC;
+  bEndCode := EC;
 end;
 
 end.
