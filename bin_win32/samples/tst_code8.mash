@@ -2,8 +2,12 @@ uses <bf>
 uses <crt>
 
 proc main():
-  a ?= 10
-  b ?= a + 100
-  println(b)
+  arr ?= [1, 2, 3, 4, 5]
+  x ?= 1
+  println(BoolToStr(x in arr))
+  println(BoolToStr(3 in arr))
+  println(BoolToStr(x in [1, 2, 3, 4, 5]))
+  println(BoolToStr(4 in [1, 2, 3, 4, 5]))
+  println(BoolToStr(0 in [1, 2, 3, 4, 5]))
   inputln()
 end
