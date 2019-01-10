@@ -1,4 +1,4 @@
-// stringsmash
+// strings.mash
 
 uses <bf>
 
@@ -220,7 +220,7 @@ enum s_ReplaceFlags [srfReplaceAll, srfIgnoreCase]
 
 func s_Replace(s, from, to, flags):
   var r = copy(s), p
-  if In(srfIgnoreCase, flags):
+  if srfIgnoreCase in flags:
     p ?= s_Pos(StrUpper(from), StrUpper(r))
   else:
     p ?= s_Pos(from, r)
@@ -228,14 +228,14 @@ func s_Replace(s, from, to, flags):
   while p > 0:
     s ?= s_Copy(r, p + s_Len(from), s_Len(r))
     r = s_Copy(r, 1, p - 2) + to + s
-    if In(srfIgnoreCase, flags):
+    if srfIgnoreCase in flags:
       p = s_Pos(StrUpper(from), StrUpper(r))
     else:
       p = s_Pos(from, r)
     end
   end
-  if In(srfReplaceAll, flags):
-    if In(srfIgnoreCase, flags):
+  if srfReplaceAll in flags:
+    if srfIgnoreCase in flags:
       p = s_Pos(from, StrUpper(r))
     else:
       p = s_Pos(from, r)

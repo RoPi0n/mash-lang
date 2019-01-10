@@ -119,7 +119,7 @@ end
 
 {_end_}
 
-func In(v, array):
+func _op_in(v, array):
   var i, ln
   i ?= 0
   ln ?= len(array)
