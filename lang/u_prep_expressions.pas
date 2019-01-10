@@ -374,7 +374,7 @@ begin
           (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
           (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
           (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
-          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') then
+          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') or (copy(s, 1, 4) = ' in ') then
         begin
           Result := True;
           break;
@@ -424,7 +424,7 @@ begin
           (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
           (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
           (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
-          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') then
+          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') or (copy(s, 1, 3) = 'in ') then
           break;
       if s[1] in ['+', '-', '*', '/', '\', '%', '&', '|', '^', '~', '>', '<', '='] then
         break;
@@ -453,10 +453,18 @@ begin
       (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or (s[1] + s[2] = '/=') or
       (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or (s[1] + s[2] = '&=') or
       (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or (s[1] + s[2] = '++') or
-      (s[1] + s[2] = '--') then
+      (s[1] + s[2] = '--') or (copy(s, 1, 3) = 'in ') then
     begin
-      Result := s[1] + s[2];
-      Delete(s, 1, 2);
+      if copy(s, 1, 3) = 'in ' then
+       begin
+         Result := 'in';
+         Delete(s, 1, 3);
+       end
+      else
+       begin
+         Result := s[1] + s[2];
+         Delete(s, 1, 2);
+       end;
       Exit;
     end;
 
@@ -769,7 +777,8 @@ begin
       (TokensStack[0] = '-') or (TokensStack[0] = '&') or
       (TokensStack[0] = '^') {or (TokensStack[0] = '~')} or
       (TokensStack[0] = '|') or (TokensStack[0] = '>') or
-      (TokensStack[0] = '<') or (TokensStack[0] = '=') then
+      (TokensStack[0] = '<') or (TokensStack[0] = '=') or
+      (TokensStack[0] = 'in') then
     begin
       Result := Result + sLineBreak + TempPushIt('0', varmgr);
     end
@@ -842,6 +851,14 @@ begin
         TokensStack.Delete(0);
       end
       else
+      if (TokensStack[0] = 'in') then
+      begin
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'pushcp _op_in' + sLineBreak + 'jc';
+        TokensStack.Delete(0);
+        TokensStack.Delete(0);
+      end
+      else
       if (TokensStack[0] = '>') then
       begin
         Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
@@ -866,6 +883,7 @@ begin
         TokensStack.Delete(0);
       end
       else
+
       if (TokensStack[0] = '&') then
       begin
         Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +

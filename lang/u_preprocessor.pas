@@ -485,7 +485,7 @@ begin
   else
   if Tk(s, 1) = 'super' then
   begin
-    Result := 'pushc super.' + Tk(s, 2) + sLineBreak + 'gpm' + sLineBreak + 'jc';
+    Result := 'pushcp super.' + Tk(s, 2) + sLineBreak + 'jc';
   end
   else
   {** Check imports for fast calling **}
