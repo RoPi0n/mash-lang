@@ -4,11 +4,11 @@
   library svm_core;
 {$else}
   program svm_core;
-  //{$define BuildGUI}
+  {$define BuildGUI}
 {$endif}
 {$inline on}
 {$ifdef BuildGUI}
-  {$apptype gui}
+  //{$apptype gui}
 {$endif}
 
 //{$Define DebugVer}
@@ -81,6 +81,7 @@ type
     bcRM,     // rem @[top]
     bcNA,     // [top] = @new array[  [top]  ] of pointer
     bcTF,     // [top] = typeof( [top] )
+    bcTMC,    // [top].type = type of class
     bcSF,     // [top] = sizeof( [top] )
 
     {** array's **}
@@ -595,6 +596,7 @@ type
     SetLength(items, CallBackStackBlockSize);
     i_pos := 0;
     size := CallBackStackBlockSize;
+    Push(High(TInstructionPointer));
   end;
 
   procedure TCallBackStack.push(ip: TInstructionPointer); inline;
@@ -1047,8 +1049,18 @@ type
 
             bcTF:
             begin
-              self.stack.push(TSVMMem.CreateFW(byte(TSVMMem(self.stack.popv).m_type)));
+              p := self.stack.popv;
+              if TObject(p) is TSVMMem then
+                self.stack.push(TSVMMem.CreateFW(byte(TSVMMem(p).m_type)))
+              else
+                self.stack.push(TSVMMem.CreateFW(byte(TSVMTypeAddr)));
               Inc(self.ip);
+            end;
+
+            bcTMC:
+            begin
+              TSVMMem(self.stack.peek).m_type := svmtClass;
+              Inc(self.ip)
             end;
 
             bcSF:
@@ -1174,7 +1186,7 @@ type
 
             bcTTHR:
             begin
-              TSVMThread(self.stack.popv).Free;
+              TSVMThread(self.stack.popv).Terminate;
               Inc(self.ip);
             end;
 
