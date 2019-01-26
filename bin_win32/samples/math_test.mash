@@ -1,0 +1,8 @@
+uses <bf>
+uses <math>
+uses <crt>
+
+proc main():
+  println(LogN(2, 4))
+  inputln()
+end

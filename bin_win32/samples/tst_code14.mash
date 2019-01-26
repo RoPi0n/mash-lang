@@ -1,0 +1,31 @@
+uses <bf>
+uses <crt>
+
+class MyClass:
+  var a, b
+  proc Create, Free
+  func Summ
+end
+
+proc MyClass::Create(a, b):
+  $a ?= new(a)
+  $b ?= new(b)
+end
+
+proc MyClass::Free():
+  Free($a, $b, $)
+end
+
+func MyClass::Summ():
+  return $a + $b
+end
+
+proc main():
+  x ?= new MyClass(10, 20)
+
+  println( if(typeof(x) == TypeClass, "It's class!", "It's not a class!") )
+  println( if(x -> type == MyClass,   "It's MyClass!", "It's not a MyClass!") )
+
+  println(x -> Summ())
+  inputln()
+end

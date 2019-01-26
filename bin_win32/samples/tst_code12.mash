@@ -1,0 +1,17 @@
+uses <bf>
+uses <crt>
+uses <classes>
+
+proc main():
+  while true:
+    sl ?= new StringList()
+
+    s ?= "Hello" + LnBreak + "world!"
+    sl -> SetText(s)
+    PrintLn(sl -> GetText())
+
+    sl -> Free()
+    gc()
+  end
+  InputLn()
+end

@@ -1,0 +1,17 @@
+uses <bf>
+uses <crt>
+uses <classes>
+
+proc main():
+  m ?= new Map()
+
+  m -> Add("world!", 2)
+  m -> Add("Hell", 0)
+  m -> Add("o ", 1)
+
+  for (i ?= 0; i < m -> Size(); i++):
+    Print(m -> Get(i))
+  end
+
+  InputLn()
+end

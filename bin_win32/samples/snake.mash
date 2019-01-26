@@ -22,14 +22,19 @@ proc Snake::Create():
 end
 
 proc Snake::Free():
-  Free($MovingVector)
   $Body->Free()
-  $rem()
+  Free($MovingVector, $)
 end
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var snk, food, score = 0, sleeptime = 80, ControlThr
+var snk,
+    food,
+    score = 0,
+    sleeptime = 80,
+    ControlThr,
+    CritSect = new TCriticalSection(),
+    VectorChanged = false
 
 str snake_char "@"
 str food_char  "&"
@@ -55,7 +60,9 @@ proc DrawBorders():
 end
 
 proc GameOver():
-  thr_suspend(ControlThr)
+  ControlThr->Suspend()
+  Crt.TextColor(Crt.White)
+  Crt.TextBackground(Crt.Black)
   Crt.ClrScr()
   Crt.CursorOn()
   PutCh(1, 1, "Game over!")
@@ -69,7 +76,8 @@ end
 proc RandFood():
   food->set(RandomB(39) + 2, RandomB(19) + 2)
   for(i ?= 1; i < snk->Body->Size(); i++):
-    if (food->x == snk->Body->Items[i]->x) & (food->y == snk->Body->Items[i]->y):
+    if (food->x == snk->Body->Items[i]->x) &
+       (food->y == snk->Body->Items[i]->y):
       RandFood()
       break
     end
@@ -91,12 +99,14 @@ proc MoveSnake(x, y):
     tmp->Free()
 
     for(i ?= 1; i < snk->Body->Size(); i++):
-      if (newhead->x == snk->Body->Items[i]->x) & (newhead->y == snk->Body->Items[i]->y):
+      if (newhead->x == snk->Body->Items[i]->x) &
+         (newhead->y == snk->Body->Items[i]->y):
         GameOver()
       end
     end
 
-    if (newhead->x == 1) | (newhead->x == 42) | (newhead->y == 1) | (newhead->y == 22):
+    if (newhead->x == 1) | (newhead->x == 42) |
+       (newhead->y == 1) | (newhead->y == 22):
       GameOver()
     end
   end
@@ -133,44 +143,53 @@ end
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc ControlThread(ThreadContext, Arg):
+proc ControlThread():
   while true:
-    k ?= Crt.ReadKey()
+    if ~VectorChanged:
+      k ?= Crt.ReadKey()
 
-    switch StrUpper(k):
-      case "W":
-        if snk->MovingVector == smvDown:
+      switch StrUpper(k):
+        case "W":
+          if snk->MovingVector == smvDown:
+            break
+          end
+          snk->MovingVector = smvUp
           break
         end
-        snk->MovingVector = smvUp
-        break
-      end
 
-      case "S":
-        if snk->MovingVector == smvUp:
+        case "S":
+          if snk->MovingVector == smvUp:
+            break
+          end
+          snk->MovingVector = smvDown
           break
         end
-        snk->MovingVector = smvDown
-        break
-      end
 
-      case "A":
-        if snk->MovingVector == smvRight:
+        case "A":
+          if snk->MovingVector == smvRight:
+            break
+          end
+          snk->MovingVector = smvLeft
           break
         end
-        snk->MovingVector = smvLeft
-        break
-      end
 
-      case "D":
-        if snk->MovingVector == smvLeft:
+        case "D":
+          if snk->MovingVector == smvLeft:
+            break
+          end
+          snk->MovingVector = smvRight
           break
         end
-        snk->MovingVector = smvRight
-        break
       end
+
+      CritSect->Enter()
+      VectorChanged = true
+      CritSect->Leave()
+
+      Sleep(100)
     end
-    Free(k)
+
+    gc()
   end
 end
 
@@ -179,13 +198,30 @@ end
 proc main():
   snk ?= new snake()
   food ?= new point(0, 0)
-  ControlThr ?= async(ControlThread, 0)
+  ControlThr ?= async(ControlThread)
   Randomize()
+
+  Crt.TextBackground(Crt.White)
   Crt.ClrScr()
+
+  Crt.TextColor(Crt.Black)
+  Crt.TextBackground(Crt.Black)
   DrawBorders()
-  PutCh(snk->body->items[1]->x, snk->body->items[1]->y, snake_char)
-  PutCh(snk->body->items[2]->x, snk->body->items[2]->y, snake_char)
-  PutCh(snk->body->items[3]->x, snk->body->items[3]->y, snake_char)
+
+  Crt.TextBackground(Crt.White)
+
+  PutCh(snk->body->items[1]->x,
+        snk->body->items[1]->y,
+        snake_char)
+
+  PutCh(snk->body->items[2]->x,
+        snk->body->items[2]->y,
+        snake_char)
+
+  PutCh(snk->body->items[3]->x,
+        snk->body->items[3]->y,
+        snake_char)
+
   food->set(RandomB(39) + 2, RandomB(19) + 2)
   PutCh(food->x, food->y, food_char)
 
@@ -194,9 +230,18 @@ proc main():
   PutCh(46, 13, "Score: 0")
 
   while true:
+    tm1 ?= TickCnt()
     Crt.CursorOff()
+    if VectorChanged:
+      CritSect->Enter()
+      VectorChanged = false
+      CritSect->Leave()
+    end
     Sleep(sleeptime)
     GameTick()
-    gc
+    Crt.TextColor(Crt.White)
+    PutCh(46, 2, "FPS: " + 1000 \ (TickCnt() - tm1) + "   ")
+    Crt.TextColor(Crt.Black)
+    gc()
   end
 end

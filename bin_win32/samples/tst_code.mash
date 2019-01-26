@@ -21,8 +21,8 @@ proc main():
   a = "Test" + " string!"
   PrintLn(a)   //Выведет: Test string!
 
-  a ?= [1, 1*2, 3.14, "Test enumeration!", F(10)]
-  PrintArr(a)  //Выведет: 1, 2, 3,14, Test enumeration!, 20
+  a ?= [-1, 1*2, 3.14, "Test enumeration!", F(10)]
+  PrintArr(a)  //Выведет: -1, 2, 3,14, Test enumeration!, 20
 
   InputLn()
 end

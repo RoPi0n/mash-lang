@@ -1,0 +1,39 @@
+uses <bf>
+uses <crt>
+uses <classes>
+
+class x:
+  var a
+  proc create
+end
+
+proc x::create(a):
+  $a ?= a
+end
+
+proc main():
+  l ?= new list()
+
+  a ?= new x(123)
+  b ?= a
+
+  for(i ?= 0; i < 100; i++):
+    l->add(new x(copy(i)))
+  end
+
+  l->add(a)
+  println(l->IndexOf(b))
+  println(l->Size)
+
+  l->Insert(a, 50)
+  println(l->Size)
+  println(l->IndexOf(b))
+
+
+  for(i ?= 0; i < 100; i++):
+    l->Delete(0)
+  end
+  println(l->IndexOf(b))
+
+  inputln()
+end

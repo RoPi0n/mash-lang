@@ -1,0 +1,39 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+var CSect = new TCriticalSection()
+
+proc ThreadedProc(Arg):
+  while true:
+    CSect -> Enter()
+      PrintLn(Arg)
+    CSect -> Leave()
+    Sleep(10)
+    gc()
+  end
+end
+
+proc CriticalThreadedProc():
+  while true:
+    Sleep(3000)
+    CSect -> Enter()
+
+    Sleep(1000)
+    PrintLn("And now...")
+    Sleep(1000)
+    PrintLn("Time to...")
+    Sleep(1000)
+    PrintLn("Critical section!")
+    Sleep(3000)
+
+    CSect -> Leave()
+    gc()
+  end
+end
+
+proc main():
+  async(ThreadedProc, "I'm thread #1!!!")
+  async(CriticalThreadedProc)
+  InputLn()
+end

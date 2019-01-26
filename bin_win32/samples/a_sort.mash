@@ -1,42 +1,6 @@
 uses <bf>
 uses <crt>
-
-/*
- *  Quick sorting algorithm.
- *  Written on Mash!
- */
-
-proc QSort(arr, left, right):
-  i ?= left
-  j ?= right
-  pivot ?= arr[(left + right) \ 2]
-
-  while i < (j + 1):
-    while arr[i] < pivot:
-      i++
-    end
-
-    while arr[j] > pivot:
-      j--
-    end
-
-    if i < (j + 1):
-      tmp ?= arr[i]
-      arr[i] ?= arr[j]
-      arr[j] ?= tmp
-      i++
-      j--
-    end
-  end
-
-  if left < j:
-    QSort(arr, left, j)
-  end
-
-  if i < right:
-    QSort(arr, i, right)
-  end
-end
+uses <algs>
 
 /*
  *  Bubble sorting algorithm.
@@ -77,27 +41,64 @@ end
 
 
 proc main():
-  arr ?= new[100000]
+  templatearr ?= new[1000000]
+  Randomize()
+  for (i ?= 0; i < 1000000; i++):
+    templatearr[999999 - i] ?= new(random())
+  end
+
+  // QuickSort
+  arr ?= new[1000000]
+
+  for (i ?= 0; i < 1000000; i++):
+    arr[999999 - i] ?= copy(templatearr[i])
+  end
+
+  t ?= TickCnt()
+  QuickSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("QuickSort: " + t + " ms.")
+  gc()
+
+  // ThreadedQuickSort
+  arr ?= new[1000000]
+
+  for (i ?= 0; i < 1000000; i++):
+    arr[999999 - i] ?= copy(templatearr[i])
+  end
+
+  t ?= TickCnt()
+  ThrQuickSort(arr, 8)
+  t ?= TickCnt() - t
+  PrintLn("ThreadedQuickSort: " + t + " ms.")
+  gc()
+
+  // HeapSort
+  /*arr ?= new[100000]
 
   for (i ?= 0; i < 100000; i++):
     arr[99999 - i] ?= copy(i)
   end
 
-  t1 ?= TickCnt()
-  QSort(arr, 0, 99999)
-  t2 ?= TickCnt() - t1
-  PrintLn("Time of sorting: " + t2 + " ms.")
+  t ?= TickCnt()
+  HeapSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("HeapSort: " + t + " ms.")
+  gc() */
 
-  arr2 ?= new[100]
+  // BubbleSort
+  /*arr ?= new[1000]
 
-  for (i ?= 0; i < 100; i++):
-    arr2[99 - i] ?= copy(i)
+  for (i ?= 0; i < 1000; i++):
+    arr[999 - i] ?= copy(i)
   end
 
-  BSort(arr2)
+  t ?= TickCnt()
+  BSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("BubbleSort: " + t + " ms.")
 
-  PrintArray(arr2)
+  gc() */
 
-  gc()
   InputLn()
 end

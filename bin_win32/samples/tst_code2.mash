@@ -25,15 +25,16 @@ func MyClass2::F():         //Переопределенная функция F.
 end                         //от для экземпляра данного класса.
 
 proc MyClass2::Free():
-  Free($a)
-  $rem()
+  Free($a, $)
 end
 
 proc main():
-  var p = new MyClass2(10)  //Создание экземпляра класса MyClass2.
+  p ?= new MyClass2(10)  //Создание экземпляра класса MyClass2.
   println(p->F())           //Результат: 40.
 
-  println(BoolToStr(typeof(10 + "3,14") == typeReal))
+  println("p ", if(p -> type == MyClass2, "==", "<>"), " MyClass2")
+
+  println("new_var_decl ", if(typeof(new_var_decl) == typePtr, "==", "<>"), " pointer")
 
   InputLn()
 end

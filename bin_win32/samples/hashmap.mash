@@ -3,7 +3,8 @@ uses <crt>
 
 class TestClass:
   var a, b
-  proc Create, Free
+
+  proc Create, Free, SayHello
   func Hash
 end
 
@@ -13,12 +14,15 @@ proc TestClass::Create(a, b):
 end
 
 proc TestClass::Free():
-  Free($a, $b)
-  $rem()
+  Free($a, $b, $)
 end
 
 func TestClass::Hash():
-  return (($a * $b) ^ $a) ^ $b
+  return (($a * $b) ^ $a) ^ $b + $a + $b
+end
+
+proc TestClass::SayHello():
+  println("Hello")
 end
 
 class HashMap:
@@ -26,10 +30,8 @@ class HashMap:
     var objects, hashes
 
   public:
-    // constructors
     proc Create, Free
 
-    // methods
     proc Append
     func Get
 end
@@ -45,8 +47,7 @@ proc HashMap::Free():
     $objects[i]->Free()
     Free($hashes[i])
   end
-  Free($objects, $hashes)
-  $rem()
+  Free($objects, $hashes, $)
 end
 
 proc HashMap::Append(x):
@@ -63,23 +64,25 @@ func HashMap::Get(h):
       return $objects[i]
     end
   end
-  return ""
+  return null
 end
 
 proc main():
+  t ?= TickCnt()
   var hm = new HashMap()
   for(var i = copy(0); i < 10000; i++):
     hm->append(new TestClass(i, i*i))
   end
 
-  var x = new TestClass(-1, -1)
+  var x = new TestClass(-12532, -1)
 
   hm->append(x)
   x ?= hm->get(x->hash())
-
+  println("Time of execution: ", TickCnt() - t, " ms.")
   println(x->a, " ", x->b)
 
   hm->Free()
-  gc
+  gc()
+
   inputln()
 end

@@ -1,9 +1,7 @@
-// Imports example.
-import PrintLn "crt.lib" "PRINTLN"
-import InputLn "crt.lib" "INPUTLN"
+uses <bf>
+uses <crt>
 
-// Program entry point (because we don't write "uses <bf>").
-proc __EntryPoint():
+proc main():
   a ?= 0
   b ?= 1
   PrintLn(0)

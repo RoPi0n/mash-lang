@@ -1,0 +1,15 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+proc TestProc():
+  Sleep(1000)
+end
+
+proc main():
+  PrintLn("Started...")
+  Thr ?= Parallel(TestProc)
+  Thr -> WaitFor()
+  PrintLn("End!")
+  InputLn()
+end

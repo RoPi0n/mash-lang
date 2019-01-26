@@ -1,0 +1,23 @@
+uses <bf>
+uses <crt>
+uses <classes>
+
+proc main():
+  while true:
+    t ?= new Tree(0)
+
+    x ?= t -> AddNode("Hello")
+    x ?= x -> AddNode("world!")
+
+    x ?= t -> GetNode(0)
+    println(x -> value)
+
+    x ?= x -> GetNode(0)
+    println(x -> value)
+
+    t -> Free()
+    gc()
+  end
+
+  inputln()
+end
