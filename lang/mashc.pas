@@ -219,12 +219,22 @@ begin
   end;
   FreePreprocessor(varmgr);
 
-  code.Text := 'word __addrtsz ' + IntToStr(varmgr.DefinedVars.Count) +
+  code.Text :=
+    //Initialization + Initialization code
+    'word __addrtsz ' + IntToStr(varmgr.DefinedVars.Count) +
     sLineBreak + 'pushc __addrtsz' + sLineBreak + 'gpm' + sLineBreak +
-    'msz' + sLineBreak + 'gc' + sLineBreak + InitCode.Text + sLineBreak +
+    'msz' + sLineBreak + 'gc' + sLineBreak + InitCode.Text +
+
+    //Code
+    sLineBreak + code.Text + sLineBreak +
+
+    //Entry point call
     'pushc __entrypoint' + slinebreak + 'gpm' + slinebreak + 'jc' +
     sLineBreak + 'pushc __haltpoint' + sLineBreak + 'gpm' + sLineBreak +
-    'jp' + sLineBreak + code.Text + sLineBreak + PostInitCode.Text + sLineBreak +
+    'jp' +
+
+    // Postinit code + haltpoint
+    sLineBreak + PostInitCode.Text + sLineBreak +
     '__haltpoint:' + sLineBreak + 'gc';
 
   code.SaveToFile('data.tmp');

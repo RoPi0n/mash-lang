@@ -89,6 +89,7 @@ type
     bcRM,     // rem @[top]
     bcNA,     // [top] = @new array[  [top]  ] of pointer
     bcTF,     // [top] = typeof( [top] )
+    bcTMC,    // [top].type = type of class
     bcSF,     // [top] = sizeof( [top] )
 
     {** array's **}
@@ -324,6 +325,9 @@ begin
     else
     if Tk(s, 1) = 'typeof' then
       Outp.WriteByte(byte(bcTF))
+    else
+    if Tk(s, 1) = 'typemarkclass' then
+      Outp.WriteByte(byte(bcTMC))
     else
     if Tk(s, 1) = 'sizeof' then
       Outp.WriteByte(byte(bcSF))

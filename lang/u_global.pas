@@ -19,6 +19,14 @@ procedure AsmError(m: string);
 procedure AsmWarn(m: string);
 procedure AsmInfo(m: string);
 
+const
+  {$IFDEF UNIX}
+  CharDirSlash = '/';
+  {$ENDIF}
+  {$IFDEF WINDOWS}
+  CharDirSlash = '\';
+  {$ENDIF}
+
 var
   RgAPICnt: cardinal = 0;
   GlobalCommentBegin: boolean = False;
@@ -114,7 +122,7 @@ begin
   c := 0;
   while c < sl.Count do
    begin
-     if (sl[c][length(sl[c])] in [',', '&', '|', '^', '+', '-', '*',
+     if (sl[c][length(sl[c])] in ['(', '[', ',', '&', '|', '^', '+', '-', '*',
                                   '/', '\', '%', '=', '.', ';', '?', '@']) and
         (not ((copy(sl[c], length(sl[c]) - 1, 2) = '++') or (copy(sl[c], length(sl[c]) - 1, 2) = '--'))) or
         ((copy(sl[c], length(sl[c]) - 1, 2) = '<<') or (copy(sl[c], length(sl[c]) - 1, 2) = '>>') or

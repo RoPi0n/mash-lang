@@ -32,22 +32,26 @@ begin
       btProc:
       begin
         {if pos('.', LocalVarPref) > 0 then
-          Delete(LocalVarPref, 1, pos('.', LocalVarPref))
+         Delete(LocalVarPref, 1, pos('.', LocalVarPref))
         else
-        if Length(LocalVarPref) > 0 then
-         }LocalVarPref := '';
+         LocalVarPref := '';}
+        LocalVarPref := GetCurrentMethodName + '.';
+        if LocalVarPref = 'global code.' then
+         LocalVarPref := '';
 
-        Result := CB.bEndCode + ':' + sLineBreak + 'jr';
+        Result := CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak + CB.bEndCode + '_block:';
       end;
       btFunc:
       begin
         {if pos('.', LocalVarPref) > 0 then
-          Delete(LocalVarPref, 1, pos('.', LocalVarPref))
+         Delete(LocalVarPref, 1, pos('.', LocalVarPref))
         else
-        if Length(LocalVarPref) > 0 then
-         }LocalVarPref := '';
+         LocalVarPref := '';}
+        LocalVarPref := GetCurrentMethodName + '.';
+        if LocalVarPref = 'global code.' then
+         LocalVarPref := '';
 
-        Result := CB.bEndCode + ':' + sLineBreak + 'jr';
+        Result := CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak + CB.bEndCode + '_block:';
         if CB.bMeta <> '+' then
           PrpError('Declarate function without return.');
       end;

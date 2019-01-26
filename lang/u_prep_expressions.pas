@@ -287,11 +287,11 @@ end;
 
 
 function TempPushIt(s: string; varmgr: TVarManager): string;
-{var
-  bf: string;}
+var
+  bf: string;
 begin
   s := Trim(s);
-  //bf := s;
+  bf := s;
   Result := '';
   if Copy(s, 1, 1)[1] in ['@', '?'] then
     Delete(s, 1, 1);
@@ -335,7 +335,7 @@ begin
       sLineBreak + 'copy' + sLineBreak + 'gpm' + sLineBreak +
       'swp' + sLineBreak + 'pop'
   else
-    Result := PushIt(s, varmgr);
+    Result := PushIt(bf, varmgr);
   //PrpError('Invalid call "' + bf + '".');
 end;
 

@@ -89,7 +89,7 @@ procedure RemoveMethod(Name: string; Lines: TStringList);
 var
   i, x: longint;
 begin
-  i := Lines.IndexOf(Name + ':');
+  i := Lines.IndexOf(Name + ':') - 2;
   if i <> -1 then
   begin
     x := Lines.Count;
@@ -108,7 +108,10 @@ begin
         Lines.Delete(i);
         if Lines.Count > i then
           if Lines[i] = 'jr' then
-            Lines.Delete(i);
+           begin
+             Lines.Delete(i);
+             Lines.Delete(i); // label
+           end;
         if Hints_Enable then
           AsmInfo('Method "' + Name + '" declared but not used.');
       end;

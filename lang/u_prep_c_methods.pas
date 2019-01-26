@@ -9,7 +9,8 @@ uses
   u_prep_codeblock, u_prep_methods;
 
 function IsProc(s: string): boolean;
-function PreprocessProc(s: string; varmgr: TVarManager): string;
+function PreprocessProc(s: string; varmgr: TVarManager;
+                        PrepForClass:boolean = false; CName: string = ''): string;
 
 implementation
 
@@ -35,7 +36,8 @@ begin
     end;
 end;
 
-function PreprocessProc(s: string; varmgr: TVarManager): string;
+function PreprocessProc(s: string; varmgr: TVarManager;
+                        PrepForClass:boolean = false; CName: string = ''): string;
 var
   bf, pn: string;
   CB: TCodeBlock;
@@ -49,9 +51,16 @@ begin
     Delete(s, length(s), 1);
   pn := Trim(GetProcName(Trim(s)));
 
-  if pos('::', pn) > 0 then
+  if (pos('::', pn) > 0) or PrepForClass then
    begin
      IsClassM := True;
+
+     if (pos('::', pn) > 0) and PrepForClass then
+      PrpError('Error in class method declaration -> ' + pn);
+
+     if PrepForClass then
+      pn := CName + '::' + pn;
+
      pn := ExtractProcName(pn);
    end
   else
@@ -63,7 +72,9 @@ begin
     CB := TCodeBlock.Create(btFunc, '', '-', '__gen_' + pn + '_method_end');
   BlockStack.Add(CB);
   CB.mName := pn;
-  Result := pn + ':';
+
+  Result := 'pushcp __gen_' + pn + '_method_end_block' + sLineBreak + 'jp' + sLineBreak + pn + ':';
+
   ProcEnterList.Add(pn);
   LocalVarPref := {LocalVarPref + }pn + '.';
   Delete(s, 1, pos('(', s));
@@ -126,7 +137,7 @@ begin
         sLineBreak + 'pop';
     end
     else
-      PrpError('Invalid proc "' + pn + '" define.');
+      PrpError('Invalid method "' + pn + '" define.');
   end;
 end;
 

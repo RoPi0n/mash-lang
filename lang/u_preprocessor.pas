@@ -147,6 +147,8 @@ begin
         if pos('"', s) <> Length(s) then
           PrpError('Invalid construction: "uses "' + s + '".');
         Delete(s, length(s), 1);
+        s := StringReplace(s, '\', CharDirSlash, [rfReplaceAll]);
+        s := StringReplace(s, '/', CharDirSlash, [rfReplaceAll]);
         s := ExtractFilePath(ParamStr(1)) + s;
         if not FileExists(s) then
           PrpError('File "' + s + '" not found.');
@@ -175,6 +177,8 @@ begin
         if pos('>', s) <> Length(s) then
           PrpError('Invalid construction: "uses <' + s + '".');
         Delete(s, length(s), 1);
+        s := StringReplace(s, '\', CharDirSlash, [rfReplaceAll]);
+        s := StringReplace(s, '/', CharDirSlash, [rfReplaceAll]);
         s := ExtractFilePath(ParamStr(0)) + 'inc\' + s;
         if not FileExists(s) then
          begin
@@ -216,11 +220,14 @@ begin
   begin
     Delete(s, 1, 4);
     s := Trim(s);
-    s1 := ExtractProcName(GetProcName(Trim(s)));
-    if ProcList.IndexOf(s1) = -1 then
-      ProcList.Add(s1);
-    if ConstDefs.IndexOf(s1) = -1 then
-      ConstDefs.Add(s1);
+    if copy(s, 1, 1) <> '!' then
+     begin
+       s1 := ExtractProcName(GetProcName(Trim(s)));
+       if ProcList.IndexOf(s1) = -1 then
+        ProcList.Add(s1);
+       if ConstDefs.IndexOf(s1) = -1 then
+        ConstDefs.Add(s1);
+     end;
   end
   else
   if Tk(s, 1) = 'import' then
@@ -267,6 +274,8 @@ begin
         if pos('"', s) <> Length(s) then
           PrpError('Invalid construction: "uses <' + s + '".');
         Delete(s, length(s), 1);
+        s := StringReplace(s, '\', CharDirSlash, [rfReplaceAll]);
+        s := StringReplace(s, '/', CharDirSlash, [rfReplaceAll]);
         s := ExtractFilePath(ParamStr(1)) + s;
         if not FileExists(s) then
           PrpError('File "' + s + '" not found.');
@@ -308,7 +317,9 @@ begin
         Delete(s, 1, 1);
         if pos('>', s) <> Length(s) then
           PrpError('Invalid construction: "uses <' + s + '".');
-        Delete(s, length(s), 1);
+        Delete(s, length(s), 1); 
+        s := StringReplace(s, '\', CharDirSlash, [rfReplaceAll]);
+        s := StringReplace(s, '/', CharDirSlash, [rfReplaceAll]);
         s := ExtractFilePath(ParamStr(0)) + 'inc\' + s;
         if not FileExists(s) then
          begin
@@ -364,7 +375,7 @@ begin
   {** Class preprocessing **}
   if IsInClassBlock then
   begin
-    PreprocessClassPart(s, varmgr);
+    Result := PreprocessClassPart(s, varmgr);
   end
   else
   {** Class def **}

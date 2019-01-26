@@ -5,9 +5,10 @@ unit u_prep_c_classes;
 interface
 
 uses
-  Classes, SysUtils, u_global, u_globalvars, u_variables, u_prep_global,
+  Classes, SysUtils, u_globalvars, u_variables, u_prep_global,
   u_prep_expressions,
-  u_prep_codeblock, u_classes, u_prep_array, u_prep_methods, u_prep_c_global;
+  u_prep_codeblock, u_classes, u_prep_methods, u_prep_c_global,
+  u_prep_c_methods;
 
 function IsClassDefine(s: string): boolean;
 function PreprocessClassDefine(s: string): string;
@@ -68,7 +69,7 @@ begin
           end
           else
             Mc.MethodsLinks[c] := Mc2.MethodsLinks[c];
-          inc(c);
+          Inc(c);
         end;
       end;
 
@@ -173,6 +174,34 @@ var
 begin
   Result := '';
   s := Trim(s);
+  {if IsProc(s) then
+  begin
+    Mc := TMashClass(ClassStack[ClassStack.Count - 1]);
+    Bf := s;
+    Delete(Bf, 1, 4);
+    Bf := Trim(Bf);
+    if copy(Bf, 1, 1) = '!' then
+    begin
+      Delete(Bf, 1, 1);
+      Delete(s, pos('!', s), 1);
+      Bf := GetProcName(Bf);
+      Result := PreprocessProc(s, varmgr, True, Mc.CName);
+
+      Mc.Methods.Add(bf);
+      Mc.MethodsLinks.Add(Mc.CName + '__' + bf);
+
+      Bf := Mc.CName + '__' + bf;
+
+      if ProcList.IndexOf(Bf) = -1 then
+        ProcList.Add(Bf);
+      if ConstDefs.IndexOf(Bf) = -1 then
+        ConstDefs.Add(Bf);
+
+    end
+    else
+     PrpError('Globally method declaration in class "' + Mc.CName + '" declaration!');
+  end
+  else}
   if s = 'end' then
     GenEnd
   else
@@ -203,12 +232,12 @@ begin
   end
   else
   if (s = 'public:') or (s = 'protected:') or (s = 'private:') or
-     (s = 'public :') or (s = 'protected :') or (s = 'private :') then
-    //It's formality
+    (s = 'public :') or (s = 'protected :') or (s = 'private :') then
+  //It's formality
   else
   if s <> '' then
-   PrpError('Invalid class definition, class: <' +
-            TMashClass(ClassStack[ClassStack.Count - 1]).CName + '>.');
+    PrpError('Invalid class definition, class: <' +
+      TMashClass(ClassStack[ClassStack.Count - 1]).CName + '>.');
 end;
 
 function GenClassAllocator(MClass: TMashClass; varmgr: TVarManager): string;
@@ -219,14 +248,15 @@ begin
   // Allocation
 
   mname := '__class_' + MClass.CName + '_allocator';
-  Result := mname + ':' + sLineBreak + PushIt(IntToStr(MClass.AllocSize), varmgr, true, true) +
-    sLineBreak + PushIt('1', varmgr, true, true) + sLineBreak + 'newa' + sLineBreak;
+  Result := mname + ':' + sLineBreak + PushIt(IntToStr(MClass.AllocSize),
+    varmgr, True, True) + sLineBreak + PushIt('1', varmgr, True, True) +
+    sLineBreak + 'newa' + sLineBreak + 'typemarkclass' + sLineBreak;
 
   // Introspection
   if RTTI_Enable then
-   Result := Result + 'pcopy' + sLineBreak + 'pushcp ' + MClass.CName + sLineBreak +
-             'swp' + sLineBreak + 'pushcp ' + ClassChildPref + 'type' + sLineBreak +
-             'swp' + sLineBreak + 'peekai' + sLineBreak;
+    Result := Result + 'pcopy' + sLineBreak + 'pushcp ' + MClass.CName +
+      sLineBreak + 'swp' + sLineBreak + 'pushcp ' + ClassChildPref +
+      'type' + sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
 
   // StructFree()
   {Result := Result + 'pcopy' + sLineBreak + 'pushcp ' + '__class_' +
@@ -238,8 +268,8 @@ begin
   while c < MClass.Methods.Count do
   begin
     Result := Result + 'pcopy' + sLineBreak + 'pushcp ' + MClass.MethodsLinks[c] +
-      sLineBreak + 'swp' + sLineBreak + 'pushcp ' + ClassChildPref + MClass.Methods[c] +
-      sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
+      sLineBreak + 'swp' + sLineBreak + 'pushcp ' + ClassChildPref +
+      MClass.Methods[c] + sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
     Inc(c);
   end;
 
