@@ -1,0 +1,48 @@
+////////////////////////////////////////////////////////////////////////////////
+// Point's
+////////////////////////////////////////////////////////////////////////////////
+
+class point(class):
+  public:
+    var x, y
+    proc Create, Free, Set, Compare
+end
+
+proc point::Create(x, y):
+  $x ?= new(x)
+  $y ?= new(y)
+end
+
+proc point::Free():
+  Free($x, $y, $)
+end
+
+proc point::Set(x, y):
+  $x = x
+  $y = y
+end
+
+func point::Compare(p):
+  return ($x == p->x) & ($y == p->y)
+end
+
+class point3(point):
+  public:
+    var z
+    proc Create, Free
+    func Compare
+end
+
+proc point3::Create(x, y, z):
+  point::Create$(x, y)
+  $z ?= new(z)
+end
+
+proc point3::Free():
+  Free($z)
+  point::Free$()
+end
+
+func point3::Compare(p):
+  return ($z == p->z) & point::Compare$(p)
+end

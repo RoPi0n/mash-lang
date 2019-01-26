@@ -20,7 +20,7 @@ int  false  0
 
 var null = "null"
 
-func BoolToStr(b):
+func b2s(b):
   if b == true:
     return "true"
   else:
@@ -59,7 +59,8 @@ proc SizeOf(obj):
   gpm
 end
 
-enum Types [TypeNull, TypeWord, TypeInt, TypeReal, TypeStr, TypeArray]
+enum Types [TypeNull, TypeWord, TypeInt, TypeReal, TypeStr, TypeArray, TypeClass]
+word TypePtr 255
 
 proc TypeOf(obj):
   push obj
@@ -120,7 +121,6 @@ end
 {_end_}
 
 func _op_in(v, array):
-  var i, ln
   i ?= 0
   ln ?= len(array)
   while i < ln:
@@ -132,16 +132,24 @@ func _op_in(v, array):
   return false
 end
 
+func ptr(a):
+  return @a
+end
+
 func temp():
   return 0
 end
 
-proc GetError():
-  //err already in stack & already markered
+func if(bool, a, b):
+  if bool:
+    return a
+  else:
+    return b
+  end
 end
 
-proc Exit():
-  jr
+proc GetError():
+  //err already in stack & already markered
 end
 
 var ParamCount, ParamList

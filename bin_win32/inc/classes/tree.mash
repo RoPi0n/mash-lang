@@ -1,0 +1,54 @@
+////////////////////////////////////////////////////////////////////////////////
+// Tree
+////////////////////////////////////////////////////////////////////////////////
+
+class Tree(class):
+  protected:
+    var Nodes, Count
+
+  public:
+    var Value
+    proc Create, Free
+
+    func AddNode, GetNode
+    proc DelNode
+end
+
+proc Tree::Create(val):
+  $Nodes ?= new[0]
+  $Count ?= new(0)
+  $Value ?= val
+end
+
+proc Tree::Free():
+  while $Count > 0:
+    $Count--
+    $Nodes[$Count] -> Free()
+  end
+  Free($Nodes, $Count, $)
+end
+
+func Tree::AddNode(val):
+  SetLen($Nodes, $Count + 1)
+  n ?= new Tree(val)
+  $Nodes[$Count] ?= n
+  $Count++
+  return n
+end
+
+func Tree::GetNode(num):
+  return $Nodes[num]
+end
+
+proc Tree::DelNode(num):
+  if ($Count <= num) | (num < 0):
+    raise "Tree node number (" + num + ") out of bounds."
+  else:
+    $Count--
+    $Nodes[num] -> Free()
+    for(; num < $Count; num++):
+      $Nodes[num] ?= $Nodes[num + 1]
+    end
+    SetLen($Nodes, $Count)
+  end
+end

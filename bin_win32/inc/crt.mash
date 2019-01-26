@@ -1,29 +1,33 @@
-import Crt.CursorBig      "crt.lib" "CURSORBIG"
-import Crt.CursorOff      "crt.lib" "CURSOROFF"
-import Crt.CursorOn       "crt.lib" "CURSORON"
-import Crt.DelLine        "crt.lib" "DELLINE"
-import Crt.GotoXY32       "crt.lib" "GOTOXY32"
-import Crt.InsLine        "crt.lib" "INSLINE"
-import Crt.KeyPressed     "crt.lib" "KEYPRESSED"
-import Crt.ReadKey        "crt.lib" "READKEY"
-import Crt.Sound          "crt.lib" "SOUND"
-import Crt.WhereX32       "crt.lib" "WHEREX32"
-import Crt.WhereY32       "crt.lib" "WHEREY32"
-import Crt.Window32       "crt.lib" "WINDOW32"
-import Crt.ClrEOL         "crt.lib" "CLREOL"
-import Crt.ClrScr         "crt.lib" "CLRSCR"
-import Crt.GetDirectVideo "crt.lib" "GETDIRECTVIDEO"
-import Crt.GetLastMode    "crt.lib" "GETLASTMODE"
-import Crt.GetTextAttr    "crt.lib" "GETTEXTATTR"
-import Crt.GetWindMax     "crt.lib" "GETWINDMAX"
-import Crt.GetWindMaxX    "crt.lib" "GETWINDMAXX"
-import Crt.GetWindMaxY    "crt.lib" "GETWINDMAXY"
-import Crt.GetWindMin     "crt.lib" "GETWINDMIN"
-import Crt.GetWindMinX    "crt.lib" "GETWINDMINX"
-import Crt.GetWindMinY    "crt.lib" "GETWINDMINY"
-import Crt.GetCheckBreak  "crt.lib" "GETCHECKBREAK"
-import Crt.GetCheckEOF    "crt.lib" "GETCHECKEOF"
-import Crt.GetCheckSnow   "crt.lib" "GETCHECKSNOW"
+import Crt.CursorBig       "crt.lib" "CURSORBIG"
+import Crt.CursorOff       "crt.lib" "CURSOROFF"
+import Crt.CursorOn        "crt.lib" "CURSORON"
+import Crt.DelLine         "crt.lib" "DELLINE"
+import Crt.GotoXY32        "crt.lib" "GOTOXY32"
+import Crt.InsLine         "crt.lib" "INSLINE"
+import _Crt.KeyPressed     "crt.lib" "KEYPRESSED"
+import _Crt.ReadKey        "crt.lib" "READKEY"
+import Crt.Sound           "crt.lib" "SOUND"
+import _Crt.WhereX32       "crt.lib" "WHEREX32"
+import _Crt.WhereY32       "crt.lib" "WHEREY32"
+import Crt.Window32        "crt.lib" "WINDOW32"
+import Crt.ClrEOL          "crt.lib" "CLREOL"
+import Crt.ClrScr          "crt.lib" "CLRSCR"
+import _Crt.GetDirectVideo "crt.lib" "GETDIRECTVIDEO"
+import _Crt.GetLastMode    "crt.lib" "GETLASTMODE"
+import Crt.SetTextAttr    "crt.lib" "SETTEXTATTR"
+import _Crt.GetTextAttr    "crt.lib" "GETTEXTATTR"
+import _Crt.GetWindMax     "crt.lib" "GETWINDMAX"
+import _Crt.GetWindMaxX    "crt.lib" "GETWINDMAXX"
+import _Crt.GetWindMaxY    "crt.lib" "GETWINDMAXY"
+import _Crt.GetWindMin     "crt.lib" "GETWINDMIN"
+import _Crt.GetWindMinX    "crt.lib" "GETWINDMINX"
+import _Crt.GetWindMinY    "crt.lib" "GETWINDMINY"
+import _Crt.GetCheckBreak  "crt.lib" "GETCHECKBREAK"
+import _Crt.GetCheckEOF    "crt.lib" "GETCHECKEOF"
+import _Crt.GetCheckSnow   "crt.lib" "GETCHECKSNOW"
+import Crt.TextColor       "crt.lib" "SETTEXTCOLOR"
+import Crt.TextBackground  "crt.lib" "SETTEXTBACKGROUND"
+
 
 {_ifdef_ argcounter}
 import _Print             "crt.lib" "PRINT"
@@ -35,17 +39,16 @@ import Print              "crt.lib" "PRINT"
 import PrintLn            "crt.lib" "PRINTLN"
 {_end_}
 
-import PrintFormat        "crt.lib" "PRINTFORMAT"
-import Input              "crt.lib" "INPUT"
-import InputLn            "crt.lib" "INPUTLN"
+import _Input             "crt.lib" "INPUT"
+import _InputLn           "crt.lib" "INPUTLN"
 
 // CRT modes
-word  Crt.BW40           0            // 40x25 B/W on Color Adapter
-word  Crt.CO40           1            // 40x25 Color on Color Adapter
-word  Crt.BW80           2            // 80x25 B/W on Color Adapter
-word  Crt.CO80           3            // 80x25 Color on Color Adapter
-word  Crt.Mono           7            // 80x25 on Monochrome Adapter
-word  Crt.Font8x8        256          // Add-in for ROM font
+word Crt.BW40           0            // 40x25 B/W on Color Adapter
+word Crt.CO40           1            // 40x25 Color on Color Adapter
+word Crt.BW80           2            // 80x25 B/W on Color Adapter
+word Crt.CO80           3            // 80x25 Color on Color Adapter
+word Crt.Mono           7            // 80x25 on Monochrome Adapter
+word Crt.Font8x8        256          // Add-in for ROM font
 
 // Foreground and background color constants
 word Crt.Black          0
@@ -75,93 +78,109 @@ word Crt.Blink          128
 {_ifdef_ argcounter}
 
 proc print(...):
-  var t
   t ?= argcount
   while t > 0:
     _print()
-    dec t
+    t--
   end
 end
 
 proc println(...):
-  var t
   t ?= argcount
   while t > 0:
     _print()
-    dec t
+    t--
   end
   _println("")
 end
 
 {_end_}
 
-//var Crt.TextAttr
+func Crt.KeyPressed():
+  return gpmx(_Crt.KeyPressed())
+end
 
-//proc Crt.Init():
-//  Crt.TextAttr = new(0x07)
-//end
+func Crt.ReadKey():
+  return gpmx(_Crt.ReadKey())
+end
 
-//proc Crt.TextColor(.color):
-//  and  .color, 143
-//  and  Crt.TextAttr, 112
-//  or   Crt.TextAttr, .color
-//end
+func Crt.WhereX32():
+  return gpmx(_Crt.WhereX32())
+end
 
-//proc Crt.TextBackground(.color):
-//var .buf = 0xf0
-//  store(.color)
-//  and  .buf,          .color
-//  shl  .color,        4
-//  and  .color,        .buf
-//  mov  .buf,          0x0f
-//  or   .buf,          !Crt.Blink
-//  and  .buf,          Crt.TextAttr
-//  or   .color,        .buf
-//  mov  Crt.TextAttr, .color
-//  load(.color)
-//end
+func Crt.WhereY32():
+  return gpmx(_Crt.WhereY32())
+end
 
-//proc Crt.NormVideo():
-//  push 7
-//  Crt.TextColor()
-//  push 0
-//  Crt.TextBackGround()
-//end
+func Crt.GetDirectVideo():
+  return gpmx(_Crt.GetDirectVideo())
+end
 
-//proc Crt.WhereX():
-//  Crt.WhereX32()
-//  push   256
-//  gpm
-//  swp
-//  mod
-//end
+func Crt.GetLastMode():
+  return gpmx(_Crt.GetLastMode())
+end
 
-//proc Crt.WhereY():
-//  Crt.WhereY32()
-//  push   256
-//  gpm
-//  swp
-//  mod
-//end
+func Crt.GetTextAttr(): 
+  return gpmx(_Crt.GetTextAttr())
+end
 
-//proc Crt.Pause():
-//  gc
-//  Crt.KeyPressed()
-//  gpm
-//  jz !Crt.Pause
-//end
+func Crt.GetWindMax():
+  return gpmx(_Crt.GetWindMax())
+end
 
-//proc PrintFmt():
-//  push .Crt.TextAttr
-//  swp
-//  PrintFormat()
-//end
+func Crt.GetWindMaxX():
+  return gpmx(_Crt.GetWindMaxX())
+end
 
-//proc PrintLnFmt():
-//  push Crt.TextAttr
-//  swp
-//  PrintFormat()
-//  push ""
-//  gpm
-//  PrintLn()
-//end
+func Crt.GetWindMaxY():
+  return gpmx(_Crt.GetWindMaxY())
+end
+
+func Crt.GetWindMin(): 
+  return gpmx(_Crt.GetWindMin())
+end
+
+func Crt.GetWindMinX(): 
+  return gpmx(_Crt.GetWindMinX())
+end
+
+func Crt.GetWindMinY():
+  return gpmx(_Crt.GetWindMinY())
+end
+
+func Crt.GetCheckBreak():
+  return gpmx(_Crt.GetCheckBreak())
+end
+
+func Crt.GetCheckEOF():
+  return gpmx(_Crt.GetCheckEOF())
+end
+
+func Crt.GetCheckSnow():
+  return gpmx(_Crt.GetCheckSnow())
+end
+
+func Input():
+  return gpmx(_Input())
+end
+
+func InputLn():
+  return gpmx(_InputLn())
+end
+
+proc Crt.NormVideo():
+  Crt.TextColor(7)
+  Crt.TextBackGround(0)
+end
+
+func Crt.WhereX():
+  return Crt.WhereX32() % 256
+end
+
+func Crt.WhereY():
+  return Crt.WhereY32() % 256
+end
+
+proc Crt.Pause():
+  Crt.ReadKey()
+end

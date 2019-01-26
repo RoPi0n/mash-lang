@@ -2,20 +2,28 @@
 // Code version: 1.0
 
 uses <bf>
+uses <classes>
+
+// imports from thrlib
+
+import __CRITSECT_CREATE   "thrlib.lib"  "CRITICAL_SECTION_CREATE"
+import __CRITSECT_FREE     "thrlib.lib"  "CRITICAL_SECTION_FREE"
+import __CRITSECT_ENTER    "thrlib.lib"  "CRITICAL_SECTION_ENTER"
+import __CRITSECT_LEAVE    "thrlib.lib"  "CRITICAL_SECTION_LEAVE"
+import __CRITSECT_TRYENTER "thrlib.lib"  "CRITICAL_SECTION_TRYENTER"
 
 // common methods
 
-proc thread(method, arg):
+proc thr_create(method, arg):
   push arg
   push method
   cthr
 end
 
-proc async(method, arg):
+proc thr_async(method, arg):
   push arg
   push method
   cthr
-  pcopy
   rthr
 end
 
@@ -44,11 +52,15 @@ end
 ////////////////////////////////////////////////////////////////////////////////
 
 class TThread:
-  public:
-    var Resumed, Terminated, FreeOnTerminate
-    proc Execute, Create, Free, Suspend, Resume, Terminate, ReJoin
   protected:
     var ThreadContext
+
+  public:
+    var Resumed, Terminated, FreeOnTerminate
+    proc Create, Free
+
+    proc Execute //for overriding
+    proc Suspend, Resume, Terminate, WaitFor, ReJoin //Control proc's
 end
 
 proc TThread::Execute():
@@ -57,17 +69,14 @@ end
 
 proc TThread_Join(CurrentThreadContext, ThreadClass):
   ThreadClass->Execute()
-  ThreadClass->Terminated = true
-  if ThreadClass->FreeOnTerminate:
-    ThreadClass->Free()
-  end
+  ThreadClass->Terminate()
 end
 
 proc TThread::Create(Resumed):
   $Resumed ?= new(false)
   $Terminated ?= new(false)
   $FreeOnTerminate ?= new(true)
-  $ThreadContext ?= thread(TThread_Join, $)
+  $ThreadContext ?= thr_create(TThread_Join, $)
   if Resumed:
     $Resume()
   end
@@ -95,9 +104,165 @@ proc TThread::Resume():
 end
 
 proc TThread::Terminate():
-  thr_terminate($ThreadContext)
+  $Resumed = false
   $Terminated = true
+  Ctxt ?= $ThreadContext
   if $FreeOnTerminate:
     $Free()
   end
+  thr_terminate(Ctxt)
+end
+
+proc TThread::WaitFor():
+  FreeOnTerm ?= $FreeOnTerminate
+  $FreeOnTerminate = false
+
+  while ~$Terminated:
+    Sleep(0)
+  end
+
+  if FreeOnTerm:
+    $Free()
+  end
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// Critical sections controller class
+////////////////////////////////////////////////////////////////////////////////
+
+class TCriticalSection:
+  protected:
+    var Critical_Section_Controller
+
+  public:
+    proc Create, Free
+
+    //Methods
+    proc Enter, Leave
+    func TryEnter
+end
+
+proc TCriticalSection::Create():
+  $Critical_Section_Controller ?= __CRITSECT_CREATE()
+end
+
+proc TCriticalSection::Free():
+  __CRITSECT_FREE($Critical_Section_Controller)
+  Free($)
+end
+
+proc TCriticalSection::Enter():
+  __CRITSECT_ENTER($Critical_Section_Controller)
+end
+
+proc TCriticalSection::Leave():
+  __CRITSECT_LEAVE($Critical_Section_Controller)
+end
+
+func TCriticalSection::TryEnter():
+  return gpmx(__CRITSECT_TRYENTER($Critical_Section_Controller))
+end
+
+////////////////////////////////////////////////////////////////////////////////
+//  Async
+////////////////////////////////////////////////////////////////////////////////
+
+class TAsyncCallThread(TThread):
+  var Method, Args
+  proc Create, Execute
+end
+
+proc TAsyncCallThread::Create(Method, Args):
+  $Method ?= Method
+  $Args ?= Args
+  TThread::Create$(true)
+end
+
+proc TAsyncCallThread::Execute():
+  while $Args->Size() > 0:
+    $Args -> pop_back()
+  end
+  $Args->Free()
+  call $Method
+end
+
+func Async(method, ...):
+  args ?= new vector()
+  t ?= argcount
+  while t > 0:
+    pop arg
+    args->push_back(arg)
+    t--
+  end
+  return new TAsyncCallThread(method, args)
+end
+
+////////////////////////////////////////////////////////////////////////////////
+//  QuickThread
+////////////////////////////////////////////////////////////////////////////////
+
+class TQThreadCallThread(TThread):
+  var Method, Args
+  proc Create, Execute
+end
+
+proc TQThreadCallThread::Create(Method, Args):
+  $Method ?= Method
+  $Args ?= Args
+  TThread::Create$(false)
+end
+
+proc TQThreadCallThread::Execute():
+  while $Args->Size() > 0:
+    $Args -> pop_back()
+  end
+  $Args->Free()
+  call $Method
+end
+
+func Thread(method, ...):
+  args ?= new vector()
+  t ?= argcount
+  while t > 0:
+    pop arg
+    args->push_back(arg)
+    t--
+  end
+  return new TQThreadCallThread(method, args)
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// Parallel tasks
+////////////////////////////////////////////////////////////////////////////////
+
+class TParallelCallThread(TThread):
+  var Method, Args
+  proc Create, Execute
+end
+
+proc TParallelCallThread::Create(Method, Args):
+  $Method ?= Method
+  $Args ?= Args
+  TThread::Create$(false)
+  $FreeOnTerminate = false
+  $Resume()
+end
+
+proc TParallelCallThread::Execute():
+  while $Args->Size() > 0:
+    $Args -> pop_back()
+  end
+  $Args->Free()
+  call $Method
+end
+
+func Parallel(method, ...):
+  args ?= new vector()
+  t ?= argcount
+  while t > 0:
+    pop arg
+    args->push_back(arg)
+    t--
+  end
+  return new TParallelCallThread(method, args)
 end
