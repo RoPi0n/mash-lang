@@ -2,7 +2,7 @@ import Crt.CursorBig       "crt.lib" "CURSORBIG"
 import Crt.CursorOff       "crt.lib" "CURSOROFF"
 import Crt.CursorOn        "crt.lib" "CURSORON"
 import Crt.DelLine         "crt.lib" "DELLINE"
-import Crt.GotoXY32        "crt.lib" "GOTOXY32"
+import _Crt.GotoXY32       "crt.lib" "GOTOXY32"
 import Crt.InsLine         "crt.lib" "INSLINE"
 import _Crt.KeyPressed     "crt.lib" "KEYPRESSED"
 import _Crt.ReadKey        "crt.lib" "READKEY"
@@ -14,7 +14,7 @@ import Crt.ClrEOL          "crt.lib" "CLREOL"
 import Crt.ClrScr          "crt.lib" "CLRSCR"
 import _Crt.GetDirectVideo "crt.lib" "GETDIRECTVIDEO"
 import _Crt.GetLastMode    "crt.lib" "GETLASTMODE"
-import Crt.SetTextAttr    "crt.lib" "SETTEXTATTR"
+import Crt.SetTextAttr     "crt.lib" "SETTEXTATTR"
 import _Crt.GetTextAttr    "crt.lib" "GETTEXTATTR"
 import _Crt.GetWindMax     "crt.lib" "GETWINDMAX"
 import _Crt.GetWindMaxX    "crt.lib" "GETWINDMAXX"
@@ -183,4 +183,8 @@ end
 
 proc Crt.Pause():
   Crt.ReadKey()
+end
+
+proc Crt.GotoXY(x, y):
+  _Crt.GotoXY32(y, x)
 end
