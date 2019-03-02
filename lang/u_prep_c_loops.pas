@@ -11,8 +11,8 @@ uses
 
 function IsWhile(s: string): boolean;
 function ParseWhile(s: string; varmgr: TVarManager): string;
-function IsUntil(s: string): boolean;
-function ParseUntil(s: string; varmgr: TVarManager): string;
+function IsWhilst(s: string): boolean;
+function ParseWhilst(s: string; varmgr: TVarManager): string;
 
 implementation
 
@@ -49,35 +49,35 @@ begin
     '_end:', WhileNum + '_end'));
 end;
 
-function IsUntil(s: string): boolean;
+function IsWhilst(s: string): boolean;
 begin
   Result := False;
-  if Length(s) > 5 then
-    if copy(s, 1, 5) = 'until' then
+  if Length(s) > 6 then
+    if copy(s, 1, 6) = 'whilst' then
     begin
-      Delete(s, 1, 5);
+      Delete(s, 1, 6);
       if Length(s) > 0 then
         Result := ((s[1] = ' ') or (s[1] = '(')) and (s[Length(s)] = ':');
     end;
 end;
 
-function ParseUntil(s: string; varmgr: TVarManager): string;
+function ParseWhilst(s: string; varmgr: TVarManager): string;
 var
-  UntilNum, ExprCode: string;
+  WhilstNum, ExprCode: string;
 begin
-  Delete(s, 1, 5);
+  Delete(s, 1, 6);
   Delete(s, Length(s), 1);
   s := Trim(s);
-  UntilNum := '__gen_until_' + IntToStr(UntilBlCounter);
-  Inc(UntilBlCounter);
-  Result := UntilNum + ':';
+  WhilstNum := '__gen_whilst_' + IntToStr(WhilstBlCounter);
+  Inc(WhilstBlCounter);
+  Result := WhilstNum + ':';
   if IsExpr(s) then
     ExprCode := PreprocessExpression(s, varmgr)
   else
     ExprCode := PushIt(s, varmgr);
-  BlockStack.Add(TCodeBlock.Create(btUntil, '', 'pushcp ' + UntilNum +
-    sLineBreak + ExprCode + sLineBreak + 'jz' +
-    sLineBreak + 'pop' + sLineBreak + UntilNum + '_end:', UntilNum + '_end'));
+  BlockStack.Add(TCodeBlock.Create(btWhilst, '', 'pushcp ' + WhilstNum +
+    sLineBreak + ExprCode + sLineBreak + 'jn' +
+    sLineBreak + 'pop' + sLineBreak + WhilstNum + '_end:', WhilstNum + '_end'));
 end;
 
 end.
