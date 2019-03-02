@@ -7,8 +7,8 @@ object EditorFrame: TEditorFrame
   ClientHeight = 450
   ClientWidth = 709
   TabOrder = 0
-  DesignLeft = 555
-  DesignTop = 184
+  DesignLeft = 377
+  DesignTop = 142
   object EditorPanel: TPanel
     Left = 0
     Height = 450
@@ -747,14 +747,12 @@ object EditorFrame: TEditorFrame
       'DEC'
       'ELSE'
       'END'
-      'ENUM'
       'FINALLY'
       'FOR'
       'FUNC'
-      'GC'
-      'GPM'
       'IF'
       'IMPORT'
+      'IN'
       'INC'
       'JUMP'
       'NEW'
@@ -773,12 +771,13 @@ object EditorFrame: TEditorFrame
       'SUPER'
       'SWITCH'
       'TRY'
-      'UNTIL'
       'USES'
       'VAR'
       'WHILE'
+      'WHILST'
     )
     Objects.Strings = (
+      'ENUM'
       'INT'
       'REAL'
       'STR'
