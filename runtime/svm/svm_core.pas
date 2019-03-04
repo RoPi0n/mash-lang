@@ -4,11 +4,11 @@
   library svm_core;
 {$else}
   program svm_core;
-  {$define BuildGUI}
+  //{$define BuildGUI}
 {$endif}
 {$inline on}
 {$ifdef BuildGUI}
-  //{$apptype gui}
+  {$apptype gui}
 {$endif}
 
 //{$Define DebugVer}
@@ -142,10 +142,6 @@ type
     bcDBP    //debug method call
     );
 
-{***** Global consts **********************************************************}
-  //const
-  // null = '';
-
 {***** Types & variables ******************************************************}
 type
   TInstructionPointer = cardinal;
@@ -232,8 +228,8 @@ type
     d: double;
     i: int64;
   begin
-    consts_count := cardinal((pb^[0] shl 24) + (pb^[1] shl 16) +
-      (pb^[2] shl 8) + pb^[3]);
+    consts_count := cardinal((pb^[3] shl 24) + (pb^[2] shl 16) +
+      (pb^[1] shl 8) + pb^[0]);
     bpos := 4;
     self.SetSize(consts_count);
     while consts_count > 0 do
@@ -243,8 +239,8 @@ type
         begin
           self.SetConst(
             cardinal(length(self.constants)) - consts_count,
-            TSVMMem.CreateFW(cardinal((pb^[bpos + 1] shl 24) + (pb^[bpos + 2] shl 16) +
-            (pb^[bpos + 3] shl 8) + pb^[bpos + 4]))
+            TSVMMem.CreateFW(cardinal((pb^[bpos + 4] shl 24) + (pb^[bpos + 3] shl 16) +
+            (pb^[bpos + 2] shl 8) + pb^[bpos + 1]))
             );
           Inc(bpos, 5);
         end;
@@ -295,9 +291,9 @@ type
 
         ctStream:
         begin
-          stl := cardinal((pb^[bpos + 1] shl 24) +
-            (pb^[bpos + 2] shl 16) + (pb^[bpos + 3] shl 8) +
-            pb^[bpos + 4]);
+          stl := cardinal((pb^[bpos + 4] shl 24) +
+            (pb^[bpos + 3] shl 16) + (pb^[bpos + 2] shl 8) +
+            pb^[bpos + 1]);
           Inc(bpos, 5);
           st := TMemoryStream.Create;
           st.SetSize(stl);
@@ -350,7 +346,7 @@ type
     lib_count, sl: word;
     s: string;
   begin
-    lib_count := cardinal((pb^[0] shl 8) + pb^[1]);
+    lib_count := (pb^[0] shl 8) + pb^[1];
     bpos := 2;
     self.SetSize(lib_count);
     while lib_count > 0 do
@@ -423,8 +419,8 @@ type
     libs.Parse(pb, mainclasspath);
     if length(libs.libs) > 0 then
     begin
-      methods_count := cardinal((pb^[0] shl 24) + (pb^[1] shl 16) +
-        (pb^[2] shl 8) + pb^[3]);
+      methods_count := cardinal((pb^[3] shl 24) + (pb^[2] shl 16) +
+        (pb^[1] shl 8) + pb^[0]);
       bpos := 4;
       self.SetSize(methods_count + ssz);
       while methods_count > 0 do
@@ -771,18 +767,18 @@ type
             bcPH:
             begin
               self.stack.push(self.mem^[cardinal(
-                (self.bytes^[self.ip + 1] shl 24) + (self.bytes^[self.ip + 2] shl 16) +
-                (self.bytes^[self.ip + 3] shl 8) +
-                self.bytes^[self.ip + 4])]);
+                (self.bytes^[self.ip + 4] shl 24) + (self.bytes^[self.ip + 3] shl 16) +
+                (self.bytes^[self.ip + 2] shl 8) +
+                self.bytes^[self.ip + 1])
+                ]);
               Inc(self.ip, 5);
             end;
 
             bcPK:
             begin
-              self.mem^[
-                cardinal((self.bytes^[self.ip + 1] shl 24) +
-                (self.bytes^[self.ip + 2] shl 14) + (self.bytes^[self.ip + 3] shl 8) +
-                self.bytes^[self.ip + 4])
+              self.mem^[cardinal((self.bytes^[self.ip + 4] shl 24) +
+                (self.bytes^[self.ip + 3] shl 14) + (self.bytes^[self.ip + 2] shl 8) +
+                self.bytes^[self.ip + 1])
                 ] := self.stack.peek;
               Inc(self.ip, 5);
             end;
@@ -1113,8 +1109,8 @@ type
             begin
               self.stack.push(
                   TSVMMem.CreateCopy(TSVMMem(self.consts^.GetConst(
-                    cardinal((self.bytes^[self.ip + 1] shl 24) + (self.bytes^[self.ip + 2] shl 16) +
-                             (self.bytes^[self.ip + 3] shl 8) + self.bytes^[self.ip + 4]
+                    cardinal((self.bytes^[self.ip + 4] shl 24) + (self.bytes^[self.ip + 3] shl 16) +
+                             (self.bytes^[self.ip + 2] shl 8) + self.bytes^[self.ip + 1]
                             ))
                     ))
                   );
@@ -1124,8 +1120,8 @@ type
             bcPHCP:
             begin
               self.stack.push(TSVMMem(self.consts^.GetConst(
-                    cardinal((self.bytes^[self.ip + 1] shl 24) + (self.bytes^[self.ip + 2] shl 16) +
-                             (self.bytes^[self.ip + 3] shl 8) + self.bytes^[self.ip + 4]
+                    cardinal((self.bytes^[self.ip + 4] shl 24) + (self.bytes^[self.ip + 3] shl 16) +
+                             (self.bytes^[self.ip + 2] shl 8) + self.bytes^[self.ip + 1]
                             )
                     )));
               Inc(self.ip, 5);
@@ -1134,9 +1130,9 @@ type
             bcPHEXMP:
             begin
               self.stack.push(self.extern_methods^.GetFunc(
-                cardinal((self.bytes^[self.ip + 1] shl 24) +
-                (self.bytes^[self.ip + 2] shl 16) + (self.bytes^[self.ip + 3] shl 8) +
-                self.bytes^[self.ip + 4])
+                cardinal((self.bytes^[self.ip + 4] shl 24) +
+                (self.bytes^[self.ip + 3] shl 16) + (self.bytes^[self.ip + 2] shl 8) +
+                self.bytes^[self.ip + 1])
                 ));
               Inc(self.ip, 5);
             end;
@@ -1352,6 +1348,7 @@ type
 
             bcTHREXT:
             begin
+              self.ip := self.end_ip;
               break;
             end;
 
