@@ -40,6 +40,8 @@ begin
          LocalVarPref := '';
 
         Result := CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak + CB.bEndCode + '_block:';
+
+        ProcEnterList.Delete(ProcEnterList.Count - 1);
       end;
       btFunc:
       begin
@@ -54,6 +56,8 @@ begin
         Result := CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak + CB.bEndCode + '_block:';
         if CB.bMeta <> '+' then
           PrpError('Declarate function without return.');
+
+        ProcEnterList.Delete(ProcEnterList.Count - 1);
       end;
       btIf:
       begin
@@ -70,7 +74,15 @@ begin
       begin
         Result := CB.bMCode;
       end;
-      btUntil:
+      btWhilst:
+      begin
+        Result := CB.bMCode;
+      end;
+      btLaunch:
+      begin
+        Result := CB.bMCode;
+      end;
+      btAsync:
       begin
         Result := CB.bMCode;
       end;
@@ -187,7 +199,13 @@ begin
     begin
       repeat
         CB := TCodeBlock(BlockStack[BlockStack.Count - i]);
-        if CB.bType in [btFor, btWhile, btUntil, btCase] then
+        if CB.bType = btLaunch then
+        begin
+          Result := CB.bEndCode + sLineBreak;
+          break;
+        end
+        else
+        if CB.bType in [btFor, btWhile, btWhilst, btCase, btAsync] then
         begin
           Result := 'pushcp ' + CB.bEndCode + sLineBreak + 'jp';
           break;

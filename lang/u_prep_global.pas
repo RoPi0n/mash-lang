@@ -13,7 +13,7 @@ function IsInt(s: string): boolean;
 function IsFloat(s: string): boolean;
 function IsStr(s: string): boolean;
 function IsConst(var s: string): boolean;
-function GetConst(s: string): string;
+function GetConst(s: string; varmgr:TVarManager): string;
 function TkPos(tk, s: string): cardinal;
 procedure PrpError(m: string);
 procedure PrpWarn(m: string);
@@ -31,10 +31,11 @@ var
   IfBlCounter: cardinal = 0;
   ForBlCounter: cardinal = 0;
   WhileBlCounter: cardinal = 0;
-  UntilBlCounter: cardinal = 0;
+  WhilstBlCounter: cardinal = 0;
   TryBlCounter: cardinal = 0;
   SwBlCounter: cardinal = 0;
   CsBlCounter: cardinal = 0;
+  LaunchBlCounter: cardinal = 0;
   BlockStack: TList;
   ConstDefs, GlobalVars: TStringList;
   //VarDefs: TStringList;
@@ -437,7 +438,7 @@ begin
   end;
 end;
 
-function GetConst(s: string): string;
+function GetConst(s: string; varmgr:TVarManager): string;
 begin
   Result := s;
   if IsConst(s) then
@@ -446,6 +447,9 @@ begin
       Delete(s, 1, 1);
     Result := s;
   end
+  else
+  if varmgr.DefinedVars.IndexOf(s) = -1 then
+    Result := s
   else
     PrpError('Invalid constant call "' + s + '".');
 end;

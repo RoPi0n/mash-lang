@@ -27,7 +27,9 @@ uses
   u_prep_c_loops,
   u_prep_c_classes,
   u_fast_prep,
-  u_prep_switch;
+  u_prep_switch,
+  u_local_variables,
+  u_prep_launch;
 
 procedure PreprocessDefinitions(s: string; varmgr: TVarManager);
 function PreprocessStr(s: string; varmgr: TVarManager): string;
@@ -440,8 +442,8 @@ begin
     Result := ParseWhile(s, varmgr)
   else
   {** Until **}
-  if IsUntil(s) then
-    Result := ParseUntil(s, varmgr)
+  if IsWhilst(s) then
+    Result := ParseWhilst(s, varmgr)
   else
   {** If **}
   if IsIf(s) then
@@ -470,6 +472,32 @@ begin
   {** Exit **}
   if s = 'exit' then
     Result := GenExit
+  else
+
+  {** Launch **}
+  if IsLaunch(s) then
+    Result := ParseLaunch(s, varmgr)
+  else
+
+  {** Async **}
+  if IsAsync(s) then
+    Result := ParseAsync(s, varmgr)
+  else
+
+  {** Await **}
+  if IsWait(s) then
+    Result := ParseWait(s, varmgr)
+  else
+
+  {** Safe-call's **}
+  if copy(s, 1, 5) = 'safe ' then
+   begin
+     Delete(s, 1, 5);
+     s := Trim(s);
+     Result := PushLocalVariables(varmgr) +
+               PreprocessStr(s, varmgr) +
+               PopLocalVariables(varmgr);
+   end
   else
   {** Try **}
   if IsTry(s) then
@@ -524,7 +552,7 @@ begin
     if IsArr(s) then
      Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
     else
-     Result := Result + sLineBreak + 'pushcp ' + GetConst('!'+s);
+     Result := Result + sLineBreak + 'pushcp ' + GetConst('!'+s, varmgr);
 
     if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
       Result := Result + sLineBreak + 'jc'
@@ -595,7 +623,7 @@ begin
           Result := PreprocessVarAction(s1, 'push', varmgr)
         else
         if IsConst(s1) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s1) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s1, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s1) then
           Result := PreprocessArrAction(s1, 'pushai', varmgr)
@@ -607,7 +635,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -634,7 +662,7 @@ begin
         Result := PreprocessVarAction(s, 'push', varmgr)
       else
       if IsConst(s) then
-        Result := 'pushc ' + GetConst(s)
+        Result := 'pushc ' + GetConst(s, varmgr)
       else
       if IsArr(s) then
         Result := PreprocessArrAction(s, 'pushai', varmgr);
@@ -654,7 +682,7 @@ begin
         Result := PreprocessVarAction(s, 'push', varmgr)
       else
       if IsConst(s) then
-        Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+        Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
       else
       if IsArr(s) then
         Result := PreprocessArrAction(s, 'pushai', varmgr)
@@ -678,7 +706,7 @@ begin
         Result := PreprocessVarAction(s, 'push', varmgr)
       else
       if IsConst(s) then
-        Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+        Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
       else
       if IsArr(s) then
         Result := PreprocessArrAction(s, 'pushai', varmgr)
@@ -852,7 +880,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -875,7 +903,7 @@ begin
           Result := PreprocessVarAction(s1, 'push', varmgr)
         else
         if IsConst(s1) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s1) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s1, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s1) then
           Result := PreprocessArrAction(s1, 'pushai', varmgr)
@@ -887,7 +915,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -910,7 +938,7 @@ begin
           Result := PreprocessVarAction(s1, 'push', varmgr)
         else
         if IsConst(s1) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s1) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s1, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s1) then
           Result := PreprocessArrAction(s1, 'pushai', varmgr)
@@ -922,7 +950,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -945,7 +973,7 @@ begin
           Result := PreprocessVarAction(s1, 'push', varmgr)
         else
         if IsConst(s1) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s1) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s1, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s1) then
           Result := PreprocessArrAction(s1, 'pushai', varmgr)
@@ -957,7 +985,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -992,7 +1020,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1027,7 +1055,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1062,7 +1090,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1097,7 +1125,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1132,7 +1160,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1167,7 +1195,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1252,7 +1280,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1286,7 +1314,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1320,7 +1348,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1354,7 +1382,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
@@ -1388,7 +1416,7 @@ begin
           Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
         else
         if IsConst(s) then
-          Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+          Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
         else
         if IsArr(s) then
           Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)

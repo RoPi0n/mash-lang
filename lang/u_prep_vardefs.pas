@@ -86,7 +86,7 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) + sLineBreak + 'gpm';
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s, varmgr) + sLineBreak + 'gpm';
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc'
@@ -99,7 +99,7 @@ begin
       Result := PreprocessVarAction(s, 'push', varmgr)
     else
     if IsConst(s) then
-      Result := Result + sLineBreak + 'pushc ' + GetConst(s)
+      Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr)
     else
     if IsArr(s) then
       Result := PreprocessArrAction(s, 'pushai', varmgr)

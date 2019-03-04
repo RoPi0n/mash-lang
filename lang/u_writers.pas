@@ -22,10 +22,10 @@ end;
 
 procedure St_WriteCardinal(s: TStream; c: cardinal);
 begin
-  s.WriteByte(PByte(cardinal(@c) + 3)^);
-  s.WriteByte(PByte(cardinal(@c) + 2)^);
-  s.WriteByte(PByte(cardinal(@c) + 1)^);
   s.WriteByte(PByte(@c)^);
+  s.WriteByte(PByte(cardinal(@c) + 1)^);
+  s.WriteByte(PByte(cardinal(@c) + 2)^);
+  s.WriteByte(PByte(cardinal(@c) + 3)^);
 end;
 
 procedure St_WriteInt64(s: TStream; i: int64);

@@ -37,8 +37,9 @@ begin
           Delete(s, 1, pos(' ', s));
           s := Trim(s);
 
-          IsWaste := False;
-          k := i + 1;
+          IsWaste := Lines.IndexOf('__gen_' + s + '_method_end:') > i; //False;
+
+          {k := i + 1;
           while k < Lines.Count do
           begin
             if Lines[k] = s + ':' then
@@ -49,7 +50,7 @@ begin
               break;
             end;
             Inc(k);
-          end;
+          end;}
 
           if not IsWaste then
           begin
@@ -119,11 +120,15 @@ begin
 end;
 
 procedure DelWasteMethods(Lines: TStringList);
+var
+  c: cardinal;
 begin
-  while Waste.Count > 0 do
+  c := Waste.Count;
+  while c > 0 do
   begin
-    RemoveMethod(Waste[0], Lines);
-    Waste.Delete(0);
+    dec(c);
+    RemoveMethod(Waste[c], Lines);
+    Waste.Delete(c);
   end;
 end;
 
@@ -280,7 +285,7 @@ begin
         FilterWaste(Lines);
       end;
     end;
-      //ligth
+    //ligth
     else
     begin
       FindAllMethods(Lines);

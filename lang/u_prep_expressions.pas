@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, StrUtils, u_variables, u_global, u_globalvars, u_prep_global,
-  u_prep_methods, u_prep_array, u_prep_enums, u_classes;
+  u_prep_methods, u_prep_array, u_prep_enums, u_classes, u_local_variables;
 
 function IsExpr(s: string): boolean;
 function CutNextExprToken(var s: string): string;
@@ -41,6 +41,7 @@ begin
   Result := '';
   s := Trim(s);
   pn := GetProcName(s);
+
   s := Trim(s);
   Delete(s, 1, Length(pn) + 1);
   Delete(s, Length(s), 1);
@@ -75,7 +76,7 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s) +
+        Result := Result + sLineBreak + 'pushc ' + GetConst('!' + s, varmgr) +
           sLineBreak + 'gpm';
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
@@ -111,6 +112,7 @@ function PreprocessArrAction(arrexpr, action: string; varmgr: TVarManager): stri
 var
   c, lvl: cardinal;
   s: string;
+  IsItSafe: boolean;
 begin
   Result := '';
   lvl := GetArrLvl(arrexpr);
@@ -118,6 +120,15 @@ begin
   while c > 0 do
   begin
     s := GetArrLvlVal(arrexpr, c);
+
+    IsItSafe := false;
+    if copy(s, 1, 5) = 'safe ' then
+     begin
+       IsItSafe := true;
+       Result := Result + sLineBreak + PushLocalVariables(varmgr);
+       Delete(s, 1, 5);
+       s := Trim(s);
+     end;
 
     if IsExpr(s) then
       Result := Result + sLineBreak + PreprocessExpression(s, varmgr)
@@ -135,7 +146,7 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s, varmgr);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc'
@@ -150,9 +161,13 @@ begin
       Result := Result + sLineBreak + PreprocessVarAction(s, 'push', varmgr)
     else
     if IsConst(s) then
-      Result := Result + sLineBreak + 'pushcp ' + GetConst(s)
+      Result := Result + sLineBreak + 'pushcp ' + GetConst(s, varmgr)
     {else
       PrpError('Error in operation with [<index>] -> "' + s + '".')};
+
+    if IsItSafe then
+     Result := Result + sLineBreak + PopLocalVariables(varmgr);
+
     Dec(c);
   end;
   Result := Result + sLineBreak + 'push ' + GetVar(GetArrName(arrexpr), varmgr);
@@ -187,10 +202,21 @@ function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True;
 var
   bf: string;
   c: cardinal;
+  IsItSafe: boolean;
 begin
-  s := Trim(s);
-  bf := s;
   Result := '';
+  s := Trim(s);
+
+  IsItSafe := false;
+  if Copy(s, 1, 5) = 'safe ' then
+   begin
+     IsItSafe := true;
+     Result := PushLocalVariables(varmgr) + sLineBreak;
+     Delete(s, 1, 5);
+     s := Trim(s);
+   end;
+
+  bf := s;
   if Copy(s, 1, 1)[1] in ['@', '?'] then
     Delete(s, 1, 1);
   if IsExpr(s) then
@@ -212,7 +238,7 @@ begin
     if IsArr(s) then
       Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
     else
-      Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
+      Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s, varmgr);
 
     if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
       Result := Result + sLineBreak + 'jc'
@@ -226,10 +252,10 @@ begin
   if IsConst(s) then
   begin
     if PushCP then
-      Result := Result + sLineBreak + 'pushcp ' + GetConst(s)
+      Result := Result + sLineBreak + 'pushcp ' + GetConst(s, varmgr)
     else
     begin
-      Result := Result + sLineBreak + 'pushc ' + GetConst(s);
+      Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr);
       if PushTemporary then
         Result := Result + sLineBreak + 'gpm';
     end;
@@ -283,16 +309,28 @@ begin
   if copy(bf, 1, 1) = '?' then //we need to push object by pointer!
     Result := Result + sLineBreak {+ 'push ' + GetVar('$' + Bf, varmgr) + sLineBreak}
       + 'gvbp';
+
+  if IsItSafe then
+   Result := Result + sLineBreak + PopLocalVariables(varmgr);
 end;
 
 
 function TempPushIt(s: string; varmgr: TVarManager): string;
 var
   bf: string;
+  IsItSafe: boolean;
 begin
   s := Trim(s);
-  bf := s;
   Result := '';
+  IsItSafe := false;
+  if Copy(s, 1, 5) = 'safe ' then
+   begin
+     IsItSafe := true;
+     Result := PushLocalVariables(varmgr) + sLineBreak;
+     Delete(s, 1, 5);
+     s := Trim(s);
+   end;
+  bf := s;
   if Copy(s, 1, 1)[1] in ['@', '?'] then
     Delete(s, 1, 1);
   if IsExpr(s) then
@@ -314,7 +352,7 @@ begin
     if IsArr(s) then
       Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
     else
-      Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
+      Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s, varmgr);
 
     if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
       Result := Result + sLineBreak + 'jc'
@@ -328,7 +366,7 @@ begin
       'swp' + sLineBreak + 'pop'
   else
   if IsConst(s) then
-    Result := Result + sLineBreak + 'pushc ' + GetConst(s) + sLineBreak + 'gpm'
+    Result := Result + sLineBreak + 'pushc ' + GetConst(s, varmgr) + sLineBreak + 'gpm'
   else
   if IsArr(s) then
     Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr) +
@@ -337,6 +375,9 @@ begin
   else
     Result := PushIt(bf, varmgr);
   //PrpError('Invalid call "' + bf + '".');
+
+  if IsItSafe then
+   Result := Result + sLineBreak + PopLocalVariables(varmgr);
 end;
 
 function IsExpr(s: string): boolean;
@@ -986,14 +1027,23 @@ end;
 function ParseEqExpr(s: string; varmgr: TVarManager): string;
 var
   Bf, Op: string;
+  IsItSafe: boolean;
 begin
   Result := '';
   Bf := Trim(CutNextExprToken(s));
   s := Trim(s);
   Op := CutNextExprOp(s);
+  s := Trim(s);
+  IsItSafe := false;
+  if Copy(s, 1, 5) = 'safe ' then
+   begin
+     IsItSafe := true;
+     Result := PushLocalVariables(varmgr) + sLineBreak;
+     Delete(s, 1, 5);
+     s := Trim(s);
+   end;
   if Op = '=' then
   begin
-    s := Trim(s);
     if IsOpNew(s) then
       Result := PreprocessOpNew(s, varmgr) + sLineBreak + PopIt(Bf, varmgr)
     else
@@ -1014,7 +1064,7 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s, varmgr);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc' + sLineBreak +
@@ -1033,7 +1083,6 @@ begin
   else
   if Op = '@=' then
   begin
-    s := Trim(s);
     if IsExpr(s) then
       Result := PreprocessExpression(s, varmgr) + sLineBreak +
         PushIt(Bf, varmgr) + sLineBreak + 'movbp'
@@ -1051,7 +1100,7 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s, varmgr);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc' + sLineBreak +
@@ -1071,7 +1120,6 @@ begin
   else
   if Op = '?=' then
   begin
-    s := Trim(s);
     if IsOpNew(s) then
       Result := PreprocessOpNew(s, varmgr) + sLineBreak + PopIt(Bf, varmgr)
     else
@@ -1091,7 +1139,7 @@ begin
       if IsArr(s) then
         Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
       else
-        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s);
+        Result := Result + sLineBreak + 'pushcp ' + GetConst('!' + s, varmgr);
 
       if (ProcList.IndexOf(s) <> -1) or IsArr(s) then
         Result := Result + sLineBreak + 'jc' + sLineBreak + PopIt(Bf, varmgr)
@@ -1134,6 +1182,8 @@ begin
     end;
     Result := Result + sLineBreak + 'pop';
   end;
+  if IsItSafe then
+   Result := Result + sLineBreak + PopLocalVariables(varmgr);
 end;
 
 function IsOpNew(s: string): boolean;

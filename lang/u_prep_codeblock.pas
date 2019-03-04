@@ -8,8 +8,8 @@ uses
   Classes, SysUtils;
 
 type
-  TBlockEntryType = (btProc, btFunc, btIf, btFor, btWhile, btUntil, btTry, btClass,
-                     btSwitch, btCase);
+  TBlockEntryType = (btProc, btFunc, btIf, btFor, btWhile, btWhilst, btTry, btClass,
+                     btSwitch, btCase, btLaunch, btAsync);
 
   TCodeBlock = class(TObject)
   public
