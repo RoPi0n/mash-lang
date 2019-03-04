@@ -1,31 +1,24 @@
 uses <bf>
 uses <crt>
-
-class MyClass:
-  var a, b
-  proc Create, Free
-  func Summ
-end
-
-proc MyClass::Create(a, b):
-  $a ?= new(a)
-  $b ?= new(b)
-end
-
-proc MyClass::Free():
-  Free($a, $b, $)
-end
-
-func MyClass::Summ():
-  return $a + $b
-end
+uses <algs>
 
 proc main():
-  x ?= new MyClass(10, 20)
+  x ?= new[3000000]
+  for (i ?= 0; i < 3000000; i++):
+    x[i] ?= copy(i)
+  end
 
-  println( if(typeof(x) == TypeClass, "It's class!", "It's not a class!") )
-  println( if(x -> type == MyClass,   "It's MyClass!", "It's not a MyClass!") )
+  t ?= TickCnt()
+  binary ?= BinSearch(x, -1)
+  t ?= TickCnt() - t
+  println("BinSearch: ", t, " ms.")
 
-  println(x -> Summ())
+  t ?= TickCnt()
+  interp ?= InterpolarSearch(x, -1)
+  t ?= TickCnt() - t
+  println("InterpolarSearch: ", t, " ms.")
+
+  println(binary)
+  println(interp)
   inputln()
 end

@@ -1,6 +1,7 @@
 uses <bf>
 uses <crt>
 uses <algs>
+uses <math>
 
 /*
  *  Bubble sorting algorithm.
@@ -26,7 +27,6 @@ proc BSort(array):
   end
 end
 
-
 /*
  *  Print array into console.
  *  Written on Mash!
@@ -41,6 +41,39 @@ end
 
 
 proc main():
+  // QuickSort
+  arr ?= new[100000]
+
+  for (i ?= 0; i < 100000; i++):
+    arr[99999 - i] ?= copy(i)
+  end
+
+  t ?= TickCnt()
+  QuickSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("QuickSort test: " + t + " ms.")
+  gc()
+
+  for (i ?= 0; i < 100000; i++):
+    arr[99999 - i] ?= copy(i)
+  end
+
+  t ?= TickCnt()
+  RadixSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("RadixSort test: " + t + " ms.")
+  gc()
+
+  for (i ?= 0; i < 100000; i++):
+    arr[99999 - i] ?= copy(i)
+  end
+
+  t ?= TickCnt()
+  ReverseArray(arr)
+  t ?= TickCnt() - t
+  PrintLn("Simple reverse test: " + t + " ms.")
+  gc()
+
   templatearr ?= new[1000000]
   Randomize()
   for (i ?= 0; i < 1000000; i++):
@@ -68,9 +101,22 @@ proc main():
   end
 
   t ?= TickCnt()
-  ThrQuickSort(arr, 8)
+  ThrQuickSort(arr, 16)
   t ?= TickCnt() - t
   PrintLn("ThreadedQuickSort: " + t + " ms.")
+  gc()
+
+  // RadixSort
+  arr ?= new[1000000]
+
+  for (i ?= 0; i < 1000000; i++):
+    arr[999999 - i] ?= copy(templatearr[i])
+  end
+
+  t ?= TickCnt()
+  RadixSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("RadixSort: " + t + " ms.")
   gc()
 
   // HeapSort

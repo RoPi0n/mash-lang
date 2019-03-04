@@ -10,6 +10,7 @@ proc main():
   PrintLn("Started...")
   Thr ?= Parallel(TestProc)
   Thr -> WaitFor()
+  Thr -> Free()
   PrintLn("End!")
   InputLn()
 end

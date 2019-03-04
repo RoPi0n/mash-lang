@@ -1,0 +1,13 @@
+uses <bf>
+uses <crt>
+uses <classes>
+
+proc main():
+  v ?= new list()
+  v->Add("Test")
+  v->Add("Test2")
+  v->Add("Test3")
+  v->ForEach(println)
+
+  inputln()
+end

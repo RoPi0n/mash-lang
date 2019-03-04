@@ -3,7 +3,7 @@ uses <threads>
 uses <crt>
 uses <forms>
 
-str _Caption "Draw on me!"
+str _Caption "Рисуй на мне!"
 stream _Icon "Icon.ico"
 
 var Form1, Canvas, Form1_Thr
@@ -34,8 +34,7 @@ func Form1_CheckEvent(Event):
         _Canvas_MoveTo(Canvas, x, y)
       end
 
-      Free(x)
-      Free(y)
+      Free(x, y)
 
       return true
     end

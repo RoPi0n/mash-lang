@@ -1,0 +1,238 @@
+/*
+ *  Graph for Mash v1.0
+ */
+
+uses <bf>
+
+import Graph_Arc                 "graph.lib" "ARC"
+import Graph_Bar                 "graph.lib" "BAR"
+import Graph_Bar3D               "graph.lib" "BAR3D"
+import Graph.ClearDevice         "graph.lib" "CLEARDEVICE"
+import Graph.Closegraph          "graph.lib" "CLOSEGRAPH"
+import Graph_DetectGraph         "graph.lib" "DETECTGRAPH"
+import Graph.DrawPoly            "graph.lib" "DRAWPOLY"       //NumPoints, PolyPoints
+import Graph_Ellipse             "graph.lib" "ELLIPSE"
+import Graph_FillEllipse         "graph.lib" "FILLELLIPSE"
+import Graph.FillPoly            "graph.lib" "FILLPOLY"
+import Graph_FloodFill           "graph.lib" "FLOODFILL"
+import Graph_GetArcCoords        "graph.lib" "GETARCCOORDS"
+import Graph_GetAspectRatio      "graph.lib" "GETASPECTRATIO"
+import Graph_GetColor            "graph.lib" "GETCOLOR"
+import Graph_GetDirectVideo      "graph.lib" "GETDIRECTVIDEO"
+import Graph_GetDriverName       "graph.lib" "GETDRIVERNAME"
+import Graph_GetFillPattern      "graph.lib" "GETFILLPATTERN"
+import Graph_GetFillSettings     "graph.lib" "GETFILLSETTINGS"
+import Graph_GetGraphMode        "graph.lib" "GETGRAPHMODE"
+import Graph_GetLineSettings     "graph.lib" "GETLINESETTINGS"
+import Graph_GetMaxColor         "graph.lib" "GETMAXCOLOR"
+import Graph_GetMaxMode          "graph.lib" "GETMAXMODE"
+import Graph_GetMaxX             "graph.lib" "GETMAXX"
+import Graph_GetMaxY             "graph.lib" "GETMAXY"
+import Graph_GetModeName         "graph.lib" "GETMODENAME"
+import Graph_GetModeRange        "graph.lib" "GETMODERANGE"
+import Graph_GetPaletteSize      "graph.lib" "GETPALETTESIZE"
+import Graph_GetTextSettings     "graph.lib" "GETTEXTSETTINGS"
+import Graph_GetViewSettings     "graph.lib" "GETVIEWSETTINGS"
+import Graph_GetX                "graph.lib" "GETX"
+import Graph_GetY                "graph.lib" "GETY"
+import Graph_GraphDefaults       "graph.lib" "GRAPHDEFAULTS"
+import Graph_GraphErrorMsg       "graph.lib" "GRAPHERRORMSG"
+import Graph_GraphResult         "graph.lib" "GRAPHRESULT"
+import Graph_InitGraph           "graph.lib" "INITGRAPH"
+import Graph_InstallUserDriver   "graph.lib" "INSTALLUSERDRIVER"
+import Graph_InstallUserFont     "graph.lib" "INSTALLUSERFONT"
+import Graph_LineRel             "graph.lib" "LINEREL"
+import Graph_LineTo              "graph.lib" "LINETO"
+import Graph_MoveRel             "graph.lib" "MOVEREL"
+import Graph_MoveTo              "graph.lib" "MOVETO"
+import Graph_OutText             "graph.lib" "OUTTEXT"
+import Graph_PieSlice            "graph.lib" "PIESLICE"
+import Graph_Rectangle           "graph.lib" "RECTANGLE"
+import Graph_RestoreCrtMode      "graph.lib" "RESTORECRTMODE"
+import Graph_Sector              "graph.lib" "SECTOR"
+import Graph_SetAspectRatio      "graph.lib" "SETASPECTRATIO"
+import Graph.SetColor            "graph.lib" "SETCOLOR"
+import Graph_SetDirectVideo      "graph.lib" "SETDIRECTVIDEO"
+import Graph_SetFillPattern      "graph.lib" "SETFILLPATTERN"
+import Graph_SetFillStyle        "graph.lib" "SETFILLSTYLE"
+import Graph_SetGraphMode        "graph.lib" "SETGRAPHMODE"
+import Graph_SetLineStyle        "graph.lib" "SETLINESTYLE"
+import Graph_SetPalette          "graph.lib" "SETPALETTE"
+import Graph_SetTextJustify      "graph.lib" "SETTEXTJUSTIFY"
+import Graph_SetTextStyle        "graph.lib" "SETTEXTSTYLE"
+import Graph_SetUserCharSize     "graph.lib" "SETUSERCHARSIZE"
+import Graph_SetViewPort         "graph.lib" "SETVIEWPORT"
+import Graph_SetWriteMode        "graph.lib" "SETWRITEMODE"
+import Graph_TextHeight          "graph.lib" "TEXTHEIGHT"
+import Graph_TextWidth           "graph.lib" "TEXTWIDTH"
+
+proc Graph.Arc(X, Y, StAngle, EndAngle, Radius):
+  Graph_Arc(Radius, EndAngle, StAngle, Y, X)
+end
+
+proc Graph.Bar(x1, y1, x2, y2):
+  Graph_Bar(y2, x2, y1, x1)
+end
+
+proc Graph.Bar3d(x1, y1, x2, y2, depth, top):
+  Graph_Bar3d(top, depth, y2, x2, y1, x1)
+end
+
+func Graph.Detect():
+  Graph_DetectGraph()
+  gpm
+  pop GraphDriver
+  gpm
+  pop GraphMode
+  return [GraphDriver, GraphMode]
+end
+
+proc Graph.Ellipse(X, Y, StAngle, EndAngle, XRadius, YRadius):
+  Graph_Ellipse(YRadius, XRadius, EndAngle, StAndle, Y, X)
+end
+
+proc Graph.FillEllipse(X, Y, XRadius, YRadius):
+  Graph_Ellipse(YRadius, XRadius, Y, X)
+end
+
+proc Graph.FloodFill(X, Y, Border):
+  Graph_Ellipse(Border, Y, X)
+end
+
+class ArcCoordsType:
+  var x, y, xstart, ystart, xend, yend
+  proc Free
+end
+
+proc ArcCoordsType::Free():
+  Free($x, $y, $xstart, $ystart, $xend, $yend, $)
+end
+
+func Graph.GetArcCoords():
+  coords ?= new ArcCoordsType
+  Graph_GetArcCoords()
+  pop coords->x
+  pop coords->y
+  pop coords->xstart
+  pop coords->ystart
+  pop coords->xend
+  pop coords->yend
+  return coords
+end
+
+func Graph.GetAspectRatio():
+  Graph_GetAspectRatio()
+  gpm
+  pop Xasp
+  gpm
+  pop Yasp
+  return [Xasp, Yasp]
+end
+
+proc Graph.GetColor():
+  Graph_GetColor()
+  gpm
+end
+
+proc Graph.GetDirectVideo():
+  Graph_GetDirectVideo()
+  gpm
+end
+
+proc Graph.GetDriverName():
+  Graph_GetDriverName()
+  gpm
+end
+
+func Graph.GetFillPattern():
+  Graph_GetFillPattern()
+
+  r ?= new[8]
+
+  for(i ?= 0; i < 8; i++):
+    gpm
+    pop x
+    r[i] ?= x
+  end
+
+  return r
+end
+
+class FillSettingsType:
+  var pattern, color
+  proc Free
+end
+
+proc FillSettingsType::Free():
+  Free($pattern, $color, $)
+end
+
+func Graph.GetFillSettings():
+  fs ?= new FillSettingsType
+  Graph_GetFillSettings()
+  pop fs->pattern
+  pop fs->color
+  return fs
+end
+
+proc Graph.GetGraphMode():
+  Graph_GetGraphMode()
+  gpm
+end
+
+class LineSettingsType:
+  var linestyle, pattern, thickness
+  proc Free
+end
+
+proc LineSettingsType::Free():
+  Free($linestyle, $pattern, $thickness, $)
+end
+
+func Graph.GetLineSettings():
+  ls ?= new LineSettingsType
+  Graph_GetLineSettings()
+  pop ls->linestyle
+  pop ls->pattern
+  pop ls->thickness
+  return ls
+end
+
+proc Graph.GetMaxColor():
+  Graph_GetMaxColor()
+  gpm
+end
+
+proc Graph.GetMaxMode():
+  Graph_GetMaxMode()
+  gpm
+end
+
+proc Graph.GetMaxX():
+  Graph_GetMaxX()
+  gpm
+end
+
+proc Graph.GetMaxY():
+  Graph_GetMaxY()
+  gpm
+end
+
+proc Graph.GetModeName(mode):
+  Graph_GetModeName(mode)
+  gpm
+end
+
+func Graph.GetModeRange(mode):
+  Graph_GetModeRange(mode)
+  gpm
+  pop a
+  gpm
+  pop b
+  return [a, b]
+end
+
+proc Graph.GetPaletteSize():
+  Graph_GetPaletteSize()
+  gpm
+end

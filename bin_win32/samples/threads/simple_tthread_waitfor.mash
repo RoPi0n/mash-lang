@@ -14,6 +14,7 @@ proc main():
   PrintLn("Started...")
   Thr ?= new MyThread(true)
   Thr -> WaitFor()
+  Thr -> Free()
   PrintLn("End!")
   InputLn()
 end

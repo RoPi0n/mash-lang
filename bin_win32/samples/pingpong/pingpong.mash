@@ -13,7 +13,7 @@ var PanelControlThr, PanelMovingVector = pmvStay, UserPanel, AIPanel
 // some methods
 
 proc PutCh(x, y, char):
-  Crt.gotoXY32(y, x)
+  Crt.GotoXY(x, y)
   Print(char)
 end
 

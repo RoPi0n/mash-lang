@@ -4,10 +4,11 @@ uses <crt>
 proc main():
   arr ?= [1, 2, 3, 4, 5]
   x ?= 1
-  println(BoolToStr(x in arr))
-  println(BoolToStr(3 in arr))
-  println(BoolToStr(x in [1, 2, 3, 4, 5]))
-  println(BoolToStr(4 in [1, 2, 3, 4, 5]))
-  println(BoolToStr(0 in [1, 2, 3, 4, 5]))
+  println(b2s(x in arr))
+  println(b2s(3 in arr))
+  println(b2s(x in [1, 2, 3, 4, 5]))
+  println(b2s(4 in [1, 2, 3, 4, 5]))
+  println(b2s(0 in [1, 2, 3, 4, 5]))
+  println(b2s(4 in Range(1, 20)))
   inputln()
 end

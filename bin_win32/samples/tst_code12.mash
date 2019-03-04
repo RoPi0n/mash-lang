@@ -3,15 +3,12 @@ uses <crt>
 uses <classes>
 
 proc main():
-  while true:
-    sl ?= new StringList()
+  sl ?= new StringList()
 
-    s ?= "Hello" + LnBreak + "world!"
-    sl -> SetText(s)
-    PrintLn(sl -> GetText())
+  s ?= "Hello" + LnBreak + "world!"
+  sl -> SetText(s)
+  PrintLn(sl -> GetText())
 
-    sl -> Free()
-    gc()
-  end
+  sl -> Free()
   InputLn()
 end

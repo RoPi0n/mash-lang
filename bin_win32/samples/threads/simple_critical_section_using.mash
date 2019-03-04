@@ -33,7 +33,7 @@ proc CriticalThreadedProc():
 end
 
 proc main():
-  async(ThreadedProc, "I'm thread #1!!!")
-  async(CriticalThreadedProc)
+  Async(ThreadedProc, "I'm thread #1!!!")
+  Async(CriticalThreadedProc)
   InputLn()
 end

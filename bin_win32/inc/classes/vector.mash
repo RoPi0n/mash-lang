@@ -5,7 +5,7 @@
 class vector(class):
   public:
     var Items
-    proc Create, Free, Push_Back, Rem_Back, Rem_First
+    proc Create, Free, Push_Back, Rem_Back, Rem_First, ForEach
     func Pop_Back, Pop_First, Peek_Back, Peek_First, At, Size
 end
 
@@ -21,15 +21,15 @@ proc vector::Push_Back(Object):
 end
 
 func vector::Pop_Back():
-  var r = $Items[$Items[0]]
+  r ?= $Items[$Items[0]]
   SetLen($Items, $Items[0])
   $Items[0]--
   return r
 end
 
 func vector::Pop_First():
-  var r = $Items[1]
-  for(var i = copy(1); i < $Items[0]; i++):
+  r ?= $Items[1]
+  for(i ?= 1; i < $Items[0]; i++):
     $Items[i] ?= $Items[i + 1]
   end
   SetLen($Items, $Items[0])
@@ -46,11 +46,17 @@ func vector::Peek_First():
 end
 
 proc vector::Rem_First():
-  for(var i = copy(1); i < $Items[0]; i++):
+  for(i ?= 1; i < $Items[0]; i++):
     $Items[i] ?= $Items[i + 1]
   end
   SetLen($Items, $Items[0])
   $Items[0]--
+end
+
+proc vector::ForEach(method):
+  for(i ?= 1; i <= $Items[0]; i++):
+    vcall(method, $Items[i])
+  end
 end
 
 proc vector::Rem_Back():

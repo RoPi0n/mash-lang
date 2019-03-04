@@ -41,7 +41,7 @@ str food_char  "&"
 str border_char "#"
 
 proc PutCh(x, y, char):
-  Crt.gotoXY32(y, x)
+  Crt.GotoXY(x, y)
   Print(char)
 end
 
@@ -198,7 +198,7 @@ end
 proc main():
   snk ?= new snake()
   food ?= new point(0, 0)
-  ControlThr ?= async(ControlThread)
+  ControlThr ?= Async(ControlThread)
   Randomize()
 
   Crt.TextBackground(Crt.White)

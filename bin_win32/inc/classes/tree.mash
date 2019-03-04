@@ -4,7 +4,7 @@
 
 class Tree(class):
   protected:
-    var Nodes, Count
+    var Nodes
 
   public:
     var Value
@@ -15,40 +15,28 @@ class Tree(class):
 end
 
 proc Tree::Create(val):
-  $Nodes ?= new[0]
-  $Count ?= new(0)
+  $Nodes ?= new list()
   $Value ?= val
 end
 
 proc Tree::Free():
-  while $Count > 0:
-    $Count--
-    $Nodes[$Count] -> Free()
-  end
-  Free($Nodes, $Count, $)
+  $Nodes -> ForEach(Tree::Free)
+  $Nodes -> Free()
+  Free($)
 end
 
 func Tree::AddNode(val):
-  SetLen($Nodes, $Count + 1)
   n ?= new Tree(val)
-  $Nodes[$Count] ?= n
-  $Count++
+  $Nodes -> Add(n)
   return n
 end
 
 func Tree::GetNode(num):
-  return $Nodes[num]
+  return $Nodes -> Get(num)
 end
 
 proc Tree::DelNode(num):
-  if ($Count <= num) | (num < 0):
-    raise "Tree node number (" + num + ") out of bounds."
-  else:
-    $Count--
-    $Nodes[num] -> Free()
-    for(; num < $Count; num++):
-      $Nodes[num] ?= $Nodes[num + 1]
-    end
-    SetLen($Nodes, $Count)
-  end
+  Node ?= $Nodes -> Get(num)
+  Node -> Free()
+  $Nodes -> Delete(num)
 end

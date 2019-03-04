@@ -53,18 +53,18 @@ func gpmx(obj):
   return obj
 end
 
-proc SizeOf(obj):
-  push obj
-  sizeof
-  gpm
-end
-
 enum Types [TypeNull, TypeWord, TypeInt, TypeReal, TypeStr, TypeArray, TypeClass]
 word TypePtr 255
 
 proc TypeOf(obj):
   push obj
   typeof
+  gpm
+end
+
+proc SizeOf(obj):
+  push obj
+  sizeof
   gpm
 end
 
@@ -84,6 +84,27 @@ proc SetLen(array, newlen):
   pop
 end
 
+proc Fill(array, val):
+  l ?= len(array)
+  for(i ?= 0; i < l; i++):
+    array[i] ?= copy(val)
+  end
+end
+
+func Range(from, to):
+  if from > to:
+    push to
+    push from
+    pop  to
+    pop  from
+  end
+  r ?= new[to - from + 1]
+  for(i ?= copy(from); i <= to; i++):
+    r[i - from] ?= copy(i)
+  end
+  return gpmx(r)
+end
+
 proc gc():
   gc
   stkdrop
@@ -100,7 +121,7 @@ end
 {_ifdef_ argcounter}
 
 proc Free(...):
-  var t
+  var x
   t ?= argcount
   while t > 0:
     rem
@@ -224,4 +245,9 @@ end
 proc TickCnt():
   _TickCnt()
   gpm
+end
+
+proc vcall(method, ...):
+  argcount--
+  call method
 end

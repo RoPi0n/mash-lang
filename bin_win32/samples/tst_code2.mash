@@ -8,33 +8,15 @@ class MyClass:              //Объявление класса MyClass.
 end
 
 proc MyClass::Create(a):    //Конструктор класса.
-  $a ?= new(a)              // $ - обращение к дочернему объекту класса.
+  $a ?= a                   // $ - обращение к дочернему объекту класса.
 end                         // ?= - присваивание указателя.
 
 func MyClass::F():          //Функция, определенная в классе MyClass.
   return $a * 2             //Возврат значения.
 end
 
-class MyClass2(MyClass):    //Объявление класса MyClass2 - наследника
-  func F                    //от класса MyClass для переопределения F.
-  proc Free
-end
-
-func MyClass2::F():         //Переопределенная функция F.
-  return MyClass::F$() * 2  //Вызов метода другого класса
-end                         //от для экземпляра данного класса.
-
-proc MyClass2::Free():
-  Free($a, $)
-end
-
 proc main():
-  p ?= new MyClass2(10)  //Создание экземпляра класса MyClass2.
-  println(p->F())           //Результат: 40.
-
-  println("p ", if(p -> type == MyClass2, "==", "<>"), " MyClass2")
-
-  println("new_var_decl ", if(typeof(new_var_decl) == typePtr, "==", "<>"), " pointer")
-
+  p ?= new MyClass(10)      //Создание экземпляра класса MyClass2.
+  println(p->F())           //Результат: 20.
   InputLn()
 end
