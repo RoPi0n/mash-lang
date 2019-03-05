@@ -118,6 +118,7 @@ type
     bcSTHR,   // suspendthread(id = [top])
     bcRTHR,   // resumethread(id = [top])
     bcTTHR,   // terminatethread(id = [top])
+    bcTHSP,   // set thread priority
 
     {** for try..catch..finally block's **}
     bcTR,     // try @block_catch = [top], @block_end = [top+1]
@@ -147,7 +148,9 @@ type
 
     bcTHREXT,//stop code execution
 
-    bcDBP    //debug method call
+    bcDBP//,   //debug method call
+
+    //bcCOPST
     );
 
 procedure TCodeSection.ParseSection;
@@ -371,6 +374,9 @@ begin
     if Tk(s, 1) = 'tthr' then
       Outp.WriteByte(byte(bcTTHR))
     else
+    if Tk(s, 1) = 'thsp' then
+      Outp.WriteByte(byte(bcTHSP))
+    else
     if Tk(s, 1) = 'tr' then
       Outp.WriteByte(byte(bcTR))
     else
@@ -437,6 +443,9 @@ begin
     if Tk(s, 1) = 'dbgbreakpoint' then
       Outp.WriteByte(byte(bcDBP))
     else
+    {if Tk(s, 1) = 'copst' then
+      Outp.WriteByte(byte(bcCOPST))
+    else}
     if Length(s) > 0 then
       AsmError('Invalid token in line: "' + s + '"');
   end;
