@@ -2,7 +2,8 @@
 // Code version: 1.0
 
 uses <bf>
-uses <classes>
+uses <classes/types>
+uses <classes/vector>
 
 // imports from thrlib
 
@@ -42,6 +43,15 @@ proc thr_terminate(thr):
   tthr
 end
 
+enum ThreadPriority [tpIdle, tpLowest, tpLower, tpNormal,
+                     tpHigher, tpHighest, tpTimeCritical]
+
+proc thr_setpriority(thr, priority):
+  push priority
+  push thr
+  thsp
+end
+
 proc thr_kill(thr):
   thr_suspend(thr)
   thr_terminate(thr)
@@ -60,7 +70,7 @@ class TThread:
     proc Create, Free
 
     proc Execute //for overriding
-    proc Suspend, Resume, Terminate, WaitFor, ReJoin //Control proc's
+    proc Suspend, Resume, Terminate, WaitFor, ReJoin, SetPriority //Control proc's
 end
 
 proc TThread::Execute():
@@ -101,6 +111,10 @@ end
 proc TThread::Resume():
   thr_resume($ThreadContext)
   $Resumed = true
+end
+
+proc TThread::SetPriority(priority):
+  thr_setpriority($ThreadContext, priority)
 end
 
 proc TThread::Terminate():
@@ -265,4 +279,41 @@ func Parallel(method, ...):
     t--
   end
   return new TParallelCallThread(method, args)
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// Thread-safe atomic
+////////////////////////////////////////////////////////////////////////////////
+
+class TAtomic:
+  private:
+    var Locker, Value
+
+  public:
+    proc Create, Free
+    proc Set
+    func Get
+end
+
+proc TAtomic::Create(Value):
+  $Locker = new TCriticalSection()
+  $Value ?= new(Value)
+end
+
+proc TAtomic::Free():
+  $Locker -> Free()
+  Free($Value, $)
+end
+
+proc TAtomic::Set(NewVal):
+  $Locker -> Enter()
+  $Value = NewVal
+  $Locker -> Leave()
+end
+
+func TAtomic::Get():
+  $Locker -> Enter()
+  r ?= copy(NewVal)
+  $Locker -> Leave()
+  return r
 end
