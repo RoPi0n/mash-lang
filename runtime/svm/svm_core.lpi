@@ -30,7 +30,7 @@
         <CommandLineParams Value="&quot;C:\Users\Админ\Desktop\svm\src\tests\tst_code3.vmc&quot;"/>
       </local>
     </RunParams>
-    <Units Count="2">
+    <Units Count="3">
       <Unit0>
         <Filename Value="svm_core.pas"/>
         <IsPartOfProject Value="True"/>
@@ -39,6 +39,10 @@
         <Filename Value="svm_grabber.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="svm_utils.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
