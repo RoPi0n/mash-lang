@@ -2,28 +2,22 @@ uses <bf>
 uses <crt>
 
 proc main():
-  println("Hello!")
-
   async a:
-    println("Test")
+    print("The ")
     sleep(1000)
-    println("Test")
-    sleep(1000)
-    println("Test")
-    sleep(1000)
+    print("is ")
   end
 
   async b:
-    println("Test 2")
-    sleep(300)
-    println("Test 2")
-    sleep(300)
-    println("Test 2")
-    sleep(300)
+    print("Mash ")
+    sleep(500)
+    print("language ")
   end
 
   wait a, b
 
-  println("End!")
+  sleep(500)
+
+  println("cool!")
   inputln()
 end

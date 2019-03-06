@@ -1,0 +1,12 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  for(i ?= 1; i <= 10; i++):
+    launch:
+      sleep(random() * 100)
+      println(i)
+    end
+  end
+  inputln()
+end

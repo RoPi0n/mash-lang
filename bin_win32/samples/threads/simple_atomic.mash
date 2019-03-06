@@ -1,0 +1,40 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+proc main():
+  MyThreadValue ?= new TAtomic(0)
+
+  //thread 1
+  launch:
+    while true:
+      MyThreadValue -> Set(1)
+      Sleep(8)
+      gc()
+    end
+  end
+
+  //thread 2
+  launch:
+    while true:
+      MyThreadValue -> Set(2)
+      Sleep(3)
+      gc()
+    end
+  end
+
+  //thread 3
+  launch:
+    while true:
+      MyThreadValue -> Set(3)
+      Sleep(11)
+      gc()
+    end
+  end
+
+  while true:
+    PrintLn(MyThreadValue -> Get())
+    Sleep(100)
+    gc()
+  end
+end
