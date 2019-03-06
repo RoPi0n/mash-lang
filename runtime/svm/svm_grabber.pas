@@ -50,13 +50,13 @@ begin
    while i_pos > 0 do
     begin
       Dec(i_pos);
-      if (TObject(tasks[i_pos]) is TSVMMem) then
-        begin
-          if TSVMMem(tasks[i_pos]).m_type <> svmtClass then
-           FreeAndNil(tasks[i_pos]);
-        end
+      if TObject(tasks[i_pos]) is TSVMMem then
+       begin
+         if TSVMMem(tasks[i_pos]).m_type <> svmtClass then
+          FreeAndNil(tasks[i_pos]);
+       end
       else
-      FreeAndNil(tasks[i_pos]);
+       FreeAndNil(tasks[i_pos]);
     end;
    size := GrabberBlockSize;
    SetLength(tasks, size);

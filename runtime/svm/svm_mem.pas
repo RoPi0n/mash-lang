@@ -21,7 +21,6 @@ type
     constructor CreateFS(s:string);
     constructor CreateFW(w:cardinal);
     constructor CreateArr(size:cardinal = 0);
-    constructor CreateCopy(m:TSVMMem);
     destructor Destroy; override;
 
     procedure Clear;
@@ -79,6 +78,8 @@ type
   TMemArray = array of pointer;
   PMemArray = ^TMemArray;
 
+  function CreateSVMMemCopy(m:TSVMMem):TSVMMem;
+
 implementation
 
 constructor TSVMMem.Create;
@@ -113,31 +114,6 @@ begin
   m_type := svmtArr;
   new(PMemArray(m_val));
   SetLength(PMemArray(m_val)^, size);
-end;
-
-constructor TSVMMem.CreateCopy(m:TSVMMem);
-var
-  c, l: cardinal;
-begin
-  if m.m_type = svmtArr then
-   begin
-     m_type := svmtArr;
-     new(PMemArray(m_val));
-     l := Length(PMemArray(m.m_val)^);
-     SetLength(PMemArray(m_val)^, l);
-     c := 0;
-     while c < l do
-      begin
-        PMemArray(m_val)^[c] := PMemArray(m.m_val)^[c];
-        inc(c);
-      end;
-   end
-  else
-   begin
-     m_val := nil;
-     m_type := m.m_type;
-     SetV(m.m_val^, m.m_type);
-   end;
 end;
 
 destructor TSVMMem.Destroy;
@@ -1008,6 +984,37 @@ begin
     else
       Error(reVarTypeCast);
   end;
+end;
+
+function CreateSVMMemCopy(m:TSVMMem):TSVMMem; inline;
+var
+  c, l: cardinal;
+begin
+  Result := nil;
+  if m.m_type = svmtClass then
+   Result := m
+  else
+  if m.m_type = svmtArr then
+   begin
+     Result := TSVMMem.Create;
+     Result.m_type := svmtArr;
+     new(PMemArray(Result.m_val));
+     l := Length(PMemArray(m.m_val)^);
+     SetLength(PMemArray(Result.m_val)^, l);
+     c := 0;
+     while c < l do
+      begin
+        PMemArray(Result.m_val)^[c] := PMemArray(m.m_val)^[c];
+        inc(c);
+      end;
+   end
+  else
+   begin
+     Result := TSVMMem.Create;
+     Result.m_val := nil;
+     Result.m_type := m.m_type;
+     Result.SetV(m.m_val^, m.m_type);
+   end;
 end;
 
 end.

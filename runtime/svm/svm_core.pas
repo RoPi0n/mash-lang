@@ -885,7 +885,7 @@ type
 
             bcMC:
             begin
-              self.stack.push(TSVMMem.CreateCopy(TSVMMem(self.stack.peek)));
+              self.stack.push(CreateSVMMemCopy(TSVMMem(self.stack.peek)));
               Inc(self.ip);
             end;
 
@@ -972,7 +972,7 @@ type
             bcPHC:
             begin
               self.stack.push(
-                  TSVMMem.CreateCopy(TSVMMem(self.consts^.GetConst(
+                  CreateSVMMemCopy(TSVMMem(self.consts^.GetConst(
                     cardinal((self.bytes^[self.ip + 4] shl 24) + (self.bytes^[self.ip + 3] shl 16) +
                              (self.bytes^[self.ip + 2] shl 8) + self.bytes^[self.ip + 1]
                             ))
