@@ -51,7 +51,7 @@ var
 begin
   try
   writeln('Mash lang!');
-  writeln('Version: 1.3, Pavel Shiryaev (c) from 2018.');
+  writeln('Version: 0.1.5, Pavel Shiryaev (c) from 2018.');
   writeln('See more at: https://github.com/RoPi0n/mash-lang');
   if ParamCount = 0 then
   begin
@@ -274,8 +274,10 @@ begin
     else
       writeln('Header: Executable object file.');
 
-    if EnableOptimization then
+    //if EnableOptimization then
       OptimizeCode(Code);
+
+    FreeAndNil(ImportsLst);
 
     if outasmp then
       Code.SaveToFile(ChangeFileExt(OutFilePath, '.partof.asm'));

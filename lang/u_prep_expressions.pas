@@ -111,7 +111,7 @@ end;
 function PreprocessArrAction(arrexpr, action: string; varmgr: TVarManager): string;
 var
   c, lvl: cardinal;
-  s: string;
+  s, pops: string;
   IsItSafe: boolean;
 begin
   Result := '';
@@ -125,6 +125,7 @@ begin
     if copy(s, 1, 5) = 'safe ' then
      begin
        IsItSafe := true;
+       Pops := PopLocalVariables(varmgr);
        Result := Result + sLineBreak + PushLocalVariables(varmgr);
        Delete(s, 1, 5);
        s := Trim(s);
@@ -166,7 +167,7 @@ begin
       PrpError('Error in operation with [<index>] -> "' + s + '".')};
 
     if IsItSafe then
-     Result := Result + sLineBreak + PopLocalVariables(varmgr);
+     Result := Result + sLineBreak + Pops;
 
     Dec(c);
   end;
@@ -200,7 +201,7 @@ end;
 function PushIt(s: string; varmgr: TVarManager; PushTemporary: boolean = True;
   PushCP: boolean = False): string;
 var
-  bf: string;
+  bf, Pops: string;
   c: cardinal;
   IsItSafe: boolean;
 begin
@@ -211,6 +212,7 @@ begin
   if Copy(s, 1, 5) = 'safe ' then
    begin
      IsItSafe := true;
+     Pops := PopLocalVariables(varmgr);
      Result := PushLocalVariables(varmgr) + sLineBreak;
      Delete(s, 1, 5);
      s := Trim(s);
@@ -311,13 +313,13 @@ begin
       + 'gvbp';
 
   if IsItSafe then
-   Result := Result + sLineBreak + PopLocalVariables(varmgr);
+   Result := Result + sLineBreak + Pops;
 end;
 
 
 function TempPushIt(s: string; varmgr: TVarManager): string;
 var
-  bf: string;
+  bf, Pops: string;
   IsItSafe: boolean;
 begin
   s := Trim(s);
@@ -326,6 +328,7 @@ begin
   if Copy(s, 1, 5) = 'safe ' then
    begin
      IsItSafe := true;
+     Pops := PopLocalVariables(varmgr);
      Result := PushLocalVariables(varmgr) + sLineBreak;
      Delete(s, 1, 5);
      s := Trim(s);
@@ -377,7 +380,7 @@ begin
   //PrpError('Invalid call "' + bf + '".');
 
   if IsItSafe then
-   Result := Result + sLineBreak + PopLocalVariables(varmgr);
+   Result := Result + sLineBreak + Pops;
 end;
 
 function IsExpr(s: string): boolean;
@@ -408,6 +411,12 @@ begin
 
     if (not in_str) and (in_br = 0) and (in_rbr = 0) then
     begin
+      if s[1] in ['+', '-', '*', '/', '\', '%', '&', '|', '^', '~', '>', '<', '='] then
+       begin
+         Result := True;
+         break;
+       end;
+
       if Length(s) > 1 then
         if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or
           (s[1] + s[2] = '<<') or (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or
@@ -415,16 +424,12 @@ begin
           (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
           (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
           (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
-          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') or (copy(s, 1, 4) = ' in ') then
+          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') or (copy(s, 1, 4) = ' in ') or
+          (s[1] + s[2] = '..') then
         begin
           Result := True;
           break;
         end;
-      if s[1] in ['+', '-', '*', '/', '\', '%', '&', '|', '^', '~', '>', '<', '='] then
-      begin
-        Result := True;
-        break;
-      end;
     end;
     Delete(s, 1, 1);
   end;
@@ -458,17 +463,19 @@ begin
 
     if (not in_str) and (in_br = 0) and (in_rbr = 0) then
     begin
-      if Length(s) > 1 then
-        if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or (s[1] + s[2] = '<<') or
-          (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or
-          (s[1] + s[2] = '?=') or (s[1] + s[2] = '@=') or
-          (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or
-          (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or
-          (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or
-          (s[1] + s[2] = '++') or (s[1] + s[2] = '--') or (copy(s, 1, 3) = 'in ') then
-          break;
       if s[1] in ['+', '-', '*', '/', '\', '%', '&', '|', '^', '~', '>', '<', '='] then
         break;
+
+      if Length(s) > 1 then
+        if (s[1] + s[2] = '>=') or (s[1] + s[2] = '<=') or (s[1] + s[2] = '<<') or
+           (s[1] + s[2] = '>>') or (s[1] + s[2] = '<>') or (s[1] + s[2] = '?=') or
+           (s[1] + s[2] = '@=') or (s[1] + s[2] = '+=') or (s[1] + s[2] = '-=') or
+           (s[1] + s[2] = '*=') or (s[1] + s[2] = '/=') or (s[1] + s[2] = '\=') or
+           (s[1] + s[2] = '%=') or (s[1] + s[2] = '&=') or (s[1] + s[2] = '|=') or
+           (s[1] + s[2] = '^=') or (s[1] + s[2] = '++') or (s[1] + s[2] = '--') or
+           (copy(s, 1, 3) = 'in ') or (s[1] + s[2] = '..') then
+          break;
+
       if (in_br < 0) or (in_rbr < 0) then
         break;
     end;
@@ -494,7 +501,7 @@ begin
       (s[1] + s[2] = '-=') or (s[1] + s[2] = '*=') or (s[1] + s[2] = '/=') or
       (s[1] + s[2] = '\=') or (s[1] + s[2] = '%=') or (s[1] + s[2] = '&=') or
       (s[1] + s[2] = '|=') or (s[1] + s[2] = '^=') or (s[1] + s[2] = '++') or
-      (s[1] + s[2] = '--') or (copy(s, 1, 3) = 'in ') then
+      (s[1] + s[2] = '--') or (copy(s, 1, 3) = 'in ') or (s[1] + s[2] = '..') then
     begin
       if copy(s, 1, 3) = 'in ' then
        begin
@@ -812,19 +819,17 @@ begin
   begin
     if (TokensStack[0] = '>=') or (TokensStack[0] = '<=') or
       (TokensStack[0] = '<<') or (TokensStack[0] = '>>') or
-      (TokensStack[0] = '<>') {or (TokensStack[0] = 'not')} or
-      (TokensStack[0] = 'and') or (TokensStack[0] = 'or') or
-      (TokensStack[0] = 'xor') or (TokensStack[0] = '+') or
+      (TokensStack[0] = '<>') or (TokensStack[0] = '+') or
       (TokensStack[0] = '-') or (TokensStack[0] = '&') or
       (TokensStack[0] = '^') {or (TokensStack[0] = '~')} or
       (TokensStack[0] = '|') or (TokensStack[0] = '>') or
       (TokensStack[0] = '<') or (TokensStack[0] = '=') or
-      (TokensStack[0] = 'in') then
+      (TokensStack[0] = 'in') or (TokensStack[0] = '..') then
     begin
       Result := Result + sLineBreak + TempPushIt('0', varmgr);
     end
     else
-    if (TokensStack[0] <> '~') and (TokensStack[0] <> 'not') then
+    if (TokensStack[0] <> '~') then
     begin
       Result := Result + sLineBreak + TempPushIt(TokensStack[0], varmgr);
       TokensStack.Delete(0);
@@ -900,6 +905,14 @@ begin
         TokensStack.Delete(0);
       end
       else
+      if (TokensStack[0] = '..') then
+      begin
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'swp' + sLineBreak + 'pushcp _op_range' + sLineBreak + 'jc';
+        TokensStack.Delete(0);
+        TokensStack.Delete(0);
+      end
+      else
       if (TokensStack[0] = '>') then
       begin
         Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
@@ -924,7 +937,14 @@ begin
         TokensStack.Delete(0);
       end
       else
-
+      if (TokensStack[0] = '===') then
+      begin
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+          sLineBreak + 'peq' + sLineBreak + 'gpm';
+        TokensStack.Delete(0);
+        TokensStack.Delete(0);
+      end
+      else
       if (TokensStack[0] = '&') then
       begin
         Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
@@ -1026,7 +1046,7 @@ end;
 
 function ParseEqExpr(s: string; varmgr: TVarManager): string;
 var
-  Bf, Op: string;
+  Bf, Op, Pops: string;
   IsItSafe: boolean;
 begin
   Result := '';
@@ -1038,6 +1058,7 @@ begin
   if Copy(s, 1, 5) = 'safe ' then
    begin
      IsItSafe := true;
+     Pops := PopLocalVariables(varmgr);
      Result := PushLocalVariables(varmgr) + sLineBreak;
      Delete(s, 1, 5);
      s := Trim(s);
@@ -1183,7 +1204,7 @@ begin
     Result := Result + sLineBreak + 'pop';
   end;
   if IsItSafe then
-   Result := Result + sLineBreak + PopLocalVariables(varmgr);
+   Result := Result + sLineBreak + Pops;
 end;
 
 function IsOpNew(s: string): boolean;
@@ -1237,8 +1258,11 @@ begin
       end;
 
       mc := FindClassRec(s);
+
       if mc = nil then
         PrpError('Not exist class object allocation "' + s + '".');
+
+      mc.ClassUsed := true;
 
       if ConstDefs.IndexOf('__class_' + s + '_allocator') = -1 then
         ConstDefs.Add('__class_' + s + '_allocator');

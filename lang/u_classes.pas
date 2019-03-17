@@ -19,13 +19,27 @@ type
     constructor Create(VName: string; Init: boolean; InitStr: string);
   end;
 
+  {TMashOpetaror = (svmopidAdd, svmopidSub, svmopidMul, svmopidDiv,
+                   svmopidIDiv,svmopidMod, svmopidEq,  svmopidBg,
+                   svmopidBe,  svmopidAnd, svmopidOr,  svmopidXor,
+                   svmopidNot, svmopidShl, svmopidShr, svmopidInc,
+                   svmopidDec, svmopidMov);
+
+  TMashClassOperatorDefine = class(TObject)
+  public
+    HandlerName: string;
+    OpType: TMashOpetaror;
+    constructor Create(HName: string; Op:TMashOpetaror);
+  end;}
+
   TMashClass = class(TObject)
   public
     AllocSize: cardinal;
     CName: string;
-    VarDefs: TList;
-    Methods, MethodsLinks, Constructors, Destructors: TStringList;
-    Table: TStringList;
+    VarDefs{, OperatorsDefs}: TList;
+    Extends, Methods, MethodsLinks, Constructors, Destructors: TStringList;
+    Table, UnresolvedDepends: TStringList;
+    ClassUsed: boolean;
     constructor Create(Name: string);
     destructor Destroy; override;
     procedure FillTable;
@@ -51,6 +65,15 @@ begin
   inherited Create;
 end;
 
+{*** Operator definition ***}
+
+{constructor TMashClassOperatorDefine.Create(HName: string; Op:TMashOpetaror);
+begin
+  HandlerName := HName;
+  OpType := Op;
+  inherited Create;
+end;}
+
 {*** Class ***}
 
 constructor TMashClass.Create(Name: string);
@@ -58,11 +81,15 @@ begin
   inherited Create;
   CName := Name;
   VarDefs := TList.Create;
+  //OperatorsDefs := TList.Create;
+  Extends := TStringList.Create;
   Methods := TStringList.Create;
   MethodsLinks := TStringList.Create;
   Constructors := TStringList.Create;
   Destructors := TStringList.Create;
+  UnresolvedDepends := TStringList.Create;
   Table := TStringList.Create;
+  ClassUsed := false;
   if RTTI_Enable then
    VarDefs.Add(TMashClassVariableDefine.Create('type', false, ''));
 end;
@@ -74,12 +101,15 @@ begin
     TMashClassVariableDefine(VarDefs[0]).Free;
     VarDefs.Delete(0);
   end;
+  FreeAndNil(Extends);
   FreeAndNil(VarDefs);
+  //FreeAndNil(OperatorsDefs);
   FreeAndNil(Methods);
   FreeAndNil(MethodsLinks);
   FreeAndNil(Constructors);
   FreeAndNil(Destructors);
   FreeAndNil(Table);
+  FreeAndNil(UnresolvedDepends);
   inherited Destroy;
 end;
 

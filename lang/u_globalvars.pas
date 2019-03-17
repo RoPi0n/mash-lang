@@ -24,6 +24,7 @@ var
   FastPrep_Defines: TStringList;
   AppMode: TSVMAppMode = amConsole;
   Hints_Enable: boolean = false;
+  NeverUsedClasses: TStringList;
 
   Current_CodeLine: cardinal = 1;
   Current_CodeFile: string = '';

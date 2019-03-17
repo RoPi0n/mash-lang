@@ -494,9 +494,10 @@ begin
    begin
      Delete(s, 1, 5);
      s := Trim(s);
+     s1:= PopLocalVariables(varmgr);
      Result := PushLocalVariables(varmgr) +
                PreprocessStr(s, varmgr) +
-               PopLocalVariables(varmgr);
+               s1;
    end
   else
   {** Try **}
@@ -1467,11 +1468,14 @@ begin
    end;
   //VarDefs := TStringList.Create;
 
+  NeverUsedClasses := TStringList.Create;
 end;
 
 procedure FreePreprocessor(varmgr: TVarManager);
+var
+  s: string;
+  c: cardinal;
 begin
-  FreeAndNil(ImportsLst);
   FreeAndNil(ProcEnterList);
   FreeAndNil(ProcList);
   {while BlockStack.Count > 0 do
@@ -1490,12 +1494,45 @@ begin
     PostInitCode.Add('jr');
   end;
 
-  while ClassStack.Count > 0 do
+  c := 0;
+  while c < ClassStack.Count do
   begin
-    PostInitCode.Add(GenClassAllocator(TMashClass(ClassStack[0]), varmgr));
-    TMashClass(ClassStack[0]).Free;
-    ClassStack.Delete(0);
+    if TMashClass(ClassStack[c]).UnresolvedDepends.Count > 0 then
+     begin
+       s := 'Unresolved class "' + TMashClass(ClassStack[c]).CName + '" depends:';
+       c := 0;
+       while c < TMashClass(ClassStack[c]).UnresolvedDepends.Count do
+        begin
+          s := s + sLineBreak + '     - Class "' + TMashClass(ClassStack[c]).UnresolvedDepends[c] + '"';
+          inc(c);
+        end;
+       AsmError(s);
+     end;
+    if TMashClass(ClassStack[c]).ClassUsed then
+     PostInitCode.Add(GenClassAllocator(TMashClass(ClassStack[c]), varmgr))
+    else
+     NeverUsedClasses.Add(TMashClass(ClassStack[c]).CName);
+
+    inc(c);
   end;
+
+  while ClassStack.Count > 0 do
+   begin
+     if TMashClass(ClassStack[0]).ClassUsed then
+      begin
+        c := 0;
+        while c < TMashClass(ClassStack[0]).Extends.Count do
+         begin
+           if NeverUsedClasses.IndexOf(TMashClass(ClassStack[0]).Extends[c]) <> -1 then
+            NeverUsedClasses.Delete(
+              NeverUsedClasses.IndexOf(TMashClass(ClassStack[0]).Extends[c])
+            );
+           inc(c);
+         end;
+      end;
+     TMashClass(ClassStack[0]).Free;
+     ClassStack.Delete(0);
+   end;
   FreeAndNil(ClassStack);
 
   FreeAndNil(ClassTable);

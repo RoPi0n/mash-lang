@@ -26,6 +26,7 @@ function CutNextArg(var s: string): string;
 function GetArrName(s: string): string;
 function IsClass(s: string): boolean;
 function FindClassRec(s: string): TMashClass;
+function FindNextUnresolved(s: string): TMashClass;
 
 var
   IfBlCounter: cardinal = 0;
@@ -256,8 +257,26 @@ begin
     end;
     Inc(c);
   end;
-  if Result = nil then
-    PrpError('Invalid class allocation. Class "' + s + '" doesn''t exist.');
+  //if Result = nil then
+  //  PrpError('Invalid class allocation. Class "' + s + '" doesn''t exist.');
+end;
+
+function FindNextUnresolved(s: string): TMashClass;
+var
+  c: cardinal;
+begin
+  Result := nil;
+  s := Trim(s);
+  c := 0;
+  while c < ClassStack.Count do
+  begin
+    if TMashClass(ClassStack[c]).UnresolvedDepends.IndexOf(s) <> -1 then
+    begin
+      Result := TMashClass(ClassStack[c]);
+      break;
+    end;
+    Inc(c);
+  end;
 end;
 
 function IsWord(var s: string): boolean;

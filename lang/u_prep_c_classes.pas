@@ -55,6 +55,7 @@ begin
     while Length(s) > 0 do
     begin
       bf := Trim(CutNextArg(s));
+      Mc.Extends.Add(bf);
       Mc2 := FindClassRec(bf);
 
       if Mc2 <> nil then
@@ -71,7 +72,9 @@ begin
             Mc.MethodsLinks[c] := Mc2.MethodsLinks[c];
           Inc(c);
         end;
-      end;
+      end
+      else
+       Mc.UnresolvedDepends.Add(bf);
 
     end;
   end
@@ -220,6 +223,115 @@ begin
     begin
       Mc := TMashClass(ClassStack[ClassStack.Count - 1]);
       bf := Trim(CutNextArg(s));
+
+      {if copy(bf, 1, 2) = '++' then
+       begin
+         Delete(bf, 1, 2);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidInc));
+       end
+      else
+      if copy(bf, 1, 2) = '--' then
+       begin
+         Delete(bf, 1, 2);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidDec));
+       end
+      else
+      if copy(bf, 1, 2) = '<<' then
+       begin
+         Delete(bf, 1, 2);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidShl));
+       end
+      else
+      if copy(bf, 1, 2) = '>>' then
+       begin
+         Delete(bf, 1, 2);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidShr));
+       end
+      else
+      if copy(bf, 1, 2) = '==' then
+       begin
+         Delete(bf, 1, 2);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidEq));
+       end
+      else
+      if copy(bf, 1, 2) = '>=' then
+       begin
+         Delete(bf, 1, 2);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidBe));
+       end
+      else
+      if copy(bf, 1, 1) = '+' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidAdd));
+       end
+      else
+      if copy(bf, 1, 1) = '-' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidSub));
+       end
+      else
+      if copy(bf, 1, 1) = '*' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidMul));
+       end
+      else
+      if copy(bf, 1, 1) = '/' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidDiv));
+       end
+      else
+      if copy(bf, 1, 1) = '\' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidIDiv));
+       end
+      else
+      if copy(bf, 1, 1) = '%' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidMod));
+       end
+      else
+      if copy(bf, 1, 1) = '>' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidBg));
+       end
+      else
+      if copy(bf, 1, 1) = '&' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidAnd));
+       end
+      else
+      if copy(bf, 1, 1) = '|' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidOr));
+       end
+      else
+      if copy(bf, 1, 1) = '^' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidXor));
+       end
+      else
+      if copy(bf, 1, 1) = '~' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidNot));
+       end
+      else
+      if copy(bf, 1, 1) = '=' then
+       begin
+         Delete(bf, 1, 1);
+         mc.OperatorsDefs.Add(TMashClassOperatorDefine.Create(bf, svmopidMov));
+       end;}
+
       i := Mc.Methods.IndexOf(bf);
       if i = -1 then
       begin
@@ -272,6 +384,19 @@ begin
       MClass.Methods[c] + sLineBreak + 'swp' + sLineBreak + 'peekai' + sLineBreak;
     Inc(c);
   end;
+
+  // Operator's definitions
+  {c := 0;
+  while c < MClass.OperatorsDefs.Count do
+   begin
+     Result := Result + sLineBreak + 'pcopy' +
+               sLineBreak + 'pushcp __class__child_' +
+               TMashClassOperatorDefine(MClass.OperatorsDefs[c]).HandlerName +
+               sLineBreak + 'swp' + sLineBreak + 'pushcp ' +
+               GetConst(IntToStr(byte(TMashClassOperatorDefine(MClass.OperatorsDefs[c]).OpType)),varmgr) +
+               sLineBreak + 'swp' + sLineBreak + 'copst' + sLineBreak;
+     Inc(c);
+   end;}
 
   Result := Result + '__gen_' + mname + '_method_end:' + sLineBreak + 'jr' + sLineBreak;
 

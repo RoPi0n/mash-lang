@@ -5,14 +5,11 @@ unit u_optimizator;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, u_globalvars, u_global;
 
 procedure OptimizeCode(Lines: TStringList);
 
 implementation
-
-uses
-  u_global, u_globalvars;
 
 var
   Waste: TStringList;
@@ -37,7 +34,8 @@ begin
           Delete(s, 1, pos(' ', s));
           s := Trim(s);
 
-          IsWaste := Lines.IndexOf('__gen_' + s + '_method_end:') > i; //False;
+          IsWaste := (Lines.IndexOf('__gen_' + s + '_method_end:') > i) and
+                     (Lines.IndexOf(s + ':') < i); //False;
 
           {k := i + 1;
           while k < Lines.Count do
@@ -63,9 +61,32 @@ begin
   end;
 end;
 
+procedure LightFilterWaste(Lines: TStringList);
+var
+  i: longint;
+  j: integer;
+  s: string;
+begin
+  i := 0;
+  while i < Lines.Count do
+  begin
+    s := Lines[i];
+    if (Copy(s, 1, 5) = 'pushc') or (Copy(s, 1, 6) = 'pushcp') then
+     begin
+       Delete(s, 1, pos(' ', s));
+       s := Trim(s);
+
+       j := Waste.IndexOf(s);
+       if j <> -1 then
+        Waste.Delete(j);
+     end;
+    Inc(i);
+  end;
+end;
+
 {*** waste code blocks ***}
 
-procedure FindAllMethods(Lines: TStringList);
+procedure FindNeverUsedMethods(Lines: TStringList);
 var
   i, x: longint;
   s: string;
@@ -76,10 +97,13 @@ begin
     s := Lines[i];
     x := Length(s);
     if x > 0 then
-      if s[x] = ':' then
+     if s[x] = ':' then
       begin
-        Delete(s, x, 1);
-        if Lines.IndexOf('__gen_' + s + '_method_end:') > i then
+        Delete(s, length(s), 1);
+        s := Trim(s);
+
+        if pos('__', s) > 0 then
+         if NeverUsedClasses.IndexOf(Trim(Copy(s, 1, pos('__', s) - 1))) <> -1 then
           Waste.Add(s);
       end;
     Inc(i);
@@ -103,56 +127,102 @@ begin
       Lines.Delete(i);
       Dec(x);
     end;
-    if Lines.Count > i then
-      if Lines[i] = '__gen_' + Name + '_method_end:' then
-      begin
-        Lines.Delete(i);
-        if Lines.Count > i then
-          if Lines[i] = 'jr' then
-           begin
-             Lines.Delete(i);
-             Lines.Delete(i); // label
-           end;
-        if Hints_Enable then
-          AsmInfo('Method "' + Name + '" declared but not used.');
-      end;
+
+    if x > i - 3 then
+     begin
+       Lines.Delete(i);
+       Lines.Delete(i);
+       Lines.Delete(i);
+     end;
+
+    if Hints_Enable then
+     AsmInfo('Method "' + Name + '" declared but never used.');
   end;
 end;
 
-procedure DelWasteMethods(Lines: TStringList);
+function DelWasteMethods(Lines: TStringList): boolean;
 var
-  c: cardinal;
+  c, l, e, k, cnt: cardinal;
+  s, s2: string;
+  isw: boolean;
 begin
-  c := Waste.Count;
-  while c > 0 do
+  Result := false;
+  c := 0;
+  while c < Lines.Count do
   begin
-    dec(c);
-    RemoveMethod(Waste[c], Lines);
-    Waste.Delete(c);
+    s := Trim(Lines[c]);
+    l := Length(s);
+    if l > 0 then
+     begin
+       if s[l] = ':' then
+        begin
+          Delete(s, length(s), 1);
+          s := Trim(s);
+          e := Lines.IndexOf('__gen_' + s + '_method_end:');
+          inc(e, 2); //setup it to method end
+          isw := true;
+
+          if e > c then
+           begin //we are in method!
+             dec(c, 2); //return back to jump-over point
+             cnt := Lines.Count;
+             k := 1;
+             while (k < cnt - e) or (k < c) do
+              begin
+                if k < c then
+                 begin
+                   s2 := Trim(Lines[c - k]);
+                   if copy(s2, 1, 5) = 'pushc' then
+                    begin
+                      Delete(s2, 1, pos(' ', s2));
+                      s2 := Trim(s2);
+                      if s = s2 then
+                       begin
+                         isw := false;
+                         break;
+                       end;
+                    end;
+                 end;
+
+                if k < cnt - e then
+                 begin
+                   s2 := Trim(Lines[e + k]);
+                   if copy(s2, 1, 5) = 'pushc' then
+                    begin
+                      Delete(s2, 1, pos(' ', s2));
+                      s2 := Trim(s2);
+                      if s = s2 then
+                       begin
+                         isw := false;
+                         break;
+                       end;
+                    end;
+                 end;
+
+                inc(k);
+              end;
+
+             k := e;
+             if isw then
+              begin
+                Result := True;
+                while k >= c do
+                 begin
+                   Lines.Delete(k);
+                   dec(k);
+                 end;
+                dec(c);
+              end
+             else
+              c := e + 1;
+           end;
+        end;
+     end;
+    inc(c);
   end;
 end;
 
 {*** waste imports ***}
-
-procedure FindAllImports(Lines: TStringList);
-var
-  i, x: longint;
-  s: string;
-begin
-  i := 0;
-  x := Lines.Count;
-  while i < x do
-  begin
-    s := Lines[i];
-    if Length(s) > 7 then
-      if s[1] = 'i' then
-      begin
-        if copy(s, 1, 7) = 'import ' then
-          Waste.Add(tk(s, 2));
-      end;
-    Inc(i);
-  end;
-end;
 
 procedure RemoveWasteImports(Lines: TStringList);
 var
@@ -249,66 +319,33 @@ end;
 {*** Main method ***}
 
 procedure OptimizeCode(Lines: TStringList);
-var
-  b: byte;
 begin
   //writeln('Optimization...');
 
   //***   waste code blocks optimization
+  while DelWasteMethods(Lines) do continue;
+
   Waste := TStringList.Create;
 
-  case OptimizationLvl of
-    0: ;
-    //middle
-    2:
-    begin
-      FindAllMethods(Lines);
-      FilterWaste(Lines);
-      b := 3;
-      while (Waste.Count > 0) and (b > 0) do
-      begin
-        DelWasteMethods(Lines);
-        FindAllMethods(Lines);
-        FilterWaste(Lines);
-        Dec(b);
-      end;
-    end;
-    //full
-    3:
-    begin
-      FindAllMethods(Lines);
-      FilterWaste(Lines);
-      while Waste.Count > 0 do
-      begin
-        DelWasteMethods(Lines);
-        FindAllMethods(Lines);
-        FilterWaste(Lines);
-      end;
-    end;
-    //ligth
-    else
-    begin
-      FindAllMethods(Lines);
-      FilterWaste(Lines);
-      DelWasteMethods(Lines);
-    end;
-  end;
+  //*** never used classes
+  FindNeverUsedMethods(Lines);
+  while Waste.Count > 0 do
+   begin
+     RemoveMethod(Waste[0], Lines);
+     Waste.Delete(0);
+   end;
+
+  while DelWasteMethods(Lines) do continue;
 
   //*** waste imports
-  if OptimizationLvl > 0 then
-  begin
-    FindAllImports(Lines);
-    FilterWaste(Lines);
-    RemoveWasteImports(Lines);
-  end;
+  Waste.Text := ImportsLst.Text;
+  LightFilterWaste(Lines);
+  RemoveWasteImports(Lines);
 
   //*** waste consts
-  if OptimizationLvl > 0 then
-  begin
-    FindAllConsts(Lines);
-    FilterWaste(Lines);
-    RemoveWasteConsts(Lines);
-  end;
+  FindAllConsts(Lines);
+  LightFilterWaste(Lines);
+  RemoveWasteConsts(Lines);
 
   FreeAndNil(Waste);
 end;

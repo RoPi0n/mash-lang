@@ -16,7 +16,7 @@ function ExtractProcName(s: string): string;
 var
   bf: string;
 begin
-  if pos('::', s) > 0 then
+  while pos('::', s) > 0 do
    begin
      bf := Trim(copy(s, 1, pos('::', s)-1));
      Delete(s, 1, pos('::', s)+1);

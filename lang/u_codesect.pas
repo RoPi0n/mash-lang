@@ -55,9 +55,10 @@ type
     bcJR,     // jp to last callback point & rem last callback point
 
     {** for untyped's **}
-    bcEQ,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcBG,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
-    bcBE,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
+    bcEQ,     // [top] == [top-1] ? [top] = true : [top] = false
+    bcPEQ,    // @[top] == @[top-1] ? [top] = true : [top] = false
+    bcBG,     // [top] >  [top-1] ? [top] = true : [top] = false
+    bcBE,     // [top] >= [top-1] ? [top] = true : [top] = false
 
     bcNOT,    // [top] = ![top]
     bcAND,    // [top] = [top] and [top-1]
@@ -244,6 +245,9 @@ begin
     else
     if Tk(s, 1) = 'eq' then
       Outp.WriteByte(byte(bcEQ))
+    else
+    if Tk(s, 1) = 'peq' then
+      Outp.WriteByte(byte(bcPEQ))
     else
     if Tk(s, 1) = 'bg' then
       Outp.WriteByte(byte(bcBG))
