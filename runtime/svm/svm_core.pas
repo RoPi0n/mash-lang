@@ -49,6 +49,7 @@ type
 
     {** for untyped's **}
     bcEQ,     // [top] == [top-1] ? [top] = 1 : [top] = 0
+    bcPEQ,
     bcBG,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
     bcBE,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
 
@@ -703,6 +704,15 @@ type
               p := self.stack.popv;
               r := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
               r.OpEq(TSVMMem(self.stack.popv));
+              self.stack.push(r);
+              Inc(self.ip);
+            end;
+
+            bcPEQ:
+            begin
+              p := self.stack.popv;
+              r := TSVMMem.Create;
+              r.SetB(p = self.stack.popv);
               self.stack.push(r);
               Inc(self.ip);
             end;
