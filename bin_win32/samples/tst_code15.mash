@@ -1,13 +1,8 @@
 uses <bf>
 uses <crt>
-uses <classes>
+uses <threads>
 
 proc main():
-  v ?= new list()
-  v->Add("Test")
-  v->Add("Test2")
-  v->Add("Test3")
-  v->ForEach(println)
-
+  println(IsNull(1))
   inputln()
 end

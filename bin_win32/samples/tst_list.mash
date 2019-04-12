@@ -12,9 +12,15 @@ proc x::create(a):
 end
 
 proc main():
-  l ?= new list()
+  while true:
+    l ?= new list()
+    l -> Add(10)
+    //l -> Delete(0)
+    l -> Free()
+    gc()
+  end
 
-  a ?= new x(123)
+  /*a ?= new x(123)
   b ?= a
 
   for(i ?= 0; i < 100; i++):
@@ -33,7 +39,7 @@ proc main():
   for(i ?= 0; i < 100; i++):
     l->Delete(0)
   end
-  println(l->IndexOf(b))
+  println(l->IndexOf(b)) */
 
   inputln()
 end

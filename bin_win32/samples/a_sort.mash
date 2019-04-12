@@ -41,48 +41,15 @@ end
 
 
 proc main():
-  // QuickSort
-  arr ?= new[100000]
-
-  for (i ?= 0; i < 100000; i++):
-    arr[99999 - i] ?= copy(i)
-  end
-
-  t ?= TickCnt()
-  QuickSort(arr)
-  t ?= TickCnt() - t
-  PrintLn("QuickSort test: " + t + " ms.")
-  gc()
-
-  for (i ?= 0; i < 100000; i++):
-    arr[99999 - i] ?= copy(i)
-  end
-
-  t ?= TickCnt()
-  RadixSort(arr)
-  t ?= TickCnt() - t
-  PrintLn("RadixSort test: " + t + " ms.")
-  gc()
-
-  for (i ?= 0; i < 100000; i++):
-    arr[99999 - i] ?= copy(i)
-  end
-
-  t ?= TickCnt()
-  ReverseArray(arr)
-  t ?= TickCnt() - t
-  PrintLn("Simple reverse test: " + t + " ms.")
-  gc()
-
   templatearr ?= new[1000000]
+  arr ?= new[1000000]
+
   Randomize()
   for (i ?= 0; i < 1000000; i++):
     templatearr[999999 - i] ?= new(random())
   end
 
   // QuickSort
-  arr ?= new[1000000]
-
   for (i ?= 0; i < 1000000; i++):
     arr[999999 - i] ?= copy(templatearr[i])
   end
@@ -94,8 +61,6 @@ proc main():
   gc()
 
   // ThreadedQuickSort
-  arr ?= new[1000000]
-
   for (i ?= 0; i < 1000000; i++):
     arr[999999 - i] ?= copy(templatearr[i])
   end
@@ -107,8 +72,6 @@ proc main():
   gc()
 
   // RadixSort
-  arr ?= new[1000000]
-
   for (i ?= 0; i < 1000000; i++):
     arr[999999 - i] ?= copy(templatearr[i])
   end
@@ -117,6 +80,14 @@ proc main():
   RadixSort(arr)
   t ?= TickCnt() - t
   PrintLn("RadixSort: " + t + " ms.")
+
+  for (i ?= 0; i < 1000000; i++):
+    rem templatearr[999999 - i]
+  end
+
+  rem templatearr
+  rem arr
+
   gc()
 
   // HeapSort

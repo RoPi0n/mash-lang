@@ -34,10 +34,11 @@ var snk,
     sleeptime = 80,
     ControlThr,
     CritSect = new TCriticalSection(),
-    VectorChanged = false
+    VectorChanged = false,
+    GameOver = false
 
-str snake_char "@"
-str food_char  "&"
+str snake_char  "@"
+str food_char   "&"
 str border_char "#"
 
 proc PutCh(x, y, char):
@@ -57,18 +58,6 @@ proc DrawBorders():
       end
     end
   end
-end
-
-proc GameOver():
-  ControlThr->Suspend()
-  Crt.TextColor(Crt.White)
-  Crt.TextBackground(Crt.Black)
-  Crt.ClrScr()
-  Crt.CursorOn()
-  PutCh(1, 1, "Game over!")
-  PutCh(1, 2, "Score: " + I2S(score) + "")
-  Crt.ReadKey()
-  Halt()
 end
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -101,13 +90,13 @@ proc MoveSnake(x, y):
     for(i ?= 1; i < snk->Body->Size(); i++):
       if (newhead->x == snk->Body->Items[i]->x) &
          (newhead->y == snk->Body->Items[i]->y):
-        GameOver()
+        GameOver = true
       end
     end
 
     if (newhead->x == 1) | (newhead->x == 42) |
        (newhead->y == 1) | (newhead->y == 22):
-      GameOver()
+      GameOver = true
     end
   end
 
@@ -154,7 +143,6 @@ proc ControlThread():
             break
           end
           snk->MovingVector = smvUp
-          break
         end
 
         case "S":
@@ -162,7 +150,6 @@ proc ControlThread():
             break
           end
           snk->MovingVector = smvDown
-          break
         end
 
         case "A":
@@ -170,7 +157,6 @@ proc ControlThread():
             break
           end
           snk->MovingVector = smvLeft
-          break
         end
 
         case "D":
@@ -178,29 +164,29 @@ proc ControlThread():
             break
           end
           snk->MovingVector = smvRight
-          break
         end
       end
 
       CritSect->Enter()
       VectorChanged = true
       CritSect->Leave()
-
-      Sleep(100)
     end
 
+    Sleep(100)
+    while GameOver:
+      Sleep(100)
+    end
     gc()
   end
 end
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc main():
+proc Main():
   snk ?= new snake()
   food ?= new point(0, 0)
-  ControlThr ?= Async(ControlThread)
   Randomize()
-
+  ControlThr ?= Async(ControlThread)
   Crt.TextBackground(Crt.White)
   Crt.ClrScr()
 
@@ -229,7 +215,7 @@ proc main():
   PutCh(46, 11, "[SNAKE]")
   PutCh(46, 13, "Score: 0")
 
-  while true:
+  while ~GameOver:
     tm1 ?= TickCnt()
     Crt.CursorOff()
     if VectorChanged:
@@ -244,4 +230,15 @@ proc main():
     Crt.TextColor(Crt.Black)
     gc()
   end
+
+  Crt.TextColor(Crt.White)
+  Crt.TextBackground(Crt.Black)
+  Crt.ClrScr()
+  Crt.CursorOn()
+
+  PutCh(1, 1, "Game over!")
+  PutCh(1, 2, "Score: " + I2S(score) + "")
+
+  Crt.ReadKey()
+  GameOver ?= false
 end

@@ -1,6 +1,6 @@
 uses <bf>
 uses <crt>
-uses <threads>
+uses <sync>
 
 proc main():
   MyThreadValue ?= new TAtomic(0)
@@ -8,7 +8,9 @@ proc main():
   //thread 1
   launch:
     while true:
-      MyThreadValue -> Set(1)
+      MyThreadValue -> Lock()
+      MyThreadValue -> Value = 1
+      MyThreadValue -> UnLock()
       Sleep(8)
       gc()
     end
@@ -17,7 +19,9 @@ proc main():
   //thread 2
   launch:
     while true:
-      MyThreadValue -> Set(2)
+      MyThreadValue -> Lock()
+      MyThreadValue -> Value = 2
+      MyThreadValue -> UnLock()
       Sleep(3)
       gc()
     end
@@ -26,14 +30,18 @@ proc main():
   //thread 3
   launch:
     while true:
-      MyThreadValue -> Set(3)
+      MyThreadValue -> Lock()
+      MyThreadValue -> Value = 3
+      MyThreadValue -> UnLock()
       Sleep(11)
       gc()
     end
   end
 
   while true:
-    PrintLn(MyThreadValue -> Get())
+    MyThreadValue -> Lock()
+    PrintLn(MyThreadValue -> Value)
+    MyThreadValue -> UnLock()
     Sleep(100)
     gc()
   end

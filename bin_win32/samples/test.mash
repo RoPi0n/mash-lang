@@ -1,16 +1,22 @@
 uses <bf>
 uses <crt>
+uses <strings>
+
 
 proc main():
-  x ?= -10
-
-  whilst x > 0:
-    if x == (-10):
-      x *= -1
-    end
-    println(x)
-    x--
+  x ?= ""
+  for(i ?= 0; i < 72; i++):
+    x += "8"
   end
 
+  while (s_Pos("222", x) > 0) | (s_Pos("888", x) > 0):
+    if s_Pos("222", x) > 0:
+      x ?= s_Replace(x, "222", "8", [])
+    else:
+      x ?= s_Replace(x, "888", "2", [])
+    end
+  end
+
+  println(x)
   inputln()
 end

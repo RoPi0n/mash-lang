@@ -3,15 +3,14 @@ uses <crt>
 uses <classes>
 
 proc main():
- // while true:
+  while true:
     t ?= new Tree(0)
-
-    t -> AddNode("Hello")
-    t -> AddNode("world!")
-
+    x ?= t -> AddNode("Hello")
+    y ?= x -> AddNode("world!")
+    t -> Clear()
     t -> Free()
     gc()
- // end
+  end
 
   inputln()
 end

@@ -1,6 +1,6 @@
 uses <bf>
 uses <crt>
-uses <threads>
+uses <coroutines>
 
 proc class::Proc1():
   while true:

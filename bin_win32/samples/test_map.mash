@@ -3,6 +3,7 @@ uses <crt>
 uses <classes>
 
 proc main():
+  while true:
   m ?= new Map()
 
   m -> Add("world!", 2)
@@ -13,5 +14,11 @@ proc main():
     Print(m -> Get(i))
   end
 
+  m -> Free()
+
+  println()
+
+  gc()
+  end
   InputLn()
 end

@@ -8,10 +8,9 @@ func fib(n):
     if n == 1:
       return 1
     else:
-      push n
-      a ?= fib(n - 1)
-      pop n
-      return a + fib(n - 2)
+      safe a ?= fib(n - 1)
+      safe b ?= fib(n - 2)
+      return a + b
     end
   end
 end
