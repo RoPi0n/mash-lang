@@ -274,7 +274,7 @@ begin
     else
       writeln('Header: Executable object file.');
 
-    //if EnableOptimization then
+    if EnableOptimization then
       OptimizeCode(Code);
 
     FreeAndNil(ImportsLst);

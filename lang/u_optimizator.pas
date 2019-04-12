@@ -27,9 +27,9 @@ begin
   while i < Lines.Count do
   begin
     s := Lines[i];
-    if length(s) > 5 then
+    if length(s) > 4 then
       if s[1] = 'p' then
-        if (Copy(s, 1, 5) = 'pushc') or (Copy(s, 1, 6) = 'pushcp') then
+        if Copy(s, 1, 5) = 'pushc' then
         begin
           Delete(s, 1, pos(' ', s));
           s := Trim(s);
@@ -71,7 +71,7 @@ begin
   while i < Lines.Count do
   begin
     s := Lines[i];
-    if (Copy(s, 1, 5) = 'pushc') or (Copy(s, 1, 6) = 'pushcp') then
+    if Copy(s, 1, 5) = 'pushc' then
      begin
        Delete(s, 1, pos(' ', s));
        s := Trim(s);
@@ -323,30 +323,44 @@ begin
   //writeln('Optimization...');
 
   //***   waste code blocks optimization
-  while DelWasteMethods(Lines) do continue;
+  if OptimizationLvl > 2 then
+   while DelWasteMethods(Lines) do continue
+  else
+   if OptimizationLvl > 0 then
+    DelWasteMethods(Lines);
 
   Waste := TStringList.Create;
 
   //*** never used classes
-  FindNeverUsedMethods(Lines);
-  while Waste.Count > 0 do
+
+  if OptimizationLvl > 1 then
    begin
-     RemoveMethod(Waste[0], Lines);
-     Waste.Delete(0);
+     FindNeverUsedMethods(Lines);
+     while Waste.Count > 0 do
+      begin
+        RemoveMethod(Waste[0], Lines);
+        Waste.Delete(0);
+      end;
    end;
 
-  while DelWasteMethods(Lines) do continue;
+  if OptimizationLvl > 2 then
+   while DelWasteMethods(Lines) do continue
+  else
+   if OptimizationLvl > 0 then
+    DelWasteMethods(Lines);
 
-  //*** waste imports
-  Waste.Text := ImportsLst.Text;
-  LightFilterWaste(Lines);
-  RemoveWasteImports(Lines);
+  if OptimizationLvl > 0 then
+   begin
+     //*** waste imports
+     Waste.Text := ImportsLst.Text;
+     LightFilterWaste(Lines);
+     RemoveWasteImports(Lines);
 
-  //*** waste consts
-  FindAllConsts(Lines);
-  LightFilterWaste(Lines);
-  RemoveWasteConsts(Lines);
-
+     //*** waste consts
+     FindAllConsts(Lines);
+     LightFilterWaste(Lines);
+     RemoveWasteConsts(Lines);
+   end;
   FreeAndNil(Waste);
 end;
 

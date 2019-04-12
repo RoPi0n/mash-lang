@@ -18,7 +18,7 @@ var
   RTTI_Enable: boolean = true;
   ARGC_Enable: boolean = true;
   EnableOptimization: boolean = true;
-  OptimizationLvl: cardinal = 1;
+  OptimizationLvl: cardinal = 0;
   Debug_Enable: boolean = false;
   Debug_InfoGen: boolean = false;
   FastPrep_Defines: TStringList;
