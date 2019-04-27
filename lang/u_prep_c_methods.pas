@@ -42,7 +42,11 @@ var
   bf, pn: string;
   CB: TCodeBlock;
   IsClassM: boolean;
+  ArgN: word;
+  RestReserved: boolean;
 begin
+  RestReserved := false;
+  ArgN := 0;
   s := Trim(s);
   bf := Copy(s, 1, 4);
   Delete(s, 1, 4);
@@ -100,8 +104,29 @@ begin
       bf := Trim(s);
       s := '';
     end;
-    if bf = '...' then
-      //Hm, all ok...
+
+    if RestReserved then
+     PrpError('Receiving arguments after receive rest-arguments "' + bf +
+          '" in method "' + pn + '".');
+
+    if (copy(bf, 1, 1) = '[') and (copy(bf, length(bf), 1) = ']') then
+     begin
+       Delete(bf, 1, 1);
+       Delete(bf, length(bf), 1);
+       bf := Trim(bf);
+       RestReserved := True;
+
+       if GlobalVars.IndexOf(bf) <> -1 then
+        PrpError('Receiving global variable as argument "' + bf +
+           '" in method "' + pn + '".');
+
+       Result := Result + sLineBreak + 'pushcp ' + GetConst(IntToStr(ArgN), varmgr) +
+                 sLineBreak + 'push ' + GetVar('argcount', varmgr) + sLineBreak +
+                 'sub' + sLineBreak + 'pushcp __poprest' + sLineBreak + 'jc' +
+                 sLineBreak + 'peek ' + GetVar(bf, varmgr) + sLineBreak + 'pop';
+
+       inc(ArgN);
+     end
     else
     if IsVar(bf, varmgr) then
     begin
@@ -110,7 +135,7 @@ begin
 
       if GlobalVars.IndexOf(bf) <> -1 then
        PrpError('Receiving global variable as argument "' + bf +
-          '" in proc "' + pn + '".');
+          '" in method "' + pn + '".');
 
       if varmgr.DefinedVars.IndexOf(bf) = -1 then
       begin
@@ -135,9 +160,11 @@ begin
       end;
       Result := Result + sLineBreak + 'peek ' + GetVar(bf, varmgr, true) +
         sLineBreak + 'pop';
+
+      inc(ArgN);
     end
     else
-      PrpError('Invalid method "' + pn + '" define.');
+      PrpError('Invalid method "' + pn + '" definition.');
   end;
 end;
 

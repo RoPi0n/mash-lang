@@ -46,7 +46,7 @@ var
   InitCode, PostInitCode: TStringList;
 
 const
-  AutoDefConstPref = '__defc_gen_';
+  AutoDefConstPref = '__def_const_gen_';
   AutoDefConstSuffx = '_n';
 
 

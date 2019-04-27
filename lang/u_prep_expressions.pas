@@ -263,9 +263,6 @@ begin
     end;
   end
   else
-  if IsArr(s) then
-    Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
-  else
   if IsEnumVals(s) then
   begin
     Result := Result + sLineBreak + PushIt(IntToStr(CountEnumItems(s)),
@@ -295,17 +292,30 @@ begin
     end;
   end
   else
+  if IsArr(s) then
+    Result := Result + sLineBreak + PreprocessArrAction(s, 'pushai', varmgr)
+  else
     PrpError('Invalid call "' + bf + '".');
 
   if copy(bf, 1, 1) = '@' then //we need to push pointer to object!
   begin
-    bf := '__p_reg_ptr_op_reg';
-    varmgr.DefVar(Bf);
-    Result := Result + sLineBreak + 'new';
-    if PushTemporary then
-      Result := Result + sLineBreak + 'gpm';
-    Result := Result + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr, true) +
-      sLineBreak + 'movp' + sLineBreak + 'push ' + GetVar('$' + Bf, varmgr, true);
+    Delete(bf, 1, 1);
+    s := bf;
+    if IsConst(s) then
+     begin
+       Result := 'pushcp ' + s;
+     end
+    else
+     begin
+       bf := '__p_reg_ptr_op_reg';
+       varmgr.DefVar(Bf);
+       Result := Result + sLineBreak + 'new';
+       if PushTemporary then
+        Result := Result + sLineBreak + 'gpm';
+
+       Result := Result + sLineBreak + 'peek ' + GetVar('$' + Bf, varmgr, true) +
+                 sLineBreak + 'movp' + sLineBreak + 'push ' + GetVar('$' + Bf, varmgr, true);
+     end;
   end;
 
   if copy(bf, 1, 1) = '?' then //we need to push object by pointer!

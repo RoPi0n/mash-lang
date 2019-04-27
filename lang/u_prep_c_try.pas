@@ -12,7 +12,7 @@ uses
 function IsTry(s: string): boolean;
 function GenTry: string;
 function IsCatch(s: string): boolean;
-function GenCatch: string;
+function GenCatch(s: string; varmgr: TVarManager): string;
 function IsFinally(s: string): boolean;
 function GenFinally: string;
 function GenRaise(s: string; varmgr: TVarManager): string;
@@ -52,21 +52,27 @@ begin
     begin
       Delete(s, Length(s), 1);
       s := Trim(s);
-      Result := s = 'catch';
+      Result := Copy(s, 1, 6) = 'catch ';
     end;
 end;
 
-function GenCatch: string;
+function GenCatch(s: string; varmgr: TVarManager): string;
 var
   CB: TCodeBlock;
 begin
+  s := Trim(s);
+  Delete(s, length(s), 1);
+  Delete(s, 1, 6);
+  s := Trim(s);
   Result := '';
   if BlockStack.Count > 0 then
   begin
     CB := TCodeBlock(BlockStack[BlockStack.Count - 1]);
     if CB.bType = btTry then
     begin
-      Result := CB.bMCode;
+      Result := CB.bMCode
+                + sLineBreak + 'peek ' + GetVar(s, varmgr)
+                + sLineBreak + 'pop' + sLineBreak;
       CB.bMeta := 'c';
     end
     else

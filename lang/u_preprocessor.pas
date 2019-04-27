@@ -433,6 +433,14 @@ begin
     Result := GenReturn(s, varmgr);
   end
   else
+  {** For in **}
+  if IsForEach(s) then
+    Result := ParseForEach(s, varmgr)
+  else
+  {** For back **}
+  if IsForBack(s) then
+    Result := ParseForBack(s, varmgr)
+  else
   {** For **}
   if IsFor(s) then
     Result := ParseFor(s, varmgr)
@@ -484,7 +492,7 @@ begin
     Result := ParseAsync(s, varmgr)
   else
 
-  {** Await **}
+  {** Wait **}
   if IsWait(s) then
     Result := ParseWait(s, varmgr)
   else
@@ -506,7 +514,7 @@ begin
   else
   {** Catch **}
   if IsCatch(s) then
-    Result := GenCatch
+    Result := GenCatch(s, varmgr)
   else
   {** Finally **}
   if IsFinally(s) then
