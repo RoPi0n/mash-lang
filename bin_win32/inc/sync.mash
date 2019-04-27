@@ -1,0 +1,82 @@
+////////////////////////////////////////////////////////////////////////////////
+// Library for synchronization
+////////////////////////////////////////////////////////////////////////////////
+
+uses <bf>
+
+// imports from thrlib
+
+import __CRITSECT_CREATE   "thrlib.lib"  "CRITICAL_SECTION_CREATE"
+import __CRITSECT_FREE     "thrlib.lib"  "CRITICAL_SECTION_FREE"
+import __CRITSECT_ENTER    "thrlib.lib"  "CRITICAL_SECTION_ENTER"
+import __CRITSECT_LEAVE    "thrlib.lib"  "CRITICAL_SECTION_LEAVE"
+import __CRITSECT_TRYENTER "thrlib.lib"  "CRITICAL_SECTION_TRYENTER"
+
+////////////////////////////////////////////////////////////////////////////////
+// Critical sections controller class
+////////////////////////////////////////////////////////////////////////////////
+
+class TCriticalSection:
+  protected:
+    var Critical_Section_Controller
+
+  public:
+    proc Create, Free
+
+    //Methods
+    proc Enter, Leave
+    func TryEnter
+end
+
+proc TCriticalSection::Create():
+  $Critical_Section_Controller ?= __CRITSECT_CREATE()
+end
+
+proc TCriticalSection::Free():
+  __CRITSECT_FREE($Critical_Section_Controller)
+  Free($)
+end
+
+proc TCriticalSection::Enter():
+  __CRITSECT_ENTER($Critical_Section_Controller)
+end
+
+proc TCriticalSection::Leave():
+  __CRITSECT_LEAVE($Critical_Section_Controller)
+end
+
+func TCriticalSection::TryEnter():
+  return gpmx(__CRITSECT_TRYENTER($Critical_Section_Controller))
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// Thread-safe atomic
+////////////////////////////////////////////////////////////////////////////////
+
+class TAtomic:
+  private:
+    var Locker
+
+  public:
+    var Value
+    proc Create, Free
+    proc Lock, UnLock
+end
+
+proc TAtomic::Create(Value):
+  $Locker = new TCriticalSection()
+  $Value ?= new(Value)
+end
+
+proc TAtomic::Free():
+  $Locker -> Free()
+  Free($Value, $)
+end
+
+proc TAtomic::Lock():
+  $Locker -> Enter()
+end
+
+proc TAtomic::UnLock():
+  $Locker -> Leave()
+end

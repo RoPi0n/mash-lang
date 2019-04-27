@@ -2,16 +2,7 @@
 // Code version: 1.0
 
 uses <bf>
-uses <classes/types>
-uses <classes/vector>
-
-// imports from thrlib
-
-import __CRITSECT_CREATE   "thrlib.lib"  "CRITICAL_SECTION_CREATE"
-import __CRITSECT_FREE     "thrlib.lib"  "CRITICAL_SECTION_FREE"
-import __CRITSECT_ENTER    "thrlib.lib"  "CRITICAL_SECTION_ENTER"
-import __CRITSECT_LEAVE    "thrlib.lib"  "CRITICAL_SECTION_LEAVE"
-import __CRITSECT_TRYENTER "thrlib.lib"  "CRITICAL_SECTION_TRYENTER"
+uses <classes\vector>
 
 // common methods
 
@@ -93,6 +84,11 @@ proc TThread::Create(Resumed):
 end
 
 proc TThread::Free():
+  if ~$Terminated:
+    $FreeOnTerminate = false
+    $Terminate()
+  end
+
   Free($Resumed, $Terminated, $FreeOnTerminate, $)
 end
 
@@ -141,43 +137,6 @@ proc TThread::WaitFor():
 end
 
 ////////////////////////////////////////////////////////////////////////////////
-// Critical sections controller class
-////////////////////////////////////////////////////////////////////////////////
-
-class TCriticalSection:
-  protected:
-    var Critical_Section_Controller
-
-  public:
-    proc Create, Free
-
-    //Methods
-    proc Enter, Leave
-    func TryEnter
-end
-
-proc TCriticalSection::Create():
-  $Critical_Section_Controller ?= __CRITSECT_CREATE()
-end
-
-proc TCriticalSection::Free():
-  __CRITSECT_FREE($Critical_Section_Controller)
-  Free($)
-end
-
-proc TCriticalSection::Enter():
-  __CRITSECT_ENTER($Critical_Section_Controller)
-end
-
-proc TCriticalSection::Leave():
-  __CRITSECT_LEAVE($Critical_Section_Controller)
-end
-
-func TCriticalSection::TryEnter():
-  return gpmx(__CRITSECT_TRYENTER($Critical_Section_Controller))
-end
-
-////////////////////////////////////////////////////////////////////////////////
 //  Async
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -200,7 +159,7 @@ proc TAsyncCallThread::Execute():
   call $Method
 end
 
-func Async(method, ...):
+func Async(method):
   args ?= new vector()
   t ?= argcount
   while t > 0:
@@ -234,7 +193,7 @@ proc TQThreadCallThread::Execute():
   call $Method
 end
 
-func Thread(method, ...):
+func Thread(method):
   args ?= new vector()
   t ?= argcount
   while t > 0:
@@ -270,7 +229,7 @@ proc TParallelCallThread::Execute():
   call $Method
 end
 
-func Parallel(method, ...):
+func Parallel(method):
   args ?= new vector()
   t ?= argcount
   while t > 0:
@@ -279,41 +238,4 @@ func Parallel(method, ...):
     t--
   end
   return new TParallelCallThread(method, args)
-end
-
-////////////////////////////////////////////////////////////////////////////////
-// Thread-safe atomic
-////////////////////////////////////////////////////////////////////////////////
-
-class TAtomic:
-  private:
-    var Locker, Value
-
-  public:
-    proc Create, Free
-    proc Set
-    func Get
-end
-
-proc TAtomic::Create(Value):
-  $Locker = new TCriticalSection()
-  $Value ?= new(Value)
-end
-
-proc TAtomic::Free():
-  $Locker -> Free()
-  Free($Value, $)
-end
-
-proc TAtomic::Set(NewVal):
-  $Locker -> Enter()
-  $Value = NewVal
-  $Locker -> Leave()
-end
-
-func TAtomic::Get():
-  $Locker -> Enter()
-  r ?= copy(NewVal)
-  $Locker -> Leave()
-  return r
 end

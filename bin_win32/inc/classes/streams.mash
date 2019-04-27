@@ -40,7 +40,7 @@ import _FileStream_Free               "streams.lib" "_FileStream_Free"
 
 enum TSeekOffset [soStart, soCurrent, soEnd]
 
-class TStream:
+class TStream(class):
   private:
     // pointer to external TStream class
     var StreamPtr

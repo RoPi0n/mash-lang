@@ -3,12 +3,15 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 uses <algs>
+uses <sync>
 
 class List(class):
   protected:
-    var Items, Size
+    var Items
 
   public:
+    var Size
+
     proc Create, Free
 
     proc Add, Insert, Delete, Clear, ForEach
@@ -71,8 +74,10 @@ end
 
 
 proc List::ForEach(method):
-  for(i ?= 0; i < $Size; i++):
+  i ?= 0
+  while i < $Size:
     vcall(method, $Items[i])
+    i++
   end
 end
 
@@ -100,7 +105,7 @@ func List::IndexOf(Obj):
 end
 
 proc List::Sort():
-  QuickSort($Items)
+  RadixSort($Items)
 end
 
 func List::NextIns(Obj):
@@ -111,4 +116,105 @@ end
 
 func List::Find(Obj):
   return BinSearch($Items, Obj)
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// ThreadList
+////////////////////////////////////////////////////////////////////////////////
+
+class ThreadList(List):
+  private:
+    var Locker
+
+  protected:
+    var Items, Size
+
+  public:
+    proc Create, Free
+
+    proc Add, Insert, Delete, Clear, ForEach
+    func Get, IndexOf
+
+    proc Sort
+    func NextIns, Find
+end
+
+proc ThreadList::Create():
+  List::Create$()
+  $Locker ?= new TCriticalSection()
+end
+
+proc ThreadList::Free():
+  $Locker->Free()
+  List::Free$()
+end
+
+proc ThreadList::Add(Obj):
+  $Locker->Enter()
+  List::Add$(Obj)
+  $Locker->Leave()
+end
+
+
+proc ThreadList::Insert(Obj, Index):
+  $Locker->Enter()
+  List::Insert$(Obj, Index)
+  $Locker->Leave()
+end
+
+
+proc ThreadList::Delete(Index):
+  $Locker->Enter()
+  List::Delete$(Index)
+  $Locker->Leave()
+end
+
+
+proc ThreadList::Clear():
+  $Locker->Enter()
+  List::Clear$()
+  $Locker->Leave()
+end
+
+
+proc ThreadList::ForEach(method):
+  $Locker->Enter()
+  List::ForEach$(method)
+  $Locker->Leave()
+end
+
+
+func ThreadList::Get(Index):
+  $Locker->Enter()
+  r ?= List::Get$(Index)
+  $Locker->Leave()
+  return r
+end
+
+
+func ThreadList::IndexOf(Obj):
+  $Locker->Enter()
+  r ?= List::IndexOf$(Obj)
+  $Locker->Leave()
+  return r
+end
+
+proc ThreadList::Sort():
+  $Locker->Enter()
+  List::Sort$()
+  $Locker->Leave()
+end
+
+func ThreadList::NextIns(Obj):
+  $Locker->Enter()
+  r ?= List::NextIns$(Obj)
+  $Locker->Leave()
+  return r
+end
+
+func ThreadList::Find(Obj):
+  $Locker->Enter()
+  r ?= List::Find$(Obj)
+  $Locker->Leave()
+  return r
 end

@@ -1,27 +1,5 @@
 // strings.mash
 
-uses <bf>
-
-// Something
-
-var LnBreak = new(c_Chr(13) + c_Chr(10))
-
-// Base functions
-
-proc c_Ord(char):
-  push char
-  chord
-  gpm
-end
-
-
-proc c_Chr(wrd):
-  push wrd
-  ordch
-  gpm
-end
-
-
 proc s_Len(s):
   push s
   alen
@@ -39,210 +17,159 @@ end
 
 
 func s_Copy(s, from, count):
-  var r = copy(s)
-  s_del(r, from + count + 1, s_len(r))
-  s_del(r, 1, from - 1)
+  r ?= copy(s)
+  s_del(r, from + count, s_len(r))
+  if from > 0:
+    s_del(r, 0, from)
+  end
   return r
 end
 
 
-// String reverse function
-
-func s_Reverse(s):
-  var i, l, prf, r, t, t2
-  l ?= s_len(s)
-  if l > 0:
-    if (l % 2) <> 0:
-      prf ?= s[1]
-      s ?= copy(s)
-      s_del(s, 1, 1)
-    else:
-      prf ?= ""
-    end
-    t ?= s_copy(s, 1, l \ 2 - 1)
-    t2 ?= s_copy(s, l \ 2 + 1, l)
-
-    l = s_len(t)
-    i ?= 0
-    while i < l:
-      r ?= t[i + 1]
-      t[i + 1] ?= t2[l - i])
-      t2[l - i] ?= r
-      inc i
-    end
-
-    r ?= t + t2 + prf
-    return r
-  else:
-    return ""
-  end
-end
-
-
-// Substring copy functions
-
 func s_LeftStr(s, count):
-  return s_copy(s, 1, count)
+  return s_copy(s, 0, count)
 end
 
 
 func s_RightStr(s, count):
-  return s_copy(s, s_len(s) - count + 1, count)
+  return s_copy(s, s_len(s) - count, count)
 end
 
+// String reverse function
 
-// Pos & PosEx - find substring start (and N start) functions
+func s_Reverse(s):
+  t ?= ""
+  for c back s:
+    t += c
+  end
+  return t
+end
+
+// Pos & PosEx
 
 func s_Pos(sb, s):
-  var p, t, t2, l, sub_l, b
+  len_s ?= len(s)
+  len_sb ?= len(sb)
 
-  l ?= s_len(s) + 2
-  sub_l ?= s_len(sb)
+  founded ?= false
 
-  b ?= false
-  p ?= 1
-  while p < l:
-    if b:
-      return p - 1
-    end
+  for(p ?= 0; p < len_s; p++):
+    if s[p] == sb[0]:
+      founded = true
+      t ?= copy(p)
 
-    b = false
-
-    if sb[1] == s[p]:
-      b = true
-      if len(sb) > 1:
-        t2 ?= copy(p)
-
-        for (t ?= 2; t < sub_l; inc t):
-          inc t2
-          if sb[t] <> s[t2]:
-            b = false
-            break
-          end
+      for c in sb:
+        if s[t] <> c:
+          founded = false
+          break
         end
-
-        if b == false:
-          p = t2
-        end
+        t++
       end
     end
 
-    inc p
+    if founded:
+      return p
+    end
   end
-  return 0
+
+  return -1
 end
 
 
 func s_PosEx(sb, s, num):
-  var p, t, t2, l, sub_l, b
+  len_s ?= len(s)
+  len_sb ?= len(sb)
 
-  l ?= s_len(s) + 2
-  sub_l ?= s_len(sb)
+  founded ?= false
 
-  b ?= false
-  p ?= 1
-  while p < l:
-    if b:
+  for(p ?= 0; p < len_s; p++):
+    if s[p] == sb[0]:
+      founded = true
+      t ?= copy(p)
+
+      for c in sb:
+        if s[t] <> c:
+          founded = false
+          break
+        end
+        t++
+      end
+    end
+
+    if founded:
       if num > 1:
-        dec num
+        num--
+        founded = false
       else:
-        return p - 1
+        return p
       end
     end
-
-    b = false
-
-    if sb[1] == s[p]:
-      b = true
-      if len(sb) > 1:
-        b = true
-        t2 ?= copy(p)
-
-        for (t ?= 2; t < sub_l; inc t):
-          inc t2
-          if sb[t] <> s[t2]:
-            b = false
-            break
-          end
-        end
-
-        if b == false:
-          p = t2
-        end
-      end
-    end
-
-    inc p
   end
-  return 0
+
+  return -1
 end
 
-
-// String trimming functions
+// Trim
 
 func s_TrimLeft(s):
-  var r = copy(s)
+  r ?= copy(s)
+
   while s_len(r) > 0:
-    if r[1] == " ":
-      s_del(r, 1, 1)
+    if r[0] == " ":
+      s_del(r, 0, 1)
     else:
       break
     end
   end
+
   return r
 end
 
 
 func s_TrimRight(s):
-  var r = copy(s)
+  r ?= copy(s)
+
   while s_len(r) > 0:
-    if r[s_len(r)] == " ":
-      s_del(r, s_len(r), 1)
+    if r[s_len(r) - 1] == " ":
+      s_del(r, s_len(r) - 1, 1)
     else:
       break
     end
   end
+
   return r
 end
 
 
 func s_Trim(s):
-  var r = copy(s)
+  r ?= copy(s)
   r = s_trimright(r)
   r = s_trimleft(r)
   return r
 end
-
 
 // Substring replase function
 
 enum s_ReplaceFlags [srfReplaceAll, srfIgnoreCase]
 
 func s_Replace(s, from, to, flags):
-  var r = copy(s), p
-  if srfIgnoreCase in flags:
-    p ?= s_Pos(StrUpper(from), StrUpper(r))
-  else:
-    p ?= s_Pos(from, r)
-  end
-  while p > 0:
-    s ?= s_Copy(r, p + s_Len(from), s_Len(r))
-    r = s_Copy(r, 1, p - 2) + to + s
+  r ?= copy(s)
+
+  s_Replace.DoIt:
+
     if srfIgnoreCase in flags:
-      p = s_Pos(StrUpper(from), StrUpper(r))
+      p ?= s_Pos(StrUpper(from), StrUpper(r))
     else:
-      p = s_Pos(from, r)
+      p ?= s_Pos(from, r)
     end
-  end
-  if srfReplaceAll in flags:
-    if srfIgnoreCase in flags:
-      p = s_Pos(from, StrUpper(r))
-    else:
-      p = s_Pos(from, r)
+
+    if p >= 0:
+      r = s_Copy(r, 0, p) + to + s_Copy(r, p + s_Len(from), s_Len(r))
+
+      if srfReplaceAll in flags:
+        jump s_Replace.DoIt
+      end
     end
-    if p > 0:
-      r = s_Replace(r, from, to, flags)
-    end
-  end
+
   return r
 end

@@ -2,6 +2,9 @@
 // Tree
 ////////////////////////////////////////////////////////////////////////////////
 
+uses <classes\types>
+uses <classes\list>
+
 class Tree(class):
   protected:
     var Nodes
@@ -11,7 +14,7 @@ class Tree(class):
     proc Create, Free
 
     func AddNode, GetNode
-    proc DelNode
+    proc DelNode, Clear
 end
 
 proc Tree::Create(val):
@@ -20,9 +23,14 @@ proc Tree::Create(val):
 end
 
 proc Tree::Free():
-  $Nodes -> ForEach(Tree::Free)
   $Nodes -> Free()
   Free($)
+end
+
+proc Tree::Clear():
+  $Nodes -> ForEach(Tree::Clear)
+  $Nodes -> ForEach(Tree::Free)
+  $Nodes -> Clear()
 end
 
 func Tree::AddNode(val):

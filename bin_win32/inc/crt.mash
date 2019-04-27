@@ -77,19 +77,15 @@ word Crt.Blink          128
 
 {_ifdef_ argcounter}
 
-proc print(...):
-  t ?= argcount
-  while t > 0:
-    _print()
-    t--
+proc print([args]):
+  for a in args:
+    _print(a)
   end
 end
 
-proc println(...):
-  t ?= argcount
-  while t > 0:
-    _print()
-    t--
+proc println([args]):
+  for a in args:
+    _print(a)
   end
   _println("")
 end

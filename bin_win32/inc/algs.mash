@@ -4,7 +4,6 @@
  */
 
 uses <bf>
-uses <threads>
 
 proc ReverseArray(arr):
   l ?= len(arr)

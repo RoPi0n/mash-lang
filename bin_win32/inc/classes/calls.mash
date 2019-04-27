@@ -1,0 +1,49 @@
+uses <classes\types>
+
+// global hooking method
+
+/*
+ *  Setting up hook:  h ?= new Hook(@MyOldMethod, MyNewMethod)
+ *  Unsetting hook:   h -> Free()
+ */
+
+class Hook(class):
+  var oldm, oldref
+  proc Create, Free
+end
+
+proc Hook::Create(old_method, new_method):
+  $oldref ?= old_method
+  $oldm ?= new(old_method)
+  old_method = new_method
+end
+
+proc Hook::Free():
+  $oldref = $oldm
+  Free($oldm, $)
+end
+
+// callable method class container
+
+class Method:
+  public:
+    var Function
+    proc Create, Free, Call
+end
+
+proc Method::Create(func_pointer):
+  $Function ?= func_pointer
+end
+
+proc Method::Free():
+  Free($)
+end
+
+proc Method::Call([args]):
+  l ?= len(args) - 1
+  while l >= 0:
+    push args[l]
+    l--
+  end
+  call $Function
+end
