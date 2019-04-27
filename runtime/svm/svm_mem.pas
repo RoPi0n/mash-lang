@@ -949,8 +949,7 @@ procedure TSVMMem.ArrSet(index: cardinal; val:pointer); inline;
 begin
   case m_type of
     svmtArr, svmtClass: PMemArray(m_val)^[index] := val;
-    svmtWord: PString(m_val)^[index] := Chr(TSVMMem(val).GetW);
-    svmtStr: PString(m_val)^[index] := TSVMMem(val).GetS[1];
+    svmtStr: PString(m_val)^[index + 1] := TSVMMem(val).GetS[1];
     else
       Error(reInvalidOp);
   end;
@@ -962,7 +961,7 @@ begin
   case m_type of
     svmtArr, svmtClass: Result := PMemArray(m_val)^[index];
     svmtStr: begin
-               Result := TSVMMem.CreateFW(Ord(PString(m_val)^[index]));
+               Result := TSVMMem.CreateFS(PString(m_val)^[index + 1]);
                grabber^.AddTask(Result);
              end;
     else

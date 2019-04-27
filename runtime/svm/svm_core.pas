@@ -1090,7 +1090,7 @@ type
             begin// strdel;
               p := self.stack.popv;
               S := String(TSVMMem(p).GetS);
-              Delete(s,TSVMMem(self.stack.popv).GetW, TSVMMem(self.stack.popv).GetW);
+              Delete(s, TSVMMem(self.stack.popv).GetW + 1, TSVMMem(self.stack.popv).GetW);
               TSVMMem(p).SetS(s);
               S := '';
               Inc(self.ip);
@@ -1249,7 +1249,7 @@ type
       except
         on E: Exception do
         begin
-          self.stack.push(TSVMMem.CreateFS(E.Message));
+          self.stack.push(TSVMMem.CreateFS(E.ClassName));
           try
             self.ip := self.try_blocks.TR_Catch(E);
           except
