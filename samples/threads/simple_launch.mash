@@ -3,7 +3,7 @@ uses <crt>
 proc main():
   for i in 1..10:
     launch:
-      sleep(random() * 100)
+      sleep(1000 - i*10)
       println(i)
     end
   end
