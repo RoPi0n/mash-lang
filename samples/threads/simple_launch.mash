@@ -1,8 +1,7 @@
-uses <bf>
 uses <crt>
 
 proc main():
-  for(i ?= 1; i <= 10; i++):
+  for i in 1..10:
     launch:
       sleep(random() * 100)
       println(i)
