@@ -571,7 +571,7 @@ begin
   else
   {** Anything **}
   if (pos('$', s) > 0) or (pos('!', s) > 0) or (pos(',', s) > 0) or
-    (pos('.', s) > 0) or (pos(' ', s) > 0) then
+     (pos('.', s) > 0) or (pos(' ', s) > 0) then
   begin
     // push $a
     // push $a[expr 1][expr 2]..[expr n]

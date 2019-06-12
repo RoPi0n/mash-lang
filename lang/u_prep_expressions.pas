@@ -542,17 +542,15 @@ end;
 function CutExprInBraces(var s: string): string;
 var
   in_str: boolean;
-  in_br, in_rbr: integer;
+  in_br: integer;
 begin
   Result := '';
   in_str := False;
   in_br := 0;
-  in_rbr := 0;
-  {if s[1] = '(' then
-   begin
-     Delete(s, 1, 1);
-     Inc(in_br);
-   end;}
+
+  if not (copy(s, 1, 1) = '(') then
+   Result := s
+  else
   while Length(s) > 0 do
   begin
     if s[1] = '"' then
@@ -564,21 +562,13 @@ begin
         Inc(in_br);
       if s[1] = ')' then
         Dec(in_br);
-      if s[1] = '[' then
-        Inc(in_rbr);
-      if s[1] = ']' then
-        Dec(in_rbr);
-    end;
-
-    if (not in_str) and (in_br <= 0) and (in_rbr <= 0) then
-    begin
-      Result := Result + s[1];
-      Delete(s, 1, 1);
-      break;
     end;
 
     Result := Result + s[1];
     Delete(s, 1, 1);
+
+    if in_br = 0 then
+      break;
   end;
 end;
 
@@ -628,12 +618,12 @@ begin
   TokensStack := TStringList.Create;
   s := Trim(s);
 
-  {bf := Trim(GetExprInBraces(s));
+  bf := Trim(GetExprInBraces(s));
   while (Length(bf) <> Length(s)) and (Length(bf) > 0) do
    begin
      s := bf;
      bf := Trim(GetExprInBraces(s));
-   end;}
+   end;
 
   if Length(s) > 0 then
     if s[1] in ['-', '+'] then
