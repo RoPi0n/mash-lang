@@ -783,7 +783,11 @@ type
 
             bcNEG:
             begin
-              TSVMMem(self.stack.peek).OpNeg;
+              p := self.stack.popv;
+              p2 := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
+              TSVMMem(p2).OpNeg;
+              self.grabber.AddTask(p2);
+              self.stack.push(p2);
               Inc(self.ip);
             end;
 
