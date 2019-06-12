@@ -607,11 +607,19 @@ begin
   Result := CutExprInBraces(s);
 end;
 
+function IfNeg(b: boolean): string;
+begin
+  Result := '';
+  if b then
+    Result := sLineBreak + 'neg';
+end;
+
 function PreprocessExpression(s: string; varmgr: TVarManager): string;
 var
   TokensStack: TStringList;
   Bf: string;
   c, vn, warnops: integer;
+  neg: boolean;
 begin
   warnops := 0;
   Result := '';
@@ -839,175 +847,258 @@ begin
   // + -
   while TokensStack.Count > 1 do
   begin
+    neg := false;
+
     if (TokensStack.Count > 1) then
     begin
       if (TokensStack[0] = '+') then
       begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'add';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '-') then
       begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'sub';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '<<') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin 
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'shl';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '>>') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin 
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'shr';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '>=') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin 
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'be' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '<=') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin 
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'be' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '<>') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin 
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'eq' + sLineBreak + 'not' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = 'in') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin  
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'pushcp _op_in' + sLineBreak + 'jc';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '..') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin  
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'pushcp _op_range' + sLineBreak + 'jc';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '>') then
       begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'bg' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '<') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin 
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'bg' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '==') then
       begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'eq' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '===') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin 
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'peq' + sLineBreak + 'gpm';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '&') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin   
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'and';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '|') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin  
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'or';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '^') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) +
+      begin   
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr, True, True) + IfNeg(neg) +
           sLineBreak + 'swp' + sLineBreak + 'xor';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
       else
       if (TokensStack[0] = '~') then
-      begin
-        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) +
+      begin   
+        if TokensStack[1] = '-' then
+         begin
+           neg := true;
+           TokensStack.Delete(1);
+         end;
+
+        Result := Result + sLineBreak + TempPushIt(TokensStack[1], varmgr) + IfNeg(neg) +
           sLineBreak + 'not';
         TokensStack.Delete(0);
         TokensStack.Delete(0);
+
       end
-      {else
-      if (TokensStack[0] = 'and') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'land'(* + sLineBreak + 'gpm'*);
-        TokensStack.Delete(0);
-        TokensStack.Delete(0);
-      end
-      else
-      if (TokensStack[0] = 'or') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'lor'(* + sLineBreak + 'gpm'*);
-        TokensStack.Delete(0);
-        TokensStack.Delete(0);
-      end
-      else
-      if (TokensStack[0] = 'xor') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'swp' + sLineBreak + 'lxor'(* + sLineBreak + 'gpm'*);
-        TokensStack.Delete(0);
-        TokensStack.Delete(0);
-      end
-      else
-      if (TokensStack[0] = 'not') then
-      begin
-        Result := Result + sLineBreak + PushIt(TokensStack[1], varmgr) +
-          sLineBreak + 'lnot'(* + sLineBreak + 'gpm'*);
-        TokensStack.Delete(0);
-        TokensStack.Delete(0);
-      end}
       else
         break;
     end;
