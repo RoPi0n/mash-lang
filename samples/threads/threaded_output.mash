@@ -2,16 +2,16 @@ uses <bf>
 uses <crt>
 uses <threads>
 
-proc ThrProc():
-  PrintLn("Hello")
+proc p(num):
+  println("Hello, ", num)
 end
 
 proc main():
+  i ?= 0
   while true:
-    Thr ?= Parallel(ThrProc)
+    Thr ?= Async(p, i)
     Thr -> WaitFor()
-    Thr -> Free()
-    Sleep(5)
+    i++
     gc()
   end
 end

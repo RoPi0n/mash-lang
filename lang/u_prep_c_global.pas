@@ -6,9 +6,10 @@ interface
 
 uses
    Classes, SysUtils, u_global, u_globalvars, u_variables, u_prep_global,
-   u_prep_expressions, u_classes, u_prep_codeblock, u_consts, u_writers;
+   u_prep_expressions, u_classes, u_prep_codeblock, u_consts, u_writers,
+   u_local_variables;
 
-function GenEnd: string;
+function GenEnd(varmgr: TVarManager): string;
 function GenExit: string;
 function GenBreak: string;
 function GenReturn(s: string; varmgr: TVarManager): string;
@@ -55,7 +56,7 @@ begin
     end;
 end;
 
-function GenEnd: string;
+function GenEnd(varmgr: TVarManager): string;
 var
    CB: TCodeBlock;
    MC, MC2: TMashClass;
@@ -77,8 +78,9 @@ begin
             if LocalVarPref = 'global code.' then
                LocalVarPref := '';
 
-            Result := CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak +
-               CB.bEndCode + '_block:';
+            Result := NullLocalVariables(varmgr) + sLineBreak +
+                      CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak +
+                      CB.bEndCode + '_block:';
 
             ProcEnterList.Delete(ProcEnterList.Count - 1);
           end;
@@ -92,8 +94,10 @@ begin
             if LocalVarPref = 'global code.' then
                LocalVarPref := '';
 
-            Result := CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak +
-               CB.bEndCode + '_block:';
+            Result := NullLocalVariables(varmgr) + sLineBreak +
+                      CB.bEndCode + ':' + sLineBreak + 'jr' + sLineBreak +
+                      CB.bEndCode + '_block:';
+
             if CB.bMeta <> '+' then
                PrpError('Declarate function without return.');
 
@@ -286,6 +290,7 @@ begin
                Result := PreprocessExpression(s, varmgr)
             else
                Result := PushIt(s, varmgr);
+
             Result := Result + sLineBreak + 'jr';
             CB.bMeta := '+';
             break;

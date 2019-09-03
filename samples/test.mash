@@ -1,0 +1,8 @@
+uses <crt>
+
+proc main():
+  r ?= 0
+
+  println(r)
+  inputln()
+end

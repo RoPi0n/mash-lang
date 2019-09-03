@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CONFIG>
   <ProjectOptions>
-    <Version Value="10"/>
+    <Version Value="11"/>
     <PathDelim Value="\"/>
     <General>
       <Flags>
@@ -25,12 +25,18 @@
     </PublishOptions>
     <RunParams>
       <local>
-        <FormatVersion Value="1"/>
-        <HostApplicationFilename Value="C:\Users\Админ\Desktop\svm\src\src\svm\svm_core.exe"/>
-        <CommandLineParams Value="&quot;C:\Users\Админ\Desktop\svm\src\tests\tst_code3.vmc&quot;"/>
+        <CommandLineParams Value="&quot;C:\Users\Админ\Desktop\svm\src\r1_test\samples\threads\threaded_output.vmc&quot;"/>
       </local>
+      <FormatVersion Value="2"/>
+      <Modes Count="1">
+        <Mode0 Name="default">
+          <local>
+            <CommandLineParams Value="&quot;C:\Users\Админ\Desktop\svm\src\r1_test\samples\threads\threaded_output.vmc&quot;"/>
+          </local>
+        </Mode0>
+      </Modes>
     </RunParams>
-    <Units Count="3">
+    <Units Count="4">
       <Unit0>
         <Filename Value="svm_core.pas"/>
         <IsPartOfProject Value="True"/>
@@ -43,6 +49,10 @@
         <Filename Value="svm_utils.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit2>
+      <Unit3>
+        <Filename Value="svm_global.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -58,16 +68,11 @@
     <CodeGeneration>
       <SmartLinkUnit Value="True"/>
       <RelocatableUnit Value="True"/>
+      <TargetOS Value="win64"/>
       <Optimizations>
         <OptimizationLevel Value="3"/>
       </Optimizations>
     </CodeGeneration>
-    <Linking>
-      <Debugging>
-        <StripSymbols Value="True"/>
-        <UseExternalDbgSyms Value="True"/>
-      </Debugging>
-    </Linking>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

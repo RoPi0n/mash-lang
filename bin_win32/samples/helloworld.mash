@@ -1,7 +1,0 @@
-import PrintLn "crt.lib" "PRINTLN"
-import InputLn "crt.lib" "INPUTLN"
-
-proc __EntryPoint():
-  PrintLn("Hello world!")
-  InputLn()
-end

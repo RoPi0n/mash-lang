@@ -206,7 +206,7 @@ begin
   end
   else}
   if s = 'end' then
-    GenEnd
+    GenEnd(varmgr)
   else
   if copy(s, 1, 4) = 'var ' then
   begin

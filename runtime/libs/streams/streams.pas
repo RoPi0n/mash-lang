@@ -1,210 +1,227 @@
 library Streams;
 
-uses SysUtils, Classes, svm_api in '..\svm_api.pas';
+uses SysUtils, Classes;
+
+{$I '..\libapi.inc'}
 
 {STREAM}
 
-procedure _Stream_Create(Stack:PStack); cdecl;
+procedure _Stream_Create(pctx: pointer); stdcall;
 begin
-  Stack^.push(TStream.Create);
+  __Return_Ref(pctx, TStream.Create);
 end;
 
-procedure _Stream_Seek(Stack:PStack); cdecl;
+procedure _Stream_Seek(pctx: pointer); stdcall;
+var
+  St:TStream;
+  P: Cardinal;
 begin
-  TStream(Stack^.popv).Seek(TSVMMem(Stack^.popv).GetW, TSeekOrigin(TSVMMem(Stack^.popv).GetW));
+  St := TStream(__Next_Ref(pctx));
+  P := __Next_Word(pctx);
+  St.Seek(P, TSeekOrigin(__Next_Word(pctx)));
 end;
 
-procedure _Stream_GetCaretPos(Stack:PStack); cdecl;
+procedure _Stream_GetCaretPos(pctx: pointer); stdcall;
 begin
-  Stack^.push(TSVMMem.CreateFW(TStream(Stack^.popv).Position));
+  __Return_Word(pctx, TStream(__Next_Ref(pctx)).Position);
 end;
 
-procedure _Stream_WriteFromMemoryStream(Stack:PStack); cdecl;
+procedure _Stream_WriteFromMemoryStream(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Src:TMemoryStream;
 begin
-  Dest := TStream(Stack^.popv);
-  Src := TMemoryStream(Stack^.popv);
-  Dest.Write(PByte(Cardinal(Src.Memory) + Src.Position)^, TSVMMem(Stack^.popv).GetW);
+  Dest := TStream(__Next_Ref(pctx));
+  Src := TMemoryStream(__Next_Ref(pctx));
+  Dest.Write(PByte(Cardinal(Src.Memory) + Src.Position)^, __Next_Word(pctx));
 end;
 
-procedure _Stream_ReadFromMemoryStream(Stack:PStack); cdecl;
+procedure _Stream_ReadFromMemoryStream(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Src:TMemoryStream;
 begin
-  Dest := TStream(Stack^.popv);
-  Src := TMemoryStream(Stack^.popv);
-  Dest.Read(PByte(Cardinal(Src.Memory) + Src.Position)^, TSVMMem(Stack^.popv).GetW);
+  Dest := TStream(__Next_Ref(pctx));
+  Src := TMemoryStream(__Next_Ref(pctx));
+  Dest.Read(PByte(Cardinal(Src.Memory) + Src.Position)^, __Next_Word(pctx));
 end;
 
-procedure _Stream_CopyFromStream(Stack:PStack); cdecl;
+procedure _Stream_CopyFromStream(pctx: pointer); stdcall;
+var
+  St, From: TStream;
 begin
-  TStream(Stack^.popv).CopyFrom(TStream(Stack^.popv), TSVMMem(Stack^.popv).GetW);
+  St := TStream(__Next_Ref(pctx));
+  From := TStream(__Next_Ref(pctx));
+  St.CopyFrom(From, __Next_Word(pctx));
 end;
 
-procedure _Stream_WriteByte(Stack:PStack); cdecl;
+procedure _Stream_WriteByte(pctx: pointer); stdcall;
 var
   Dest:TStream;
 begin
-  Dest := TStream(Stack^.popv);
-  Dest.WriteByte(TSVMMem(Stack^.popv).GetW);
+  Dest := TStream(__Next_Ref(pctx));
+  Dest.WriteByte(__Next_Word(pctx));
 end;
 
-procedure _Stream_WriteWord(Stack:PStack); cdecl;
+procedure _Stream_WriteWord(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:Cardinal;
 begin
-  Dest := TStream(Stack^.popv);
-  Val := TSVMMem(Stack^.popv).GetW;
+  Dest := TStream(__Next_Ref(pctx));
+  Val := __Next_Word(pctx);
   Dest.Write(Val, SizeOf(Val));
 end;
 
-procedure _Stream_WriteInt(Stack:PStack); cdecl;
+procedure _Stream_WriteInt(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:Int64;
 begin
-  Dest := TStream(Stack^.popv);
-  Val := TSVMMem(Stack^.popv).GetI;
+  Dest := TStream(__Next_Ref(pctx));
+  Val := __Next_Int(pctx);
   Dest.Write(Val, SizeOf(Val));
 end;
 
-procedure _Stream_WriteFloat(Stack:PStack); cdecl;
+procedure _Stream_WriteFloat(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:Double;
 begin
-  Dest := TStream(Stack^.popv);
-  Val := TSVMMem(Stack^.popv).GetD;
+  Dest := TStream(__Next_Ref(pctx));
+  Val := __Next_Float(pctx);
   Dest.Write(Val, SizeOf(Val));
 end;
 
-procedure _Stream_WriteStr(Stack:PStack); cdecl;
+procedure _Stream_WriteStr(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:String;
 begin
-  Dest := TStream(Stack^.popv);
-  Val := TSVMMem(Stack^.popv).GetS;
+  Dest := TStream(__Next_Ref(pctx));
+  Val := '';
+  __Next_String(pctx, @Val);
   Dest.Write(Val[1], Length(Val));
 end;
 
-procedure _Stream_ReadByte(Stack:PStack); cdecl;
+procedure _Stream_ReadByte(pctx: pointer); stdcall;
 var
   Dest:TStream;
 begin
-  Dest := TStream(Stack^.popv);
-  TSVMMem(Stack^.popv).SetW(Dest.ReadByte);
+  Dest := TStream(__Next_Ref(pctx));
+  __Return_Word(pctx, Dest.ReadByte);
 end;
 
-procedure _Stream_ReadWord(Stack:PStack); cdecl;
+procedure _Stream_ReadWord(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:Cardinal;
 begin
-  Dest := TStream(Stack^.popv);
+  Dest := TStream(__Next_Ref(pctx));
+  Val := 0;
   Dest.Read(Val, SizeOf(Val));
-  TSVMMem(Stack^.popv).SetW(Val);
+  __Return_Word(pctx, Val);
 end;
 
-procedure _Stream_ReadInt(Stack:PStack); cdecl;
+procedure _Stream_ReadInt(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:Int64;
 begin
-  Dest := TStream(Stack^.popv);
+  Dest := TStream(__Next_Ref(pctx));
+  Val := 0;
   Dest.Read(Val, SizeOf(Val));
-  TSVMMem(Stack^.popv).SetI(Val);
+  __Return_Int(pctx, Val);
 end;
 
-procedure _Stream_ReadFloat(Stack:PStack); cdecl;
+procedure _Stream_ReadFloat(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:Double;
 begin
-  Dest := TStream(Stack^.popv);
+  Dest := TStream(__Next_Ref(pctx));
+  Val := 0;
   Dest.Read(Val, SizeOf(Val));
-  TSVMMem(Stack^.popv).SetD(Val);
+  __Return_Float(pctx, Val);
 end;
 
-procedure _Stream_ReadStr(Stack:PStack); cdecl;
+procedure _Stream_ReadStr(pctx: pointer); stdcall;
 var
   Dest:TStream;
   Val:Pointer;
   Len:Cardinal;
   S:String;
 begin
-  Dest := TStream(Stack^.popv);
-  Val := Stack^.popv;
-  Len := TSVMMem(Stack^.popv).GetW;
+  Dest := TStream(__Next_Ref(pctx));
+  Len := __Next_Word(pctx);
   SetLength(S, Len);
   Dest.Read(S[1], Len);
-  TSVMMem(Stack^.popv).SetS(S);
+  __Return_String(pctx, @S);
 end;
 
-procedure _Stream_GetSize(Stack:PStack); cdecl;
+procedure _Stream_GetSize(pctx: pointer); stdcall;
 begin
-  Stack^.push(TSVMMem.CreateFW(TStream(Stack^.popv).Size));
+  __Return_Word(pctx, TStream(__Next_Ref(pctx)).Size);
 end;
 
-procedure _Stream_Clear(Stack:PStack); cdecl;
+procedure _Stream_Clear(pctx: pointer); stdcall;
 begin
-  TStream(Stack^.popv).Size := 0;
+  TStream(__Next_Ref(pctx)).Size := 0;
 end;
 
-procedure _Stream_Free(Stack:PStack); cdecl;
+procedure _Stream_Free(pctx: pointer); stdcall;
 begin
-  TStream(Stack^.popv).Free;
+  TStream(__Next_Ref(pctx)).Free;
 end;
 
 {MEMORYSTREAM}
 
-procedure _MemoryStream_Create(Stack:PStack); cdecl;
+procedure _MemoryStream_Create(pctx: pointer); stdcall;
 begin
-  Stack^.push(TMemoryStream.Create);
+  __Return_Ref(pctx, TMemoryStream.Create);
 end;
 
-procedure _MemoryStream_Free(Stack:PStack); cdecl;
+procedure _MemoryStream_Free(pctx: pointer); stdcall;
 begin
-  TMemoryStream(Stack^.popv).Free;
+  TMemoryStream(__Next_Ref(pctx)).Free;
 end;
 
-procedure _MemoryStream_LoadFromStream(Stack:PStack); cdecl;
+procedure _MemoryStream_LoadFromStream(pctx: pointer); stdcall;
+var
+  Ms: TMemoryStream;
 begin
-  TMemoryStream(Stack^.popv).LoadFromStream(TStream(Stack^.popv));
+  Ms := TMemoryStream(__Next_Ref(pctx));
+  Ms.LoadFromStream(TStream(__Next_Ref(pctx)));
 end;
 
-procedure _MemoryStream_StoreToStream(Stack:PStack); cdecl;
+procedure _MemoryStream_StoreToStream(pctx: pointer); stdcall;
+var
+  Ms: TMemoryStream;
 begin
-  TMemoryStream(Stack^.popv).SaveToStream(TStream(Stack^.popv));
+  Ms := TMemoryStream(__Next_Ref(pctx));
+  Ms.SaveToStream(TStream(__Next_Ref(pctx)));
 end;
 
-procedure _MemoryStream_LoadFromFile(Stack:PStack); cdecl;
+procedure _MemoryStream_LoadFromFile(pctx: pointer); stdcall;
 begin
-  TMemoryStream(Stack^.popv).LoadFromFile(TSVMMem(Stack^.popv).GetS);
+  TMemoryStream(__Next_Ref(pctx)).LoadFromFile(__Next_String(pctx));
 end;
 
-procedure _MemoryStream_SaveToFile(Stack:PStack); cdecl;
+procedure _MemoryStream_SaveToFile(pctx: pointer); stdcall;
 begin
-  TMemoryStream(Stack^.popv).SaveToFile(TSVMMem(Stack^.popv).GetS);
+  TMemoryStream(__Next_Ref(pctx)).SaveToFile(__Next_String(pctx));
 end;
 
 {FILESTREAM}
 
-procedure _FileStream_Create(Stack:PStack); cdecl;
-var
-  p:TSVMMem;
+procedure _FileStream_Create(pctx: pointer); stdcall;
 begin
-  p := TSVMMem(Stack^.popv);
-  Stack^.push(TFileStream.Create(p.GetS, TSVMMem(Stack^.popv).GetW));
+  __Return_Ref(pctx, TFileStream.Create(__Next_String(pctx), __Next_Word(pctx)));
 end;
 
-procedure _FileStream_Free(Stack:PStack); cdecl;
+procedure _FileStream_Free(pctx: pointer); stdcall;
 begin
-  TFileStream(Stack^.popv).Free;
+  TFileStream(__Next_Ref(pctx)).Free;
 end;
 
 {EXPORTS DB}

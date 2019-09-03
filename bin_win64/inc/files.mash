@@ -1,0 +1,33 @@
+////////////////////////////////////////////////////////////////////////////////
+// Files
+////////////////////////////////////////////////////////////////////////////////
+
+uses <strings>
+
+import FileExists   "files.lib" "FILEEXISTS"
+import DirExists    "files.lib" "DIREXISTS"
+import CreateDir    "files.lib" "CREATEDIR"
+import DeleteFile   "files.lib" "DELETEFILE"
+import DeleteDir    "files.lib" "DELETEDIR"
+import ScanDir      "files.lib" "SCANDIR"
+import ScanDirFirst "files.lib" "SCANDIRFIRST"
+
+func ExtractFilePath(path):
+  path ?= s_Reverse(path)
+  s_Del(path, 0, s_Pos(sysslash, path))
+  return s_Reverse(path)
+end
+
+func ExtractFileDir(path):
+  path ?= s_Reverse(path)
+  s_Del(path, 0, s_Pos(sysslash, path) + 1)
+  return s_Reverse(path)
+end
+
+func PreparePath(path):
+  if s_Pos(":" + sysslash, path) > 0:
+    return path
+  else:
+    return ExtractFilePath(ParamList[0]) + path
+  end
+end

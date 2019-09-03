@@ -6,8 +6,8 @@ proc main():
   try:
     println("Trying to do something...")
     a ?= 10 / 0
-  catch:
-    println(getError())
+  catch Err:
+    println(Err)
   finally:
     println("Finally")
   end

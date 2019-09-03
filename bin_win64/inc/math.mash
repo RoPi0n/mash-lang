@@ -1,0 +1,110 @@
+// externals
+
+import Sin    "lmath.lib" "SIN"
+import Cos    "lmath.lib" "COS"
+import Tg     "lmath.lib" "TG"
+import Ctg    "lmath.lib" "CTG"
+import ArcSin "lmath.lib" "ARCSIN"
+import ArcCos "lmath.lib" "ARCCOS"
+import Log10  "lmath.lib" "LOG10"
+import Log2   "lmath.lib" "LOG2"
+import LogN   "lmath.lib" "LOGN"
+import LNXP1  "lmath.lib" "LNXP1"
+import Exp    "lmath.lib" "EXP"
+
+// constants
+
+real m_pi          3.14159265358979
+real m_e           2.71828182845904
+
+// some methods
+
+func trunc(a):
+  return a \ 1
+end
+
+func frac(a):
+  return a - a \ 1
+end
+
+func round(a):
+  return trunc(a + 0.5)
+end
+
+func ceil(a):
+  return trunc(a + 0.9999)
+end
+
+func abs(a):
+  if a > 0:
+    return a
+  else:
+    return -a
+  end
+end
+
+func Log(a):
+  return LogN(m_e, a)
+end
+
+func Power(a, n):
+  return Exp(Log(a) * n)
+end
+
+func IntPower(a, n):
+  return Round(Power(a, n))
+end
+
+func Sqrt(a):
+  return Power(a, 0.5)
+end
+
+func Factorial(a):
+  r ?= 1
+
+  for(i ?= 0; i < a; i++):
+    r *= i + 1
+  end
+
+  return r
+end
+
+// Gamma function
+
+func stGamma(a):
+  return sqrt(2 * m_pi / a) * Power(a / m_e, a)
+end
+
+func spGamma(a):
+  b ?= 12
+  c ?= new[12]
+
+  k1_factrl ?= 1
+  c[0] ?= sqrt(2 * m_pi)
+  for(k ?= 1; k < b; k++):
+    c[k] ?= exp(b - k) * Power(b - k, k - 0.5) / k1_factrl
+    k1_factrl *= -k
+  end
+
+  accm ?= c[0]
+
+  for(k ?= 1; k < b; k++):
+    accm += c[k] / ( a + k )
+  end
+
+  accm *= exp(-(a + b)) * Power(a + b, a + 0.5)
+
+  return accm / a
+end
+
+func hypot(w, h):
+  return sqrt(w*w + h*h)
+end
+
+func radians(a):
+  return a * (180 / m_pi)
+end
+
+func degrees(a):
+  return a * (m_pi / 180)
+end

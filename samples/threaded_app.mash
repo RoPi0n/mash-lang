@@ -2,21 +2,18 @@ uses <bf>
 uses <crt>
 uses <threads>
 
-proc MyThread(ThreadContext, arg):
-  var text = new(arg)
+proc MyThread(arg):
   while true:
-    println(text)
-    sleep(1000)
-    gc
+    println(arg)
+    //sleep(1000)
+    gc()
   end
 end
 
 proc main():
-  var Thr = async(MyThread, "Threaded hello!")
-
   while true:
-    println("Hello from main thread!")
-    sleep(1000)
-    gc
+    _println("Hello from main thread!")
+    //sleep(1000)
+    gc()
   end
 end

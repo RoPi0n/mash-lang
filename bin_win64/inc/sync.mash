@@ -1,0 +1,78 @@
+////////////////////////////////////////////////////////////////////////////////
+// Library for synchronization
+////////////////////////////////////////////////////////////////////////////////
+
+// imports from sync.lib
+
+import __CRITSECT_CREATE   "sync.lib"  "CRITICAL_SECTION_CREATE"
+import __CRITSECT_FREE     "sync.lib"  "CRITICAL_SECTION_FREE"
+import __CRITSECT_ENTER    "sync.lib"  "CRITICAL_SECTION_ENTER"
+import __CRITSECT_LEAVE    "sync.lib"  "CRITICAL_SECTION_LEAVE"
+import __CRITSECT_TRYENTER "sync.lib"  "CRITICAL_SECTION_TRYENTER"
+
+////////////////////////////////////////////////////////////////////////////////
+// Critical sections controller class
+////////////////////////////////////////////////////////////////////////////////
+
+class CriticalSection:
+  protected:
+    var Critical_Section
+
+  public:
+    proc Create, Free
+
+    //Methods
+    proc Enter, Leave
+    func TryEnter
+end
+
+proc CriticalSection::Create():
+  $Critical_Section ?= __CRITSECT_CREATE()
+end
+
+proc CriticalSection::Free():
+  __CRITSECT_FREE($Critical_Section)
+end
+
+proc CriticalSection::Enter():
+  __CRITSECT_ENTER($Critical_Section)
+end
+
+proc CriticalSection::Leave():
+  __CRITSECT_LEAVE($Critical_Section)
+end
+
+func CriticalSection::TryEnter():
+  return __CRITSECT_TRYENTER($Critical_Section)
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// Thread-safe atomic
+////////////////////////////////////////////////////////////////////////////////
+
+class TAtomic:
+  private:
+    var Locker
+
+  public:
+    var Value
+    proc Create, Free
+    proc Lock, UnLock
+end
+
+proc TAtomic::Create(Value):
+  $Locker = new CriticalSection()
+  $Value ?= new(Value)
+end
+
+proc TAtomic::Free():
+  $Locker -> Free()
+end
+
+proc TAtomic::Lock():
+  $Locker -> Enter()
+end
+
+proc TAtomic::UnLock():
+  $Locker -> Leave()
+end

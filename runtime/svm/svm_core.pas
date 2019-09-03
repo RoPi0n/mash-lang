@@ -19,6 +19,8 @@ uses
   {$endif}
   {$ifdef Windows}
   windows,
+  JwaWinBase,
+  JwaWinNT,
   {$endif}
   SysUtils,
   dynlibs,
@@ -49,7 +51,6 @@ type
 
     {** for untyped's **}
     bcEQ,     // [top] == [top-1] ? [top] = 1 : [top] = 0
-    bcPEQ,
     bcBG,     // [top] >  [top-1] ? [top] = 1 : [top] = 0
     bcBE,     // [top] >= [top-1] ? [top] = 1 : [top] = 0
 
@@ -80,11 +81,14 @@ type
     bcNW,     // [top] = @new
     bcMC,     // copy [top]
     bcMD,     // double [top]
-    bcRM,     // rem @[top]
     bcNA,     // [top] = @new array[  [top]  ] of pointer
     bcTF,     // [top] = typeof( [top] )
     bcTMC,    // [top].type = type of class
     bcSF,     // [top] = sizeof( [top] )
+    //bcRM,     // rem object
+    //bcGPM,    // mark garbage
+    bcGC,     // garbage collect
+
 
     {** array's **}
     bcAL,     // length( [top] as array )
@@ -93,18 +97,12 @@ type
     bcPA,     // push ([top] as array)[top-1]
     bcSA,     // peek [top-2] -> ([top] as array)[top-1]
 
-    {** memory grabber **}
-    bcGPM,    // add pointer to TMem to grabber task-list
-    bcGC,     // run grabber
-
     {** constant's **}
     bcPHC,    // push copy of const
     bcPHCP,   // push pointer to original const
 
     {** external call's **}
-    bcPHEXMP, // push pointer to external method
     bcINV,    // call external method
-    bcINVBP,  // call external method by pointer [top]
 
     {** for thread's **}
     bcPHN,    // push null
@@ -113,6 +111,11 @@ type
     bcRTHR,   // resumethread(id = [top])
     bcTTHR,   // terminatethread(id = [top])
     bcTHSP,   // set thread priority
+
+    bcPLC,    // push last callback
+    bcPCT,    // push context
+    bcLCT,    // load context
+    bcJRX,    // jp to last callback point & rem last callback point twice
 
     {** for try..catch..finally block's **}
     bcTR,     // try @block_catch = [top], @block_end = [top+1]
@@ -124,22 +127,6 @@ type
     bcCHORD,
     bcORDCH,
 
-    {** [!] directly memory operations **}
-    bcALLC,  //alloc memory
-    bcRALLC, //realloc memory
-    bcDISP,  //dispose memory
-    bcGTB,   //get byte
-    bcSTB,   //set byte
-    bcCBP,   //mem copy
-    bcRWBP,  //read word
-    bcWWBP,  //write word
-    bcRIBP,  //read int
-    bcWIBP,  //write int
-    bcRFBP,  //read float
-    bcWFBP,  //write float
-    bcRSBP,  //read string
-    bcWSBP,  //write string
-
     bcTHREXT,//stop code execution
 
     bcDBP    //debug method call
@@ -149,8 +136,6 @@ type
 
 {***** Types & variables ******************************************************}
 type
-  TMemory = array of pointer;
-  PMemory = ^TMemory;
   TByteArr = array of byte;
   PByteArr = ^TByteArr;
   TDbgCallBack = procedure(p:pointer); cdecl;
@@ -242,40 +227,41 @@ type
         begin
           self.SetConst(
             cardinal(length(self.constants)) - consts_count,
-            TSVMMem.CreateFW(cardinal((pb^[bpos + 4] shl 24) + (pb^[bpos + 3] shl 16) +
+            TSVMMem.MCreateFW(cardinal((pb^[bpos + 4] shl 24) + (pb^[bpos + 3] shl 16) +
             (pb^[bpos + 2] shl 8) + pb^[bpos + 1]))
             );
+
           Inc(bpos, 5);
         end;
 
         ctInt64:
         begin
-           PByte(Cardinal(@i) + 7)^ := pb^[bpos + 1];
-           PByte(Cardinal(@i) + 6)^ := pb^[bpos + 2];
-           PByte(Cardinal(@i) + 5)^ := pb^[bpos + 3];
-           PByte(Cardinal(@i) + 4)^ := pb^[bpos + 4];
-           PByte(Cardinal(@i) + 3)^ := pb^[bpos + 5];
-           PByte(Cardinal(@i) + 2)^ := pb^[bpos + 6];
-           PByte(Cardinal(@i) + 1)^ := pb^[bpos + 7];
-           PByte(Cardinal(@i))^ := pb^[bpos + 4];
+           PByte(@i + 7)^ := pb^[bpos + 1];
+           PByte(@i + 6)^ := pb^[bpos + 2];
+           PByte(@i + 5)^ := pb^[bpos + 3];
+           PByte(@i + 4)^ := pb^[bpos + 4];
+           PByte(@i + 3)^ := pb^[bpos + 5];
+           PByte(@i + 2)^ := pb^[bpos + 6];
+           PByte(@i + 1)^ := pb^[bpos + 7];
+           PByte(@i)^ := pb^[bpos + 4];
            self.SetConst(
-             cardinal(length(self.constants)) - consts_count, TSVMMem.CreateF(i, svmtInt)
+             cardinal(length(self.constants)) - consts_count, TSVMMem.MCreateF(i, svmtInt)
            );
           Inc(bpos, 9);
         end;
 
         ctDouble:
         begin
-          PByte(Cardinal(@d) + 7)^ := pb^[bpos + 1];
-          PByte(Cardinal(@d) + 6)^ := pb^[bpos + 2];
-          PByte(Cardinal(@d) + 5)^ := pb^[bpos + 3];
-          PByte(Cardinal(@d) + 4)^ := pb^[bpos + 4];
-          PByte(Cardinal(@d) + 3)^ := pb^[bpos + 5];
-          PByte(Cardinal(@d) + 2)^ := pb^[bpos + 6];
-          PByte(Cardinal(@d) + 1)^ := pb^[bpos + 7];
-          PByte(Cardinal(@d))^ := pb^[bpos + 8];
+          PByte(@d + 7)^ := pb^[bpos + 1];
+          PByte(@d + 6)^ := pb^[bpos + 2];
+          PByte(@d + 5)^ := pb^[bpos + 3];
+          PByte(@d + 4)^ := pb^[bpos + 4];
+          PByte(@d + 3)^ := pb^[bpos + 5];
+          PByte(@d + 2)^ := pb^[bpos + 6];
+          PByte(@d + 1)^ := pb^[bpos + 7];
+          PByte(@d)^ := pb^[bpos + 8];
           self.SetConst(
-            cardinal(length(self.constants)) - consts_count, TSVMMem.CreateF(d, svmtReal));
+            cardinal(length(self.constants)) - consts_count, TSVMMem.MCreateF(d, svmtReal));
           Inc(bpos, 9);
         end;
 
@@ -289,7 +275,7 @@ type
             s := s + chr(pb^[bpos - sl]);
             Dec(sl);
           end;
-          self.SetConst(cardinal(length(self.constants)) - consts_count, TSVMMem.CreateFS(s));
+          self.SetConst(cardinal(length(self.constants)) - consts_count, TSVMMem.MCreateFS(s));
         end;
 
         ctStream:
@@ -305,7 +291,7 @@ type
           st.Seek(0, soFromBeginning);
           Inc(bpos, stl);
           self.SetConst(cardinal(length(self.constants)) - consts_count,
-                        TSVMMem.CreateFW(Cardinal(Pointer(st))));
+                        TSVMMem.MCreateFW(Cardinal(Pointer(st))));
         end;
         else
           VMError('Error: resource section format not supported.');
@@ -383,7 +369,15 @@ type
 
 {***** Import section *********************************************************}
 type
-  TExternalFunction = procedure(PStack: pointer); cdecl;
+  TCallingContext = record
+    pVM: pointer;
+    pStack: pointer;
+    pGrabber: pointer;
+  end;
+
+  PCallingContext = ^TCallingContext;
+
+  TExternalFunction = procedure(pCallingContext: pointer); stdcall;
   PExternalFunction = ^TExternalFunction;
 
 type
@@ -456,11 +450,12 @@ type
   TSizeArr = array of cardinal;
   PSizeArr = ^TSizeArr;
 
-  function NewArr_Sub(size_arr: PSizeArr; lvl: word): TSVMMem; inline;
+  function NewArr_Sub(size_arr: PSizeArr; lvl: word; Grabber: TGrabber): TSVMMem; inline;
   var
     i, l: cardinal;
+    r: TSVMMem;
   begin
-    Result := TSVMMem.CreateArr(size_arr^[length(size_arr^) - lvl]);
+    Result := NewSVMM_Arr(size_arr^[length(size_arr^) - lvl], Grabber);
     if lvl > 0 then
      begin
        i := 0;
@@ -468,7 +463,11 @@ type
        while i < l do
         begin
           if lvl - 1 > 0 then
-           Result.ArrSet(i, NewArr_Sub(size_arr, lvl - 1))
+           begin
+             r := NewArr_Sub(size_arr, lvl - 1, Grabber);
+             r.m_refc := 1;
+             Result.ArrSet(i, r);
+           end
           else
            Result.ArrSet(i, nil);
           inc(i);
@@ -476,19 +475,22 @@ type
      end;
   end;
 
-  function NewArr(stk: PStack; lvl: word): TSVMMem; inline;
+  function NewArr(stk: PStack; lvl: word; Grabber: TGrabber): TSVMMem; inline;
   var
     size_arr: TSizeArr;
     i: word;
+    r: TSVMMem;
   begin
     SetLength(size_arr, lvl);
     i := 0;
     while i < lvl do
      begin
-       size_arr[i] := TSVMMem(stk^.popv).GetW;
+       r := TSVMMem(stk^.popv);
+       Dec(r.m_refc);
+       size_arr[i] := r.GetW;
        inc(i);
      end;
-    Result := NewArr_Sub(@size_arr, lvl);
+    Result := NewArr_Sub(@size_arr, lvl, Grabber);
     //Result := TSVMMem.CreateArr(TSVMMem(stk^.popv).GetW);
   end;
 
@@ -497,6 +499,9 @@ type
   TTRBlock = record
     CatchPoint, EndPoint: TInstructionPointer;
   end;
+
+  EUnhandledException = class(Exception);
+  EUnhandledVirtualRaisedException = class(EUnhandledException);
 
   TTRBlocks = object
   public
@@ -519,12 +524,18 @@ type
   function TTRBlocks.TR_Catch(E: Exception): TInstructionPointer; inline;
   begin
     if Length(self.trblocks) > 0 then
-    begin
-      Result := self.trblocks[length(self.trblocks) - 1].CatchPoint;
-      SetLength(self.trblocks, length(self.trblocks) - 1);
-    end
+     begin
+       Result := self.trblocks[length(self.trblocks) - 1].CatchPoint;
+       SetLength(self.trblocks, length(self.trblocks) - 1);
+     end
     else
-      raise E;
+     begin
+       //raise E;
+       writeln('Unhandled exception <', E.ClassName, '>', sLineBreak,
+               '- Message: "', E.Message, '"', sLineBreak,
+               '- ThreadID: ', GetCurrentThreadId);
+       ExitThread(1);
+     end;
   end;
 
   function TTRBlocks.TR_Finally: TInstructionPointer; inline;
@@ -533,6 +544,155 @@ type
     setlength(self.trblocks, length(self.trblocks) - 1);
   end;
 
+{***** Context ****************************************************************}
+type
+  TSVMThreadContext = class
+    public
+      CtxMemory: PMemory;
+      CtxStack: TStack;
+      constructor Create(mem: PMemory; stack: PStack);
+      destructor Destroy; override;
+  end;
+
+constructor TSVMThreadContext.Create(mem: PMemory; stack: PStack);
+var
+  c, l: cardinal;
+begin
+  inherited Create;
+  new(CtxMemory);
+  l := Length(mem^);
+  SetLength(self.CtxMemory^, l);
+
+  c := 0;
+  while c < l do
+   begin
+     self.CtxMemory^[c] := mem^[c];
+     Inc(c);
+   end;
+
+  self.CtxStack.init;
+  l := stack^.i_pos;
+  c := 0;
+
+  while c < l do
+   begin
+     self.CtxStack.push(stack^.items[c]);
+     Inc(c);
+   end;
+end;
+
+destructor TSVMThreadContext.Destroy;
+begin
+  Dispose(self.CtxMemory);
+  self.CtxStack.drop;
+  inherited;
+end;
+
+{***** Global features ********************************************************}
+var
+  GrabbersStorage: TThreadList = nil;
+
+procedure GlobalGC;
+var
+  lst: TList;
+  c, l: cardinal;
+begin
+  try
+    lst := GrabbersStorage.LockList;
+    c := 0;
+    l := lst.count;
+
+    while c < l do
+     begin
+       if TGrabber(lst[c]).Stack.i_pos = 0 then
+        begin
+          TGrabber(lst[c]).Free;
+          lst[c] := lst[l - 1];
+          lst.delete(l - 1);
+          dec(l);
+          dec(c);
+        end
+       else
+        TGrabber(lst[c]).Run;
+
+       inc(c);
+     end;
+  finally
+    GrabbersStorage.UnlockList;
+  end;
+end;
+
+procedure GlobalTerm;
+var
+  lst: TList;
+  l: cardinal;
+begin
+  try
+    lst := GrabbersStorage.LockList;
+    l := lst.count;
+
+    while l > 0 do
+     begin
+       TGrabber(lst[l - 1]).Term;
+       TGrabber(lst[l - 1]).Free;
+       lst.delete(l - 1);
+
+       dec(l);
+     end;
+  finally
+    GrabbersStorage.UnlockList;
+  end;
+end;
+
+{$IfDef Windows}
+
+// For Win 32/64 VEH exceptions.
+
+type
+  EUnknownException = class(Exception);
+
+{function GetRegistrationHead: PExceptionRegistrationRecord;
+  external 'kernel32.dll' name 'GetRegistrationHead';
+
+procedure RtlRaiseException(ExceptionRecord: PExceptionRecord);
+  external 'kernel32.dll' name 'RtlRaiseException';
+
+function NtContinue(ThreadContext:PContext; RaiseAlert: boolean): THandle;
+  external 'ntdll.dll' name 'NtContinue';
+
+function NtRaiseException(ExceptionRecord: PExceptionRecord; ThreadContext:
+                          PContext; HandleException: boolean): THandle;
+  external 'ntdll.dll' name 'NtRaiseException';}
+
+
+function WinSVMVectoredHandler(ExceptionInfo: PExceptionPointers): Longint; stdcall;
+var
+  pExceptReg: PExceptionRegistrationRecord;
+begin
+  if byte(ExceptionInfo^.ExceptionRecord^.ExceptionCode) in [
+          byte(Windows.EXCEPTION_FLT_DIVIDE_BY_ZERO),
+          byte(Windows.EXCEPTION_ACCESS_VIOLATION),
+          byte(Windows.EXCEPTION_ARRAY_BOUNDS_EXCEEDED),
+          byte(Windows.EXCEPTION_FLT_INVALID_OPERATION),
+          byte(Windows.EXCEPTION_FLT_OVERFLOW),
+          byte(Windows.EXCEPTION_FLT_UNDERFLOW),
+          byte(Windows.EXCEPTION_NONCONTINUABLE_EXCEPTION)
+     ]
+  then
+   Result := EXCEPTION_EXECUTE_HANDLER
+  else
+   begin
+     Exception(ExceptionInfo^.ExceptionRecord^.ExceptionInformation[1]).Free;
+     //ExceptionInfo^.ExceptionRecord^.ExceptionCode := 0;
+
+     Result := EXCEPTION_CONTINUE_EXECUTION;
+     VEHExceptions.Add(Pointer(GetCurrentThreadId));
+     Inc(VEHExceptions_Count);
+   end;
+end;
+
+{$EndIf}
+
 {***** VM *********************************************************************}
 type
   TSVM = object
@@ -540,17 +700,20 @@ type
     ip,end_ip: TInstructionPointer;
     mainclasspath: string;
     mem: PMemory;
+    //pmgrabber: TPMGrabber;
+    grabber: TGrabber;
     stack: TStack;
     cbstack: TCallBackStack;
     bytes: PByteArr;
-    grabber: TGrabber;
     consts: PConstSection;
     extern_methods: PImportSection;
     try_blocks: TTRBlocks;
+    isMainThread: boolean;
     procedure Run;
     procedure RunThread;
     procedure LoadByteCodeFromFile(fn: string);
     procedure LoadByteCodeFromArray(b: TByteArr);
+    procedure LoadContext(Ctx: TSVMThreadContext);
   end;
 
   PSVM = ^TSVM;
@@ -570,16 +733,17 @@ type
     arg: pointer);
   var
     c, ml: cardinal;
+    m: TSVMMem;
   begin
     FreeOnTerminate := True;
     new(vm);
+    vm^.isMainThread := false;
     vm^.bytes := bytes;
     vm^.end_ip := length(bytes^);
     vm^.consts := consts;
     vm^.extern_methods := extern_methods;
-    vm^.stack.init(vm);
+    vm^.stack.init;
     vm^.cbstack.init;
-    vm^.grabber.init;
 
     //fill mem map
     new(vm^.mem);
@@ -589,12 +753,21 @@ type
     while c < ml do
      begin
        vm^.mem^[c] := svm_memory^[c];
+
+       if svm_memory^[c] <> nil then
+        if TObject(svm_memory^[c]) is TSVMMem then
+         Inc(TSVMMem(svm_memory^[c]).m_refc);
+
        inc(c);
      end;
 
     vm^.stack.push(arg);
-    vm^.stack.push(self);
     vm^.ip := method;
+    vm^.grabber := TGrabber.Create;
+    m := NewSVMM_Ref(self, vm^.grabber);
+    m.m_refc := 1;
+    vm^.stack.push(m);
+
     inherited Create(True);
   end;
 
@@ -604,12 +777,28 @@ type
   end;
 
   destructor TSVMThread.Destroy;
+  var
+    c, ml: cardinal;
   begin
-    vm^.grabber.run;
+    ml := Length(vm^.mem^);
+    c := 0;
+    while c < ml do
+     begin
+       if vm^.mem^[c] <> nil then
+        if TObject(vm^.mem^[c]) is TSVMMem then
+         Dec(TSVMMem(vm^.mem^[c]).m_refc);
+
+       inc(c);
+     end;
+
+    vm^.stack.drop;
+
+    GrabbersStorage.Add(vm^.grabber);
+
     SetLength(vm^.mem^, 0);
     Dispose(vm^.mem);
-    vm^.stack.drop;
     Dispose(vm);
+
     inherited Destroy;
   end;
 
@@ -618,39 +807,101 @@ type
     p, p2: pointer;
     r: TSVMMem;
     s: string;
+    c: cardinal;
+    pcctx: PCallingContext;
+    {$IfDef Windows}
+    lst: TList;
+    {$EndIf}
   begin
     repeat
-      {$IfNDef BuildInLibrary}
       try
-      {$EndIf}
         while self.ip < self.end_ip do
          begin
           {$IfDef DebugVer}
             writeln('IP: ', self.ip,', Op: ', GetEnumName(TypeInfo(TComand), self.bytes^[self.ip]));
           {$EndIf}
+
+          {$IfDef Windows}
+          if VEHExceptions_Count > 0 then
+           try
+             lst := VEHExceptions.LockList;
+
+             p := Pointer(GetCurrentThreadId);
+             if lst.IndexOf(p) <> -1 then
+              begin
+                while lst.IndexOf(p) <> -1 do
+                 lst.Delete(lst.IndexOf(p));
+
+                VEHExceptions_Count := lst.Count;
+
+                p2 := NewSVMM_FS('Unknown exception.', Grabber);
+                TSVMMem(p2).m_refc := 1;
+                self.stack.push(p2);
+
+                p2 := NewSVMM_FS('EUnknownException', Grabber);
+                TSVMMem(p2).m_refc := 1;
+                self.stack.push(p2);
+
+                p := EUnknownException.Create('Unknown exception.');
+                self.ip := try_blocks.TR_Catch(Exception(p));
+                FreeAndNil(p);
+              end;
+           finally
+             VEHExceptions.UnlockList;
+           end;
+          {$EndIf}
+
           case TComand(self.bytes^[self.ip]) of
             bcPH:
             begin
-              self.stack.push(self.mem^[cardinal(
+              c := cardinal(
                 (self.bytes^[self.ip + 4] shl 24) + (self.bytes^[self.ip + 3] shl 16) +
                 (self.bytes^[self.ip + 2] shl 8) +
-                self.bytes^[self.ip + 1])
-                ]);
+                self.bytes^[self.ip + 1]);
+
+              p := self.mem^[c];
+
+              if p <> nil then
+               //if TObject(p) is TSVMMem then
+                Inc(TSVMMem(p).m_refc);
+
+              self.stack.push(p);
+
               Inc(self.ip, 5);
             end;
 
             bcPK:
             begin
-              self.mem^[cardinal((self.bytes^[self.ip + 4] shl 24) +
-                (self.bytes^[self.ip + 3] shl 14) + (self.bytes^[self.ip + 2] shl 8) +
-                self.bytes^[self.ip + 1])
-                ] := self.stack.peek;
+              c := cardinal(
+                (self.bytes^[self.ip + 4] shl 24) + (self.bytes^[self.ip + 3] shl 16) +
+                (self.bytes^[self.ip + 2] shl 8) +
+                self.bytes^[self.ip + 1]);
+
+              p := self.mem^[c];
+
+              if p <> nil then
+               //if TObject(p) is TSVMMem then
+                Dec(TSVMMem(p).m_refc);
+
+              p2 := self.stack.peek;
+
+              self.mem^[c] := p2;
+
+              if p2 <> nil then
+               if TObject(p2) is TSVMMem then
+                Inc(TSVMMem(p2).m_refc);
+
               Inc(self.ip, 5);
             end;
 
             bcPP:
             begin
-              self.stack.pop;
+              p := self.stack.popv;
+
+              if p <> nil then
+               //if TObject(p) is TSVMMem then
+                Dec(TSVMMem(p).m_refc);
+
               Inc(self.ip);
             end;
 
@@ -668,21 +919,40 @@ type
 
             bcJP:
             begin
-              self.ip := TSVMMem(self.stack.popv).GetW;
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              self.ip := TSVMMem(p).GetW;
             end;
 
             bcJZ:
             begin
-              if TSVMMem(self.stack.popv).GetI = 0 then
-                self.ip := TSVMMem(self.stack.popv).GetW
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              if TSVMMem(p).GetI = 0 then
+               begin
+                 p := self.stack.popv;
+                 Dec(TSVMMem(p).m_refc);
+
+                 self.ip := TSVMMem(p).GetW;
+               end
               else
                 Inc(self.ip);
             end;
 
             bcJN:
             begin
-              if TSVMMem(self.stack.popv).GetI <> 0 then
-                self.ip := TSVMMem(self.stack.popv).GetW
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              if TSVMMem(p).GetI <> 0 then
+               begin
+                 p := self.stack.popv;
+                 Dec(TSVMMem(p).m_refc);
+
+                 self.ip := TSVMMem(p).GetW;
+               end
               else
                 Inc(self.ip);
             end;
@@ -691,7 +961,11 @@ type
             begin
               self.cbstack.push(self.ip + 1);
               {$IfDef DebugVer}writeln(' - Point to jump: ', TSVMMem(self.stack.peek).GetW);{$EndIf}
-              self.ip := TSVMMem(self.stack.popv).GetW;
+
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              self.ip := TSVMMem(p).GetW;
             end;
 
             bcJR:
@@ -702,36 +976,47 @@ type
             bcEQ:
             begin
               p := self.stack.popv;
-              r := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
-              r.OpEq(TSVMMem(self.stack.popv));
-              self.stack.push(r);
-              Inc(self.ip);
-            end;
+              Dec(TSVMMem(p).m_refc);
 
-            bcPEQ:
-            begin
+              r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
+
               p := self.stack.popv;
-              r := TSVMMem.Create;
-              r.SetB(p = self.stack.popv);
+              Dec(TSVMMem(p).m_refc);
+                                 
+              r.m_refc := 1;
               self.stack.push(r);
+              r.OpEq(TSVMMem(p));
               Inc(self.ip);
             end;
 
             bcBG:
             begin
               p := self.stack.popv;
-              r := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
-              r.OpBg(TSVMMem(self.stack.popv));
+              Dec(TSVMMem(p).m_refc);
+
+              r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
+
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+                                 
+              r.m_refc := 1;
               self.stack.push(r);
+              r.OpBg(TSVMMem(p));
               Inc(self.ip);
             end;
 
             bcBE:
             begin
               p := self.stack.popv;
-              r := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
-              r.OpBe(TSVMMem(self.stack.popv));
+              Dec(TSVMMem(p).m_refc);
+              r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
+
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              r.m_refc := 1;
               self.stack.push(r);
+              r.OpBe(TSVMMem(p));
               Inc(self.ip);
             end;
 
@@ -744,50 +1029,71 @@ type
             bcAND:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpAnd(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpAnd(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcOR:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpOr(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpOr(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcXOR:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpXor(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpXor(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcSHR:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpShr(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpSHR(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcSHL:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpShl(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpSHL(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcNEG:
             begin
               p := self.stack.popv;
-              p2 := TSVMMem.CreateF(TSVMMem(p).m_val^, TSVMMem(p).m_type);
-              TSVMMem(p2).OpNeg;
-              self.grabber.AddTask(p2);
-              self.stack.push(p2);
+              Dec(TSVMMem(p).m_refc);
+              r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
+              r.OpNeg;
+              r.m_refc := 1;
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
@@ -806,71 +1112,112 @@ type
             bcADD:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpAdd(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpAdd(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcSUB:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpSub(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpSub(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcMUL:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpMul(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpMul(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcDIV:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpDiv(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpDiv(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcMOD:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpMod(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpMod(TSVMMem(p2));
               Inc(self.ip);
             end;
 
             bcIDIV:
             begin
               p := self.stack.popv;
-              TSVMMem(p).OpIDiv(TSVMMem(self.stack.popv));
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
               self.stack.push(p);
+              TSVMMem(p).OpIDiv(TSVMMem(p2));
               Inc(self.ip);
             end;
 			
 	    bcMV:
 	    begin
               p := self.stack.popv;
-	      TSVMMem(p).SetM(TSVMMem(self.stack.popv));
+              Dec(TSVMMem(p).m_refc);
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
+	      TSVMMem(p).SetM(TSVMMem(p2));
 	      Inc(self.ip);
 	    end;
 			
 	    bcMVBP:
 	    begin
               p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
+
               {$HINTS OFF}
-              TSVMMem(Pointer(TSVMMem(p).GetW)).SetM(TSVMMem(self.stack.popv));
+              TSVMMem(Pointer(TSVMMem(p).GetW)).SetM(TSVMMem(p2));
               {$HINTS ON}
               Inc(self.ip);
 	    end;
 			
 	    bcGVBP:
 	    begin
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
               {$HINTS OFF}
-	      self.stack.push(TSVMMem(Pointer(TSVMMem(self.stack.popv).GetW)));
+              r := TSVMMem(Pointer(TSVMMem(p).GetW));
+	      self.stack.push(r);
+
+              Inc(r.m_refc);
               {$HINTS ON}
               Inc(self.ip);
 	    end;
@@ -878,46 +1225,91 @@ type
 	    bcMVP:
 	    begin
               p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
               {$HINTS OFF}
-              TSVMMem(p).SetW(Cardinal(self.stack.popv));
+              p2 := self.stack.popv;
+
+              if p2 <> nil then
+               if TObject(p2) is TSVMMem then
+                Dec(TSVMMem(p2).m_refc);
+
+              TSVMMem(p).SetW(LongWord(p2));
               {$HINTS ON}
-	      Inc(self.ip);
+
+              Inc(self.ip);
 	    end;
 
             bcMS:
             begin
-              SetLength(self.mem^, TSVMMem(self.stack.popv).GetW);
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              SetLength(self.mem^, TSVMMem(p).GetW);
               {$IfDef DebugVer} writeln(' - Mem size: ', Length(self.mem^)); {$EndIf}
               Inc(self.ip);
             end;
 
             bcNW:
             begin
-              self.stack.push(TSVMMem.Create);
+              r := NewSVMM(Grabber);
+              r.m_refc := 1;
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
             bcMC:
             begin
-              self.stack.push(CreateSVMMemCopy(TSVMMem(self.stack.peek)));
+              r := CreateSVMMemCopy(TSVMMem(self.stack.peek), Grabber);
+              r.m_refc := 1;
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
             bcMD:
             begin
-              self.stack.push(self.stack.peek);
+              p := self.stack.peek;
+              if p <> nil then
+               //if TObject(p) is TSVMMem then
+                Inc(TSVMMem(p).m_refc);
+
+              self.stack.push(p);
               Inc(self.ip);
             end;
 
-            bcRM:
+            {bcRM:
             begin
-              TSVMMem(self.stack.popv).Free;
+              grabber.heap.Remove(self.stack.peek);
+              p := self.stack.popv;
+              FreeAndNil(p);
+              Inc(self.ip);
+            end;}
+
+            {bcGPM:
+            begin
+              pmgrabber.AddTask(stack.peek);
+              Inc(self.ip);
+            end;}
+
+            bcGC:
+            begin
+              //pmgrabber.run;
+              grabber.Run;
+
+              if isMainThread then
+               GlobalGC;
+
               Inc(self.ip);
             end;
 
             bcNA:
             begin
-              self.stack.push(NewArr(@self.stack, Cardinal(TSVMMem(self.stack.popv).GetW)));
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              r := NewArr(@self.stack, Cardinal(TSVMMem(p).GetW), self.Grabber);
+              r.m_refc := 1;
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
@@ -925,9 +1317,20 @@ type
             begin
               p := self.stack.popv;
               if TObject(p) is TSVMMem then
-                self.stack.push(TSVMMem.CreateFW(byte(TSVMMem(p).m_type)))
+               begin
+                 Dec(TSVMMem(p).m_refc);
+
+                 r := NewSVMM_FW(byte(TSVMMem(p).m_type), Grabber);
+                 r.m_refc := 1;
+                 self.stack.push(r);
+               end
               else
-                self.stack.push(TSVMMem.CreateFW(byte(TSVMTypeAddr)));
+               begin
+                 r := NewSVMM_FW(byte(TSVMTypeAddr), Grabber);
+                 r.m_refc := 1;
+                 self.stack.push(r);
+               end;
+
               Inc(self.ip);
             end;
 
@@ -939,19 +1342,31 @@ type
 
             bcSF:
             begin
-              self.stack.push(TSVMMem.CreateFW(TSVMMem(self.stack.popv).GetSize));
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              r := NewSVMM_FW(TSVMMem(p).GetSize, Grabber);
+              r.m_refc := 1;
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
             bcAL:
             begin
-              self.stack.push(TSVMMem.CreateFW(TSVMMem(self.stack.popv).ArrGetSize));
+              p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
+              r := NewSVMM_FW(TSVMMem(p).ArrGetSize, Grabber);
+              r.m_refc := 1;
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
             bcSL:
             begin
               p := self.stack.popv;
+              Dec(TSVMMem(p).m_refc);
+
               TSVMMem(self.stack.peek).ArrSetSize(TSVMMem(p).GetW);
               Inc(self.ip);
             end;
@@ -959,39 +1374,44 @@ type
             bcPA:
             begin
               p := self.stack.popv;
-              self.stack.push(TSVMMem(p).ArrGet(TSVMMem(self.stack.popv).GetW, @self.grabber));
+              Dec(TSVMMem(p).m_refc);
+
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              p2 := TSVMMem(p).ArrGet(r.GetW, Grabber);
+
+              if p2 <> nil then
+               if TObject(p2) is TSVMMem then
+                Inc(TSVMMem(p2).m_refc);
+
+              self.stack.push(p2);
               Inc(self.ip);
             end;
 
             bcSA:
             begin
               p := self.stack.popv;
-              p2:= self.stack.popv;
-              TSVMMem(p).ArrSet(TSVMMem(p2).GetW, self.stack.popv);
-              Inc(self.ip);
-            end;
+              Dec(TSVMMem(p).m_refc);
 
-            bcGPM:
-            begin
-              self.grabber.AddTask(self.stack.peek);
-              Inc(self.ip);
-            end;
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
 
-            bcGC:
-            begin
-              self.grabber.Run;
+              TSVMMem(p).ArrSet(r.GetW, self.stack.popv);
               Inc(self.ip);
             end;
 
             bcPHC:
             begin
-              self.stack.push(
-                  CreateSVMMemCopy(TSVMMem(self.consts^.GetConst(
+              r := CreateSVMMemCopy(TSVMMem(self.consts^.GetConst(
                     cardinal((self.bytes^[self.ip + 4] shl 24) + (self.bytes^[self.ip + 3] shl 16) +
                              (self.bytes^[self.ip + 2] shl 8) + self.bytes^[self.ip + 1]
                             ))
-                    ))
-                  );
+                    ), Grabber);
+              r.m_refc := 1;
+
+              self.stack.push(r);
+
               Inc(self.ip, 5);
             end;
 
@@ -1002,50 +1422,61 @@ type
                              (self.bytes^[self.ip + 2] shl 8) + self.bytes^[self.ip + 1]
                             )
                     )));
-              Inc(self.ip, 5);
-            end;
 
-            bcPHEXMP:
-            begin
-              self.stack.push(self.extern_methods^.GetFunc(
-                cardinal((self.bytes^[self.ip + 4] shl 24) +
-                (self.bytes^[self.ip + 3] shl 16) + (self.bytes^[self.ip + 2] shl 8) +
-                self.bytes^[self.ip + 1])
-                ));
               Inc(self.ip, 5);
             end;
 
             bcINV:
             begin
-              TExternalFunction(self.extern_methods^.GetFunc(TSVMMem(self.stack.popv).GetW))(
-                @self.stack);
-              Inc(self.ip);
-            end;
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
 
-            bcINVBP:
-            begin
-              TExternalFunction(self.stack.popv)(@self.stack);
+              new(pcctx);
+
+              pcctx^.pVM := @self;
+              pcctx^.pStack := @self.stack;
+              pcctx^.pGrabber := grabber;
+
+              TExternalFunction(self.extern_methods^.GetFunc(r.GetW))(pcctx);
+
+              dispose(pcctx);
+
               Inc(self.ip);
             end;
 
             bcPHN:
             begin
-              self.stack.push(nil);
+              r := NewSVMM(self.grabber);
+              r.m_refc := 1;
+
+              self.stack.push(r);
               Inc(self.ip);
             end;
 
             bcCTHR:
             begin
-              self.stack.push(TSVMThread.Create(self.bytes, self.consts,
-                self.extern_methods, self.mem, TSVMMem(self.stack.popv).GetW,
-                self.stack.popv));
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              p := self.stack.popv; // don't touch ref cnt because new thread will have it in stack.
+
+              p2 := NewSVMM_Ref(TSVMThread.Create(self.bytes, self.consts,
+                                                  self.extern_methods,
+                                                  self.mem, r.GetW, p),
+                                self.grabber);
+              TSVMMem(p2).m_refc := 1;
+
+              self.stack.push(p2);
               Inc(self.ip);
             end;
 
             bcSTHR:
             begin
               {$WARNINGS OFF}
-              TSVMThread(self.stack.popv).Suspend;
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              TSVMThread(r.m_val).Suspend;
               {$WARNINGS ON}
               Inc(self.ip);
             end;
@@ -1053,28 +1484,70 @@ type
             bcRTHR:
             begin
               {$WARNINGS OFF}
-              TSVMThread(self.stack.popv).Resume;
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              TSVMThread(r.m_val).Resume;
               {$WARNINGS ON}
               Inc(self.ip);
             end;
 
             bcTTHR:
             begin
-              TSVMThread(self.stack.popv).Terminate;
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              TSVMThread(r.m_val).Terminate;
               Inc(self.ip);
             end;
 
             bcTHSP:
             begin
               p := self.stack.popv;
-              TSVMThread(p).Priority := TThreadPriority(TSVMMem(self.stack.popv).GetW);
+              Dec(TSVMMem(p).m_refc);
+
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              TSVMThread(TSVMMem(p).m_val).Priority := TThreadPriority(r.GetW);
               Inc(self.ip);
+            end;
+
+            bcPLC:
+            begin
+              r := NewSVMM_FW(self.cbstack.peek, Grabber);
+              r.m_refc := 1;
+              self.stack.push(r);
+              Inc(self.ip);
+            end;
+
+            bcPCT:
+            begin
+              self.stack.push(TSVMThreadContext.Create(self.mem, @self.stack));
+              Inc(self.ip);
+            end;
+
+            bcLCT:
+            begin
+              self.LoadContext(TSVMThreadContext(self.stack.popv));
+              Inc(self.ip);
+            end;
+
+            bcJRX:
+            begin
+              Self.cbstack.pop;
+              self.ip := Self.cbstack.popv;
             end;
 
             bcTR:
             begin
               p := self.stack.popv;
-              try_blocks.add(TSVMMem(p).GetW, TSVMMem(self.stack.popv).GetW);
+              Dec(TSVMMem(p).m_refc);
+
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              try_blocks.add(TSVMMem(p).GetW, r.GetW);
               Inc(self.ip);
             end;
 
@@ -1085,7 +1558,9 @@ type
 
             bcTRR:
             begin
-              self.ip := try_blocks.TR_Catch(Exception.Create(TSVMMem(self.stack.popv).GetS));
+              p := EUnhandledVirtualRaisedException.Create('At point 0x' + IntToHex(self.ip, 8));
+              self.ip := try_blocks.TR_Catch(Exception(p));
+              FreeAndNil(p);
             end;
 
             {** for string's **}
@@ -1093,8 +1568,18 @@ type
             bcSTRD:
             begin// strdel;
               p := self.stack.popv;
-              S := String(TSVMMem(p).GetS);
-              Delete(s, TSVMMem(self.stack.popv).GetW + 1, TSVMMem(self.stack.popv).GetW);
+
+              r := TSVMMem(p);
+              Dec(r.m_refc);
+              S := String(r.GetS);
+
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              p2 := self.stack.popv;
+              Dec(TSVMMem(p2).m_refc);
+
+              System.Delete(s, TSVMMem(p2).GetW + 1, r.GetW);
               TSVMMem(p).SetS(s);
               S := '';
               Inc(self.ip);
@@ -1102,132 +1587,25 @@ type
 
             bcCHORD:
             begin
-              self.stack.push(TSVMMem.CreateFW(Ord(TSVMMem(self.stack.popv).GetS[1])));
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
+
+              p := NewSVMM_FW(Ord(r.GetS[1]), Grabber);
+              TSVMMem(p).m_refc := 1;
+
+              self.stack.push(p);
 	      Inc(self.ip);
             end;
 
             bcORDCH:
             begin
-              self.stack.push(TSVMMem.CreateFS(Chr(TSVMMem(self.stack.popv).GetW)));
-              Inc(self.ip);
-            end;
+              r := TSVMMem(self.stack.popv);
+              Dec(r.m_refc);
 
-            {*** [!] directly memory operations ***}
+              p := NewSVMM_FS(Chr(r.GetW), Grabber);
+              TSVMMem(p).m_refc := 1;
 
-            bcALLC:  //alloc memory
-            begin
-              self.stack.push(GetMem(TSVMMem(self.stack.popv).GetW));
-              Inc(self.ip);
-            end;
-
-            bcRALLC: //realloc memory
-            begin
-              p := self.stack.popv; //new sz
-              self.stack.push(ReAllocMemory(self.stack.popv, TSVMMem(p).GetW));
-            end;
-
-            bcDISP:  //dispose memory
-            begin
-              p := self.stack.popv; //sz
-              FreeMem(self.stack.popv, TSVMMem(p).GetW);
-              Inc(self.ip);
-            end;
-
-            bcGTB: //get byte
-            begin
-              self.stack.push(TSVMMem.CreateFW(PByte(self.stack.popv)^));
-              Inc(self.ip);
-            end;
-
-            bcSTB:   //set byte
-            begin
-              p := self.stack.popv; //dest
-              PByte(p)^ := TSVMMem(self.stack.popv).GetW;
-              Inc(self.ip);
-            end;
-
-            bcCBP:   //copy
-            begin
-              p := self.stack.popv; //sz
-              p2 := self.stack.popv; //dest
-              Move(self.stack.popv^, p2^, TSVMMem(p).GetW);
-              Inc(self.ip);
-            end;
-
-            bcRWBP:  //read word
-            begin
-              p := self.stack.popv; //stream
-              new(PCardinal(p2));
-              Move(p^, p2^, SizeOf(Cardinal));
-              TSVMMem(self.stack.popv).SetW(PCardinal(p2)^);
-              dispose(PCardinal(p2));
-              Inc(self.ip);
-            end;
-
-            bcWWBP:  //write word
-            begin
-              p := self.stack.popv; //stream
-              new(PCardinal(p2));
-              PCardinal(p2)^ := TSVMMem(self.stack.popv).GetW;
-              Move(p2^, p^, SizeOf(Cardinal));
-              dispose(PCardinal(p2));
-              Inc(self.ip);
-            end;
-
-            bcRIBP:  //read int
-            begin
-              p := self.stack.popv; //stream
-              new(PInt64(p2));
-              Move(p^, p2^, SizeOf(Int64));
-              TSVMMem(self.stack.popv).SetI(PInt64(p2)^);
-              dispose(PInt64(p2));
-              Inc(self.ip);
-            end;
-
-            bcWIBP:  //write int
-            begin
-              p := self.stack.popv; //stream
-              new(PInt64(p2));
-              PInt64(p2)^ := TSVMMem(self.stack.popv).GetI;
-              Move(p2^, p^, SizeOf(Int64));
-              dispose(PInt64(p2));
-              Inc(self.ip);
-            end;
-
-            bcRFBP:  //read float
-            begin
-              p := self.stack.popv; //stream
-              new(PDouble(p2));
-              Move(p^, p2^, SizeOf(Double));
-              TSVMMem(self.stack.popv).SetD(PDouble(p2)^);
-              dispose(PDouble(p2));
-              Inc(self.ip);
-            end;
-
-            bcWFBP:  //write float
-            begin
-              p := self.stack.popv; //stream
-              new(PDouble(p2));
-              PDouble(p2)^ := TSVMMem(self.stack.popv).GetD;
-              Move(p2^, p^, SizeOf(Double));
-              dispose(PDouble(p2));
-              Inc(self.ip);
-            end;
-
-            bcRSBP:  //read string
-            begin
-              p := self.stack.popv; //stream
-              p2 := self.stack.popv; //str len
-              SetLength(s, TSVMMem(p2).GetW);
-              Move(p^, PByte(@s[1])^, TSVMMem(p2).GetW);
-              Inc(self.ip);
-            end;
-
-            bcWSBP:   //write string
-            begin
-              p := self.stack.popv; //stream
-              s := TSVMMem(self.stack.popv).GetS; //str
-              Move(PByte(@s[1])^, p, Length(s));
+              self.stack.push(p);
               Inc(self.ip);
             end;
 
@@ -1249,28 +1627,32 @@ type
                 ', at #' + IntToStr(self.ip));
           end;
           end;
-      {$IfNDef BuildInLibrary}
       except
         on E: Exception do
         begin
-          self.stack.push(TSVMMem.CreateFS(E.ClassName));
-          try
-            self.ip := self.try_blocks.TR_Catch(E);
-          except
-            on E2: Exception do
-              raise E2;
-          end;
+          p := NewSVMM_FS(E.Message, Grabber);
+          TSVMMem(p).m_refc := 1;
+
+          p2 := NewSVMM_FS(E.ClassName, Grabber);
+          TSVMMem(p2).m_refc := 1;
+
+          self.stack.push(p);
+          self.stack.push(p2);
+          self.ip := self.try_blocks.TR_Catch(E);
         end;
       end;
-      {$EndIf}
     until self.ip >= self.end_ip;
-    self.grabber.run;
   end;
 
   procedure TSVM.Run;
   var
     c: Cardinal;
+    r: TSVMMem;
+    s: string;
   begin
+    if GrabbersStorage = nil then
+     GrabbersStorage := TThreadList.Create;
+
     extern_methods^.Parse(self.bytes, mainclasspath);
     consts^.Parse(self.bytes);
     self.ip := 0;
@@ -1279,20 +1661,51 @@ type
       c := 0;
       while c < Length(consts^.constants) do
        begin
-         writeln('ConstID: ', c, ', Val: ', TSVMMem(consts^.constants[c]).GetS);
+         write('ConstID: ', c, ', Val: ');
+         case TSVMMem(consts^.constants[c]).m_type of
+           svmtInt: writeln(TSVMMem(consts^.constants[c]).GetI);
+           svmtWord: writeln(TSVMMem(consts^.constants[c]).GetW);
+           svmtReal: writeln(TSVMMem(consts^.constants[c]).GetD);
+           svmtStr: writeln(TSVMMem(consts^.constants[c]).GetS);
+           else
+             writeln('<section>');
+         end;
          inc(c);
        end;
     {$EndIf}
 
+    self.grabber := TGrabber.Create({self.mem, @self.stack});
+   // self.pmgrabber.Init(grabber);
+
     c := ParamCount;
-    while c > 0 do
+    while c > 1 do
      begin
-       self.stack.push(TSVMMem.CreateFS(ParamStr(c)));
+       r := NewSVMM_FS(ParamStr(c), Grabber);
+       r.m_refc := 1;
+       self.stack.push(r);
        dec(c);
      end;
-    self.stack.push(TSVMMem.CreateFW(ParamCount));
+
+    s := ParamStr(1);
+    if pos(':', s) < 0 then
+     s := ExtractFilePath(ParamStr(0));
+
+    r := NewSVMM_FS(s, Grabber);
+    r.m_refc := 1;
+
+    self.stack.push(r);
+
+    r := NewSVMM_FW(ParamCount, Grabber);
+    r.m_refc := 1;
+    self.stack.push(r);
 
     self.RunThread;
+    self.grabber.Term;
+
+    GlobalTerm;
+
+    FreeAndNil(self.grabber);
+    FreeAndNil(GrabbersStorage);
   end;
 
   procedure TSVM.LoadByteCodeFromFile(fn: string);
@@ -1321,8 +1734,29 @@ type
       self.bytes^[i] := b[i];
   end;
 
+  procedure TSVM.LoadContext(Ctx: TSVMThreadContext);
+  var
+    p: pointer;
+    c, l: cardinal;
+  begin
+    p := self.mem;
+    self.mem := Ctx.CtxMemory;
+    Ctx.CtxMemory := p;
+
+    self.stack.drop;
+    l := Ctx.CtxStack.i_pos;
+    c := 0;
+
+    while c < l do
+     begin
+       self.stack.push(Ctx.CtxStack.items[c]);
+       Inc(c);
+     end;
+  end;
+
 {***** Main *******************************************************************}
 {$ifdef BuildInLibrary}
+
 function SVM_Create:PSVM; stdcall;
 begin
   New(Result);
@@ -1330,6 +1764,7 @@ begin
   New(Result^.consts);
   New(Result^.extern_methods);
   New(Result^.mem);
+  Result^.isMainThread := true;
   Result^.stack.init(Result);
   Result^.cbstack.init;
   Result^.grabber.init;
@@ -1428,24 +1863,44 @@ end;
 
 var
   svm:TSVM;
+  {$IfDef Windows}
+    SEH_Handler: Pointer;
+  {$EndIf}
 begin
+  {$IfDef Windows}
+    VEHExceptions := TThreadList.Create;
+    //VEHExceptions.;
+
+    SEH_Handler := nil;
+    SEH_Handler := AddVectoredExceptionHandler(0, @WinSVMVectoredHandler);
+  {$EndIf}
+
   if ParamCount<1 then
    begin
      writeln('MASH!');
      writeln('Stack-based virtual machine.');
-     writeln('Version: 1.4');
-	 writeln('Using: ',ExtractFileName(ParamStr(0)),' <svmexe file>');
+     writeln('Version: 1.9');
+	 writeln('Using: ',ExtractFileName(ParamStr(0)),' <svmexe file> [args]');
    end;
+
   new(svm.bytes);
   new(svm.consts);
   new(svm.extern_methods);
   new(svm.mem);
-  svm.stack.init(@svm);
+
+  svm.isMainThread := true;
+  svm.stack.init;
   svm.cbstack.init;
-  svm.grabber.init;
   svm.LoadByteCodeFromFile(ParamStr(1));
   CheckHeader(svm.bytes);
   CutLeftBytes(svm.bytes,10);
   svm.Run;
+
+  {$IfDef Windows}
+    if SEH_Handler <> nil then
+     RemoveVectoredExceptionHandler(SEH_Handler);
+
+    FreeAndNil(VEHExceptions);
+  {$EndIf}
 end.
 {$endif}

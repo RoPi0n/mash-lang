@@ -71,6 +71,8 @@ begin
     if CB.bType = btTry then
     begin
       Result := CB.bMCode
+                + sLineBreak + 'pushcp __MakeException'
+                + sLineBreak + 'jc'
                 + sLineBreak + 'peek ' + GetVar(s, varmgr)
                 + sLineBreak + 'pop' + sLineBreak;
       CB.bMeta := 'c';
@@ -122,7 +124,8 @@ begin
     Result := PreprocessExpression(s, varmgr)
   else
     Result := PushIt(s, varmgr);
-  Result := Result + sLineBreak + 'trr';
+
+  Result := Result + sLineBreak + PushIt('"ERaisedException"', varmgr) + sLineBreak + 'trr';
 end;
 
 end.

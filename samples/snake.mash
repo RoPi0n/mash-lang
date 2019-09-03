@@ -1,15 +1,21 @@
 uses <crt>
-uses <classes>
+uses <classes\vector>
+uses <classes\points>
 uses <threads>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 enum SnakeMovingVector [smvLeft, smvRight, smvUp, smvDown]
 
+var  Vectors = [ [-1,  0],
+                 [ 1,  0],
+                 [ 0, -1],
+                 [ 0,  1] ]
+
 class Snake:
   public:
     var Body, MovingVector
-    proc Create, Free
+    proc Create
 end
 
 proc Snake::Create():
@@ -20,21 +26,13 @@ proc Snake::Create():
   $MovingVector ?= new(smvRight)
 end
 
-proc Snake::Free():
-  $Body->Free()
-  Free($MovingVector, $)
-end
-
 ////////////////////////////////////////////////////////////////////////////////
 
 var snk,
     food,
-    score = 0,
-    sleeptime = 80,
-    ControlThr,
-    CritSect = new TCriticalSection(),
-    VectorChanged = false,
-    GameOver = false
+    score,
+    sleeptime,
+    GameOver
 
 str snake_char  "@"
 str food_char   "&"
@@ -46,8 +44,8 @@ proc PutCh(x, y, char):
 end
 
 proc DrawBorders():
-  for(y ?= 1; y < 23; y++):
-    for(x ?= 1; x < 43; x++):
+  for y in 1..22:
+    for x in 1..42:
       if y in [1, 22]:
         PutCh(x, y, border_char)
       else:
@@ -62,7 +60,7 @@ end
 ////////////////////////////////////////////////////////////////////////////////
 
 proc RandFood():
-  food->set(RandomB(39) + 2, RandomB(19) + 2)
+  food->set(RandomTo(39) + 2, RandomTo(19) + 2)
   for(i ?= 1; i < snk->Body->Size(); i++):
     if (food->x == snk->Body->Items[i]->x) &
        (food->y == snk->Body->Items[i]->y):
@@ -76,24 +74,23 @@ proc MoveSnake(x, y):
   head ?= snk->Body->Peek_Back()
   newhead ?= new point(head->x + x, head->y + y)
 
-  if newhead->x == food->x & (newhead->y == food->y):
+  if (newhead->x == food->x) & (newhead->y == food->y):
     RandFood()
     PutCh(food->x, food->y, food_char)
     score++
-    PutCh(46, 13, "Score: " + I2S(score) + "")
+    PutCh(46, 13, "Score: " + score + "")
   else:
     tmp ?= snk->Body->Pop_First()
     PutCh(tmp->x, tmp->y, " ")
-    tmp->Free()
 
     for(i ?= 1; i < snk->Body->Size(); i++):
-      if newhead->x == snk->Body->Items[i]->x &
+      if (newhead->x == snk->Body->Items[i]->x) &
          (newhead->y == snk->Body->Items[i]->y):
         GameOver = true
       end
     end
 
-    if newhead->x in [1, 42] | (newhead->y in [1, 22]):
+    if (newhead->x in [1, 42]) | (newhead->y in [1, 22]):
       GameOver = true
     end
   end
@@ -105,85 +102,56 @@ end
 
 
 proc GameTick():
-  switch snk->MovingVector:
-    case smvLeft:
-      MoveSnake(-1, 0)
-      break
-    end
-
-    case smvRight:
-      MoveSnake(1, 0)
-      break
-    end
-
-    case smvUp:
-      MoveSnake(0, -1)
-      break
-    end
-
-    case smvDown:
-      MoveSnake(0, 1)
-      break
-    end
-  end
+  MoveSnake(Vectors[snk->MovingVector][0], Vectors[snk->MovingVector][1])
 end
 
 ////////////////////////////////////////////////////////////////////////////////
 
 proc ControlThread():
-  while true:
-    if ~VectorChanged:
-      k ?= Crt.ReadKey()
+  while ~GameOver:
+    k ?= StrUpper(Crt.ReadKey())
 
-      switch StrUpper(k):
+    if snk->MovingVector in [smvLeft, smvRight]:
+      switch k:
         case "W":
-          if snk->MovingVector == smvDown:
-            break
-          end
           snk->MovingVector = smvUp
         end
 
         case "S":
-          if snk->MovingVector == smvUp:
-            break
-          end
           snk->MovingVector = smvDown
         end
+      end
+    end
 
+    if snk->MovingVector in [smvUp, smvDown]:
+      switch k:
         case "A":
-          if snk->MovingVector == smvRight:
-            break
-          end
           snk->MovingVector = smvLeft
         end
 
         case "D":
-          if snk->MovingVector == smvLeft:
-            break
-          end
           snk->MovingVector = smvRight
         end
       end
-
-      CritSect->Enter()
-      VectorChanged = true
-      CritSect->Leave()
     end
 
     Sleep(100)
-    while GameOver:
-      Sleep(100)
-    end
+
     gc()
   end
 end
 
 ////////////////////////////////////////////////////////////////////////////////
 
-proc Main():
-  snk ?= new snake()
-  food ?= new point(0, 0)
+proc RunGame():
   Randomize()
+
+  snk ?= new snake()
+  food ?= new point(RandomTo(39) + 2, RandomTo(19) + 2)
+  GameOver ?= false
+  score ?= 0
+  sleeptime ?= 80
+  Ctrl ?= async(ControlThread)
 
   Crt.TextBackground(Crt.White)
   Crt.ClrScr()
@@ -206,28 +174,16 @@ proc Main():
         snk->body->items[3]->y,
         snake_char)
 
-  food->set(RandomB(39) + 2, RandomB(19) + 2)
   PutCh(food->x, food->y, food_char)
 
   PutCh(46, 10, "[MASH LANG!]")
   PutCh(46, 11, "[SNAKE]")
   PutCh(46, 13, "Score: 0")
 
-  ControlThr ?= Async(ControlThread)
-
   while ~GameOver:
-    tm1 ?= TickCnt()
     Crt.CursorOff()
-    if VectorChanged:
-      CritSect->Enter()
-      VectorChanged = false
-      CritSect->Leave()
-    end
     Sleep(sleeptime)
     GameTick()
-    Crt.TextColor(Crt.White)
-    PutCh(46, 2, "FPS: " + 1000 \ (TickCnt() - tm1) + "   ")
-    Crt.TextColor(Crt.Black)
     gc()
   end
 
@@ -237,8 +193,15 @@ proc Main():
   Crt.CursorOn()
 
   PutCh(1, 1, "Game over!")
-  PutCh(1, 2, "Score: " + I2S(score) + "")
+  PutCh(1, 2, "Score: " + score + "")
 
-  Crt.ReadKey()
-  GameOver ?= false
+  Ctrl -> WaitFor()
+  crt.ReadKey()
+end
+
+proc Main():
+  while true:
+    RunGame()
+    gc()
+  end
 end

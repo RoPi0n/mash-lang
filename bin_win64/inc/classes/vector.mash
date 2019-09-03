@@ -1,0 +1,75 @@
+////////////////////////////////////////////////////////////////////////////////
+//  Vector
+////////////////////////////////////////////////////////////////////////////////
+
+uses <classes\types>
+
+class vector(class):
+  public:
+    var Items
+    proc Create, Push_Back, Rem_Back, Rem_First, ForEach
+    func Pop_Back, Pop_First, Peek_Back, Peek_First, At, Size
+end
+
+proc vector::Create():
+  $Items ?= new[1]
+  $Items[0] ?= new(0)
+end
+
+proc vector::Push_Back(Object):
+  SetLen($Items, $Items[0] + 2)
+  $Items[0]++
+  $Items[$Items[0]] ?= Object
+end
+
+func vector::Pop_Back():
+  r ?= $Items[$Items[0]]
+  SetLen($Items, $Items[0])
+  $Items[0]--
+  return r
+end
+
+func vector::Pop_First():
+  r ?= $Items[1]
+  for(i ?= 1; i < $Items[0]; i++):
+    $Items[i] ?= $Items[i + 1]
+  end
+  SetLen($Items, $Items[0])
+  $Items[0]--
+  return r
+end
+
+func vector::Peek_Back():
+  return $Items[$Items[0]]
+end
+
+func vector::Peek_First():
+  return $Items[1]
+end
+
+proc vector::Rem_First():
+  for(i ?= 1; i < $Items[0]; i++):
+    $Items[i] ?= $Items[i + 1]
+  end
+  SetLen($Items, $Items[0])
+  $Items[0]--
+end
+
+proc vector::ForEach(method):
+  for(i ?= 1; i <= $Items[0]; i++):
+    vcall(method, $Items[i])
+  end
+end
+
+proc vector::Rem_Back():
+  SetLen($Items, $Items[0])
+  $Items[0]--
+end
+
+func vector::At(Index):
+  return $Items[Index - 1]
+end
+
+func vector::Size():
+  return $Items[0]
+end

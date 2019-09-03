@@ -8,8 +8,21 @@ uses
    Classes, SysUtils;
 
 type
+   TMemory = array of pointer;
+   PMemory = ^TMemory;
    TInstructionPointer = cardinal;
    PInstructionPointer = ^TInstructionPointer;
+
+{***** Windows VEH ************************************************************}
+{$IfDef Windows}
+
+var
+  VEHExceptions: TThreadList;
+  VEHExceptions_Count: word = 0;
+
+procedure RaiseSafeException;
+
+{$EndIf}
 
 {***** Stack ******************************************************************}
 const
@@ -20,8 +33,7 @@ type
    public
       items: array of pointer;
       size, i_pos: cardinal;
-      parent_vm: pointer;
-      procedure init(vm: pointer);
+      procedure init;
       procedure push(p: pointer);
       function peek: pointer;
       procedure pop;
@@ -53,12 +65,24 @@ type
 
 implementation
 
-procedure TStack.init(vm: pointer);
+uses
+   svm_mem;
+
+{$IfDef Windows}
+
+procedure RaiseSafeException;
+begin
+  VEHExceptions.Add(Pointer(GetCurrentThreadId));
+  Inc(VEHExceptions_Count);
+end;
+
+{$EndIf}
+
+procedure TStack.init;
 begin
    SetLength(items, StackBlockSize);
    i_pos := 0;
    size := StackBlockSize;
-   parent_vm := vm;
 end;
 
 procedure TStack.push(p: pointer); inline;
@@ -108,7 +132,19 @@ begin
 end;
 
 procedure TStack.drop; inline;
+var
+   c: cardinal;
 begin
+   c := 0;
+   while c < i_pos do
+    begin
+      if items[c] <> nil then
+       //if TObject(items[c]) is TSVMMem then
+        Dec(TSVMMem(items[c]).m_refc);
+
+      Inc(c);
+    end;
+
    SetLength(items, StackBlockSize);
    size := StackBlockSize;
    i_pos := 0;

@@ -25,7 +25,7 @@ func MyPoint2::Summ():
 end
 
 proc main():
-  var p = new MyPoint2
+  p ?= new MyPoint2
   p->Fill(2, 3)
   println(p->Summ())
   inputln()

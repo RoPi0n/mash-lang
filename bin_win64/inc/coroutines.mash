@@ -1,0 +1,169 @@
+////////////////////////////////////////////////////////////////////////////////
+// Coroutines
+////////////////////////////////////////////////////////////////////////////////
+
+uses <bf>
+uses <classes\list>
+uses <threads>
+
+////////////////////////////////////////////////////////////////////////////////
+// Simple coroutine
+////////////////////////////////////////////////////////////////////////////////
+
+class Coroutine:
+  private:
+    var FunctionAddr, NextAddr, HaveResult, Result, JumpFromYield
+    proc Function
+  public:
+    proc Create, Call, Yield
+end
+
+proc Coroutine::Create(Addr):
+  $HaveResult   ?= new(false)
+  $JumpFromYield?= new(false)
+  $FunctionAddr ?= new(Addr)
+  $NextAddr     ?= new(Addr)
+  $Function     ?= $FunctionAddr
+end
+
+proc Coroutine::Function():
+  // for dynamic overriding
+end
+
+proc Coroutine::Call():
+  if $Function == $NextAddr:
+    $HaveResult = false
+    $JumpFromYield = false
+
+    $Function()
+  else:
+    $HaveResult = false
+    $JumpFromYield = false
+
+    call $NextAddr
+
+    if ~$JumpFromYield:
+      $NextAddr = $FunctionAddr
+    end
+  end
+
+  if $HaveResult:
+    push $Result
+    $HaveResult ?= false
+  end
+end
+
+proc Coroutine::Yield([result]):
+  if len(result) > 0:
+    $HaveResult = true
+    $Result ?= result[0]
+  else:
+    $HaveResult = false
+  end
+
+  $JumpFromYield = true
+
+  var addr
+
+  plc
+  peek addr
+  pop
+
+  $NextAddr = addr
+  jrx
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// Threaded Coroutine
+////////////////////////////////////////////////////////////////////////////////
+
+class TCoroutine(TThread):
+  public:
+    var NextCoroutine
+    proc Create
+
+    proc Yield, YieldFor
+end
+
+proc TCoroutine::Create(Resumed, NextCoroutine):
+  $NextCoroutine ?= NextCoroutine
+  TThread::Create$(Resumed)
+end
+
+proc TCoroutine::Yield():
+  $NextCoroutine -> Resume()
+  $Suspend()
+end
+
+proc TCoroutine::YieldFor(ForCoroutine):
+  ForCoroutine -> Resume()
+  $Suspend()
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// TQCoroutine
+////////////////////////////////////////////////////////////////////////////////
+
+class TQCoroutine(TCoroutine):
+  proc Create
+end
+
+proc TQCoroutine::Create(Resumed, NextCoroutine, Method):
+  $NextCoroutine ?= NextCoroutine
+  $Execute ?= Method
+  TThread::Create$(Resumed)
+end
+
+class TFCoroutine(TCoroutine):
+  proc Create
+end
+
+proc TFCoroutine::Create(Method):
+  $NextCoroutine ?= null
+  $Execute ?= Method
+  TThread::Create$(false)
+end
+
+////////////////////////////////////////////////////////////////////////////////
+// TCarousel
+////////////////////////////////////////////////////////////////////////////////
+
+class TCarousel:
+  protected:
+    var Coroutines
+
+  public:
+    proc Create, Add, Delete, Run, Stop
+end
+
+proc TCarousel::Create():
+  $Coroutines ?= new List()
+end
+
+proc TCarousel::Add(NewCoroutine):
+  if $Coroutines -> Size > 0:
+    $Coroutines -> Items[$Coroutines -> Size - 1] -> NextCoroutine ?= NewCoroutine
+    NewCoroutine -> NextCoroutine ?= $Coroutines -> Items[0]
+    $Coroutines -> Add(NewCoroutine)
+  else:
+    $Coroutines -> Add(NewCoroutine)
+  end
+end
+
+proc TCarousel::Delete(Index):
+  // todo
+end
+
+proc TCarousel::Run():
+  if $Coroutines -> Size > 0:
+    $Coroutines -> Items[0] -> Resume()
+  end
+end
+
+proc TCarousel::Stop():
+  i ?= 0
+  while i < $Coroutines->Size:
+    $Coroutines -> Items[i] -> Suspend()
+    i++
+  end
+end

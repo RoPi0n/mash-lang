@@ -3,6 +3,9 @@ uses <math>
 uses <crt>
 
 proc main():
-  println(LogN(2, 4))
+  for i in 1..20:
+    println(i, ": ", Factorial(i))
+  end
+
   inputln()
 end

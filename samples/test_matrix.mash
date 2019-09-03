@@ -1,0 +1,39 @@
+uses <crt>
+
+proc Mult1(a, b, c, n):
+  for (i ?= 0; i < n; i++):
+    for (j ?= 0; j < n; j++):
+      cc ?= 0.0
+      for (k ?= 0; k < n; k++):
+        cc += a[i][k]*b[k][j]
+      end
+      c[i][j] ?= cc
+    end
+  end
+end
+
+func CreateRandMatrix(nx, ny):
+  r ?= new[nx][ny]
+  for (x ?= 0; x < nx; x++):
+    for (y ?= 0; y < ny; y++):
+      r[x][y] ?= random()
+    end
+  end
+
+  return r
+end
+
+proc main():
+  a ?= CreateRandMatrix(100, 100)
+  b ?= CreateRandMatrix(100, 100)
+
+  c ?= new[100][100]
+
+  tm ?= TickCnt()
+  Mult1(a, b, c, 100)
+  println(TickCnt() - tm)
+
+  gc()
+
+  inputln()
+end

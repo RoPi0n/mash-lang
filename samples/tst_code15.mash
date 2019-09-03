@@ -1,0 +1,39 @@
+uses <crt>
+uses <classes\calls>
+
+func f(a, b):
+  return a + b
+end
+
+func f2(a, b):
+  return a * b
+end
+
+class xclass:
+  var a
+  proc create, free
+end
+
+proc xclass::create(a):
+  $a ?= a
+end
+
+proc xclass::Free():
+  Free($)
+end
+
+proc main():
+  while true:
+    m ?= new Method(f)
+    h ?= new Hook(@f, f2)
+
+    m -> call(10, 20)
+    f(10, 20)
+
+    m -> Free()
+    h -> Free()
+    gc()
+  end
+
+  inputln()
+end

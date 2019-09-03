@@ -1,8 +1,0 @@
-uses <bf>
-uses <crt>
-uses <threads>
-
-proc main():
-  println(IsNull(1))
-  inputln()
-end

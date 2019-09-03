@@ -2,15 +2,13 @@ uses <bf>
 uses <crt>
 
 proc main():
-  /*a ?= 10
-  b ?= a + 100
-  println(b)*/
-
-  a ?= 10
-  while a < 0:
-    println(a)
-    a--
-  end
-
+  arr ?= [1, 2, 3, 4, 5]
+  x ?= 1
+  println(b2s(x in arr))
+  println(b2s(3 in arr))
+  println(b2s(x in [1, 2, 3, 4, 5]))
+  println(b2s(4 in [1, 2, 3, 4, 5]))
+  println(b2s(0 in [1, 2, 3, 4, 5]))
+  println(b2s(4 in Range(1, 20)))
   inputln()
 end

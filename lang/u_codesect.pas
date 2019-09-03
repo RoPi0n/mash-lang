@@ -56,7 +56,7 @@ type
 
     {** for untyped's **}
     bcEQ,     // [top] == [top-1] ? [top] = true : [top] = false
-    bcPEQ,    // @[top] == @[top-1] ? [top] = true : [top] = false
+    //bcPEQ,    // @[top] == @[top-1] ? [top] = true : [top] = false
     bcBG,     // [top] >  [top-1] ? [top] = true : [top] = false
     bcBE,     // [top] >= [top-1] ? [top] = true : [top] = false
 
@@ -87,11 +87,13 @@ type
     bcNW,     // [top] = @new
     bcMC,     // copy [top]
     bcMD,     // double [top]
-    bcRM,     // rem @[top]
     bcNA,     // [top] = @new array[  [top]  ] of pointer
     bcTF,     // [top] = typeof( [top] )
     bcTMC,    // [top].type = type of class
     bcSF,     // [top] = sizeof( [top] )
+    //bcRM,     // rem object
+    //bcGPM,    // mark garbage
+    bcGC,     // garbage collect
 
     {** array's **}
     bcAL,     // length( [top] as array )
@@ -100,18 +102,12 @@ type
     bcPA,     // push ([top] as array)[top-1]
     bcSA,     // peek [top-2] -> ([top] as array)[top-1]
 
-    {** memory grabber **}
-    bcGPM,    // add pointer to TMem to grabber task-list
-    bcGC,     // run grabber
-
     {** constant's **}
     bcPHC,    // push copy of const
     bcPHCP,   // push pointer to original const
 
     {** external call's **}
-    bcPHEXMP, // push pointer to external method
     bcINV,    // call external method
-    bcINVBP,  // call external method by pointer [top]
 
     {** for thread's **}
     bcPHN,    // push null
@@ -120,6 +116,11 @@ type
     bcRTHR,   // resumethread(id = [top])
     bcTTHR,   // terminatethread(id = [top])
     bcTHSP,   // set thread priority
+
+    bcPLC,    // push last callback
+    bcPCT,    // push context
+    bcLCT,    // load context
+    bcJRX,    // jp to last callback point & rem last callback point twice
 
     {** for try..catch..finally block's **}
     bcTR,     // try @block_catch = [top], @block_end = [top+1]
@@ -130,22 +131,6 @@ type
     bcSTRD,     // strdel
     bcCHORD,
     bcORDCH,
-
-    {** [!] directly memory operations **}
-    bcALLC,  //alloc memory
-    bcRALLC, //realloc memory
-    bcDISP,  //dispose memory
-    bcGTB,   //get byte
-    bcSTB,   //set byte
-    bcCBP,   //mem copy
-    bcRWBP,  //read word
-    bcWWBP,  //write word
-    bcRIBP,  //read int
-    bcWIBP,  //write int
-    bcRFBP,  //read float
-    bcWFBP,  //write float
-    bcRSBP,  //read string
-    bcWSBP,  //write string
 
     bcTHREXT,//stop code execution
 
@@ -176,7 +161,7 @@ begin
       (Tk(s, 1) = 'pushm') or (Tk(s, 1) = 'pushcp') then
       Inc(p1, 5)
     else
-    if Length(s) > 0 then
+    if (Tk(s, 1) <> 'gpm') and (Tk(s, 1) <> 'rem') and (Tk(s, 1) <> 'peq') and (Length(s) > 0) then
       Inc(p1);
     Inc(p2);
   end;
@@ -201,13 +186,6 @@ begin
     if Tk(s, 1) = 'pushc' then
     begin
       Outp.WriteByte(byte(bcPHC));
-      St_WriteCardinal(Outp, Constants.GetAddr(Tk(s, 2)));
-      s := '';
-    end
-    else
-    if Tk(s, 1) = 'pushm' then
-    begin
-      Outp.WriteByte(byte(bcPHEXMP));
       St_WriteCardinal(Outp, Constants.GetAddr(Tk(s, 2)));
       s := '';
     end
@@ -246,9 +224,9 @@ begin
     if Tk(s, 1) = 'eq' then
       Outp.WriteByte(byte(bcEQ))
     else
-    if Tk(s, 1) = 'peq' then
+    {if Tk(s, 1) = 'peq' then
       Outp.WriteByte(byte(bcPEQ))
-    else
+    else}
     if Tk(s, 1) = 'bg' then
       Outp.WriteByte(byte(bcBG))
     else
@@ -325,7 +303,7 @@ begin
       Outp.WriteByte(byte(bcMD))
     else
     if Tk(s, 1) = 'rem' then
-      Outp.WriteByte(byte(bcRM))
+      //Outp.WriteByte(byte(bcRM))
     else
     if Tk(s, 1) = 'newa' then
       Outp.WriteByte(byte(bcNA))
@@ -352,16 +330,13 @@ begin
       Outp.WriteByte(byte(bcSA))
     else
     if Tk(s, 1) = 'gpm' then
-      Outp.WriteByte(byte(bcGPM))
+      //Outp.WriteByte(byte(bcGPM))
     else
     if Tk(s, 1) = 'gc' then
       Outp.WriteByte(byte(bcGC))
     else
     if Tk(s, 1) = 'invoke' then
       Outp.WriteByte(byte(bcINV))
-    else
-    if Tk(s, 1) = 'invokebp' then
-      Outp.WriteByte(byte(bcINVBP))
     else
     if Tk(s, 1) = 'pushn' then
       Outp.WriteByte(byte(bcPHN))
@@ -381,6 +356,18 @@ begin
     if Tk(s, 1) = 'thsp' then
       Outp.WriteByte(byte(bcTHSP))
     else
+    if Tk(s, 1) = 'plc' then
+      Outp.WriteByte(byte(bcPLC))
+    else
+    if Tk(s, 1) = 'pct' then
+      Outp.WriteByte(byte(bcPCT))
+    else
+    if Tk(s, 1) = 'lct' then
+      Outp.WriteByte(byte(bcLCT))
+    else
+    if Tk(s, 1) = 'jrx' then
+      Outp.WriteByte(byte(bcJRX))
+    else
     if Tk(s, 1) = 'tr' then
       Outp.WriteByte(byte(bcTR))
     else
@@ -398,48 +385,6 @@ begin
     else
     if Tk(s, 1) = 'ordch' then
       Outp.WriteByte(byte(bcORDCH))
-    else
-    if Tk(s, 1) = 'allc' then
-      Outp.WriteByte(byte(bcALLC))
-    else
-    if Tk(s, 1) = 'rallc' then
-      Outp.WriteByte(byte(bcRALLC))
-    else
-    if Tk(s, 1) = 'disp' then
-      Outp.WriteByte(byte(bcDISP))
-    else
-    if Tk(s, 1) = 'gtb' then
-      Outp.WriteByte(byte(bcGTB))
-    else
-    if Tk(s, 1) = 'stb' then
-      Outp.WriteByte(byte(bcSTB))
-    else
-    if Tk(s, 1) = 'cbp' then
-      Outp.WriteByte(byte(bcCBP))
-    else
-    if Tk(s, 1) = 'rwbp' then
-      Outp.WriteByte(byte(bcRWBP))
-    else
-    if Tk(s, 1) = 'wwbp' then
-      Outp.WriteByte(byte(bcWWBP))
-    else
-    if Tk(s, 1) = 'ribp' then
-      Outp.WriteByte(byte(bcRIBP))
-    else
-    if Tk(s, 1) = 'wibp' then
-      Outp.WriteByte(byte(bcWIBP))
-    else
-    if Tk(s, 1) = 'rfbp' then
-      Outp.WriteByte(byte(bcRFBP))
-    else
-    if Tk(s, 1) = 'wfbp' then
-      Outp.WriteByte(byte(bcWFBP))
-    else
-    if Tk(s, 1) = 'rsbp' then
-      Outp.WriteByte(byte(bcRSBP))
-    else
-    if Tk(s, 1) = 'wsbp' then
-      Outp.WriteByte(byte(bcWSBP))
     else
     if Tk(s, 1) = 'threxit' then
       Outp.WriteByte(byte(bcTHREXT))

@@ -454,6 +454,7 @@ begin
   in_str := False;
   in_br := 0;
   in_rbr := 0;
+
   while Length(s) > 0 do
   begin
     if s[1] = '"' then
@@ -546,29 +547,36 @@ var
 begin
   Result := '';
   in_str := False;
-  in_br := 0;
-
+  in_br := 1;
+  s := Trim(s);
   if not (copy(s, 1, 1) = '(') then
    Result := s
   else
-  while Length(s) > 0 do
   begin
-    if s[1] = '"' then
-      in_str := not in_str;
-
-    if not in_str then
-    begin
-      if s[1] = '(' then
-        Inc(in_br);
-      if s[1] = ')' then
-        Dec(in_br);
-    end;
-
-    Result := Result + s[1];
     Delete(s, 1, 1);
+    s := Trim(s);
+    while Length(s) > 0 do
+    begin
+      if s[1] = '"' then
+        in_str := not in_str;
 
-    if in_br = 0 then
-      break;
+      if not in_str then
+      begin
+        if s[1] = '(' then
+          Inc(in_br);
+        if s[1] = ')' then
+          Dec(in_br);
+      end;
+
+      if in_br = 0 then
+       begin
+         Delete(s, 1, 1);
+         break;
+       end;
+
+      Result := Result + s[1];
+      Delete(s, 1, 1);
+    end;
   end;
 end;
 
@@ -617,61 +625,64 @@ end;
 function PreprocessExpression(s: string; varmgr: TVarManager): string;
 var
   TokensStack: TStringList;
-  Bf: string;
+  Bf, Pops: string;
   c, vn, warnops: integer;
-  neg: boolean;
+  neg, isSafe: boolean;
 begin
   warnops := 0;
   Result := '';
   TokensStack := TStringList.Create;
   s := Trim(s);
 
-  bf := Trim(GetExprInBraces(s));
+  isSafe := false;
+  if copy(s, 1, 5) = 'safe ' then
+   begin
+     isSafe := true;
+     Pops := PopLocalVariables(varmgr);
+     Result := PushLocalVariables(varmgr);
+     Delete(s, 1, 5);
+     s := Trim(s);
+   end;
+
+  {bf := Trim(GetExprInBraces(s));
   while (Length(bf) <> Length(s)) and (Length(bf) > 0) do
    begin
      s := bf;
      bf := Trim(GetExprInBraces(s));
-   end;
+   end;}
 
   if Length(s) > 0 then
     if s[1] in ['-', '+'] then
       s := '0' + s;
+
   //build tokens stack
+
   while Length(s) > 0 do
   begin
     Bf := '';
     if Length(s) > 0 then
-      repeat
-        Bf := Trim(CutNextExprOp(s));
-        if Length(Bf) > 0 then
-          TokensStack.Add(Bf);
-        s := Trim(s);
-      until Bf = '';
-
-    if Length(s) > 0 then
-      if s[1] = '(' then
       begin
-        Bf := Trim(CutExprInBraces(s));
-        if Length(Bf) > 0 then
-          TokensStack.Add(Bf);
-        s := Trim(s);
+        if s[1] = '(' then
+        begin
+          Bf := Trim(CutExprInBraces(s));
+          if Length(Bf) > 0 then
+            TokensStack.Add('(' + Bf + ')');
+        end
+        else
+        begin
+          Bf := Trim(CutNextExprToken(s));
+          if Length(Bf) > 0 then
+            TokensStack.Add(Bf);
+
+          s := Trim(s);
+
+          Bf := Trim(CutNextExprOp(s));
+          if Length(Bf) > 0 then
+            TokensStack.Add(Bf);
+        end;
       end;
 
-    if Length(s) > 0 then
-      repeat
-        Bf := Trim(CutNextExprOp(s));
-        if Length(Bf) > 0 then
-          TokensStack.Add(Bf);
-        s := Trim(s);
-      until Bf = '';
-
-    if Length(s) > 0 then
-      Bf := Trim(CutNextExprToken(s));
-    if Length(Bf) > 0 then
-      TokensStack.Add(Bf);
-
-    if Length(s) > 0 then
-      s := Trim(s);
+    s := Trim(s);
   end;
 
   c := 0;
@@ -1105,13 +1116,16 @@ begin
     Inc(c);
   end;
 
-  while warnops > 1 do
+  while warnops > 0 do
   begin
     Result := Result + sLineBreak + 'swp' + sLineBreak + 'pop';
     Dec(warnops);
   end;
 
   FreeAndNil(TokensStack);
+
+  if isSafe then
+   Result := Result + sLineBreak + Pops;
 end;
 
 function IsEqExpr(s: string; varmgr: TVarManager): boolean;

@@ -3,7 +3,8 @@ uses <crt>
 
 class TestClass:
   var a, b
-  proc Create, Free
+
+  proc Create, Free, SayHello
   func Hash
 end
 
@@ -17,7 +18,11 @@ proc TestClass::Free():
 end
 
 func TestClass::Hash():
-  return (($a * $b) ^ $a) ^ $b
+  return (($a * $b) ^ $a) ^ $b + $a + $b
+end
+
+proc TestClass::SayHello():
+  println("Hello")
 end
 
 class HashMap:
@@ -69,7 +74,7 @@ proc main():
     hm->append(new TestClass(i, i*i))
   end
 
-  var x = new TestClass(-1, -1)
+  var x = new TestClass(-12532, -1)
 
   hm->append(x)
   x ?= hm->get(x->hash())
@@ -77,6 +82,7 @@ proc main():
   println(x->a, " ", x->b)
 
   hm->Free()
-  gc
+  gc()
+
   inputln()
 end

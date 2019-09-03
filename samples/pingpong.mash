@@ -2,6 +2,7 @@ uses <bf>
 uses <crt>
 uses <math>
 uses <classes>
+uses <threads>
 
 word Width  80
 word Height 20
@@ -13,18 +14,13 @@ var BotScore = 0,
 
 class Pad:
   var pos, size
-  proc Create, Free, Draw, MoveLeft, MoveRight
+  proc Create, Draw, MoveLeft, MoveRight
   func IsContain
 end
 
 proc Pad::Create(stX, stY, size):
   $pos ?= new point(stX, stY)
   $size ?= new(size)
-end
-
-proc Pad::Free():
-  $pos->Free()
-  Free($size, $)
 end
 
 proc Pad::Draw():
@@ -80,18 +76,12 @@ var BotPad = new Pad(Width \ 2, 3, 5),
 
 class Ball:
   var pos, vect
-  proc Create, Free, Draw, Move
+  proc Create, Draw, Move
 end
 
 proc Ball::Create(stX, stY, stvX, stvY):
   $pos ?= new point(stX, stY)
   $vect ?= new point(stvX, stvY)
-end
-
-proc Ball::Free():
-  $pos->Free()
-  $vect->Free()
-  Free($)
 end
 
 proc Ball::Draw():
@@ -152,7 +142,7 @@ var GameBall = new Ball(Width \ 2, Height \ 2, 0, 0)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var OutLocker = new TCriticalSection()
+var OutLocker = new CriticalSection()
 
 proc ControlThr():
   while true:
@@ -161,14 +151,12 @@ proc ControlThr():
         OutLocker -> Enter()
         PlayerPad -> MoveLeft()
         OutLocker -> Leave()
-        break
       end
 
       case "D":
         OutLocker -> Enter()
         PlayerPad -> MoveRight()
         OutLocker -> Leave()
-        break
       end
     end
 
@@ -176,8 +164,6 @@ proc ControlThr():
     gc()
   end
 end
-
-var ControlThread
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -203,34 +189,35 @@ var Barrier1Vec = 0,
     Barrier2Vec = 0
 
 proc MoveBarriers():
-
-  for (i ?= 0; i < 2; i++):
   if Barrier1Vec < 0:
-    if ~Barrier1->MoveLeft():
+    if Barrier1->MoveLeft():
+    else:
       Barrier1Vec += 1
     end
   else:
-    if ~Barrier1->MoveRight():
+    if Barrier1->MoveRight():
+    else:
       Barrier1Vec -= 1
     end
   end
 
   if Barrier2Vec < 0:
-    if ~Barrier2->MoveLeft():
+    if Barrier2->MoveLeft():
       Barrier2Vec += 1
     end
   else:
-    if ~Barrier2->MoveRight():
+    if Barrier2->MoveRight():
+    else:
       Barrier2Vec -= 1
     end
-  end
-
   end
 end
 
 proc main():
   Randomize()
   Crt.CursorOff()
+
+  Crt.ClrScr()
   DrawBorders()
 
   Crt.GotoXY(Width + 4, Height \ 2 - 2)
@@ -245,7 +232,7 @@ proc main():
   Barrier2 -> Draw()
   GameBall -> Draw()
 
-  ControlThread ?= Async(ControlThr)
+  Ctrl ?= async(ControlThr())
 
   while true:
     Crt.CursorOff()

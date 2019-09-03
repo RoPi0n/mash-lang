@@ -5,22 +5,30 @@ unit svm_mem;
 interface
 
 uses
-  SysUtils, svm_grabber;
+  SysUtils, svm_grabber, svm_utils;
 
 const
   TSVMTypeAddr = 255;
+  EInvalidSVMTypeCast_ErrorCode = 255;
 
 type
-  TSVMType = (svmtNull, svmtWord, svmtInt, svmtReal, svmtStr, svmtArr, svmtClass);
+  EInvalidSVMTypeCast = class(Exception)
+    constructor Create(msg: string);
+  end;
+
+  TSVMType = (svmtNull, svmtWord, svmtInt, svmtReal, svmtStr, svmtArr, svmtClass, svmtRef);
 
   TSVMMem = class
     m_val: pointer;
     m_type: TSVMType;
-    constructor Create;
-    constructor CreateF(const value; t:TSVMType);
-    constructor CreateFS(s:string);
-    constructor CreateFW(w:cardinal);
-    constructor CreateArr(size:cardinal = 0);
+    m_refc: integer;
+
+    constructor MCreate;
+    constructor MCreateF(const value; t:TSVMType);
+    constructor MCreateFS(s:string);
+    constructor MCreateFW(w:LongWord);
+    constructor MCreateArr(size:LongWord = 0);
+
     destructor Destroy; override;
 
     procedure Clear;
@@ -28,14 +36,14 @@ type
     // variables
 
     procedure SetV(const value; t:TSVMType);
-    procedure SetW(value:cardinal);
+    procedure SetW(value:LongWord);
     procedure SetI(value:int64);
     procedure SetD(value:double);
     procedure SetS(value:string);
     procedure SetB(b:boolean);
     procedure SetM(m:TSVMMem);
 
-    function  GetW: cardinal;
+    function  GetW: LongWord;
     function  GetI: int64;
     function  GetD: double;
     function  GetS: string;
@@ -65,54 +73,117 @@ type
 
     // arrays
 
-    procedure ArrSetSize(newsize: cardinal);
-    function  ArrGetSize: cardinal;
-    procedure ArrSet(index: cardinal; val:pointer);
-    function  ArrGet(index: cardinal; grabber:PGrabber): pointer;
+    procedure ArrSetSize(newsize: LongWord);
+    function  ArrGetSize: LongWord;
+    procedure ArrSet(index: LongWord; val:pointer);
+    function  ArrGet(index: LongWord; Grabber: TGrabber): pointer;
 
     // any
 
-    function GetSize: cardinal;
+    function GetSize: LongWord;
   end;
 
   TMemArray = array of pointer;
   PMemArray = ^TMemArray;
 
-  function CreateSVMMemCopy(m:TSVMMem):TSVMMem;
+  function CreateSVMMemCopy(m:TSVMMem; Grabber: TGrabber):TSVMMem;
+
+  function NewSVMM(Grabber: TGrabber): TSVMMem;
+  function NewSVMM_F(const value; t:TSVMType; Grabber: TGrabber): TSVMMem;
+  function NewSVMM_FS(s:string; Grabber: TGrabber): TSVMMem;
+  function NewSVMM_FW(w:LongWord; Grabber: TGrabber): TSVMMem;
+  function NewSVMM_Arr(size:LongWord; Grabber: TGrabber): TSVMMem;
+  function NewSVMM_Ref(ref:pointer; Grabber: TGrabber): TSVMMem;
 
 implementation
 
-constructor TSVMMem.Create;
+// Custom exception
+
+constructor EInvalidSVMTypeCast.Create(msg: string);
+begin
+  inherited CreateFmt(msg, [EInvalidSVMTypeCast_ErrorCode]);
+end;
+
+// Allocations
+
+function NewSVMM(Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreate;
+  Result.m_type := svmtNull;
+  Result.m_val := nil;
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_F(const value; t:TSVMType; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateF(value, t);
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_FS(s:string; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateFS(s);
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_FW(w:LongWord; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateFW(w);
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_Arr(size:LongWord; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateArr(size);
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_Ref(ref:pointer; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreate;
+  Result.m_type := svmtRef;
+  Result.m_val := ref;
+  Grabber.Reg(Result);
+end;
+
+// TSVMMem
+
+constructor TSVMMem.MCreate;
 begin
   m_val := nil;
   m_type := svmtNull;
+  m_refc := 0;
 end;
 
-constructor TSVMMem.CreateF(const value; t:TSVMType);
+constructor TSVMMem.MCreateF(const value; t:TSVMType);
 begin
   m_val := nil;
   m_type := t;
+  m_refc := 0;
   SetV(value, t);
 end;
 
-constructor TSVMMem.CreateFS(s:string);
+constructor TSVMMem.MCreateFS(s:string);
 begin
   m_val := nil;
   m_type := svmtStr;
+  m_refc := 0;
   SetS(S);
 end;
 
-constructor TSVMMem.CreateFW(w:cardinal);
+constructor TSVMMem.MCreateFW(w:LongWord);
 begin
   m_val := nil;
   m_type := svmtWord;
+  m_refc := 0;
   SetW(w);
 end;
 
-constructor TSVMMem.CreateArr(size:cardinal = 0);
+constructor TSVMMem.MCreateArr(size:LongWord = 0);
 begin
   m_type := svmtArr;
   new(PMemArray(m_val));
+  m_refc := 0;
   SetLength(PMemArray(m_val)^, size);
 end;
 
@@ -124,8 +195,8 @@ end;
 procedure TSVMMem.Clear; inline;
 begin
   case m_type of
-    svmtNull: { nop };
-    svmtWord: Dispose(PCardinal(m_val));
+    svmtNull, svmtRef: { no actions };
+    svmtWord: Dispose(PLongWord(m_val));
     svmtInt:  Dispose(PInt64(m_val));
     svmtReal: Dispose(PDouble(m_val));
     svmtStr:  Dispose(PString(m_val));
@@ -135,18 +206,18 @@ begin
                 Dispose(PMemArray(m_val));
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.Clear()');
   end;
 end;
 
 {** Setters **}
 
-procedure TSVMMem.SetV(const value; t:TSVMType); inline;
+procedure TSVMMem.SetV(const value; t:TSVMType);
 begin
   if (m_val <> nil) and (m_type = t) then
    begin
      case t of
-       svmtWord: PCardinal(m_val)^ := Cardinal(value);
+       svmtWord: PLongWord(m_val)^ := LongWord(value);
        svmtInt:  PInt64(m_val)^ := Int64(value);
        svmtReal: PDouble(m_val)^ := Double(value);
        svmtStr:  PString(m_val)^ := String(value);
@@ -160,8 +231,8 @@ begin
      m_type := t;
      case t of
        svmtWord: begin
-                   New(PCardinal(m_val));
-                   PCardinal(m_val)^ := Cardinal(value);
+                   New(PLongWord(m_val));
+                   PLongWord(m_val)^ := LongWord(value);
                  end;
        svmtInt:  begin
                    New(PInt64(m_val));
@@ -175,24 +246,27 @@ begin
                    New(PString(m_val));
                    PString(m_val)^ := String(value);
                  end;
+       svmtNull: begin
+                   m_val := nil;
+                 end;
        else
-         Error(reVarTypeCast);
+         RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.SetV()');
      end;
    end;
 end;
 
-procedure TSVMMem.SetW(value:cardinal); inline;
+procedure TSVMMem.SetW(value:LongWord); inline;
 begin
   if (m_val <> nil) and (m_type = svmtWord) then
-   PCardinal(m_val)^ := value
+   PLongWord(m_val)^ := value
   else
    begin
      if m_val <> nil then
       FreeMem(m_val);
 
      m_type := svmtWord;
-     New(PCardinal(m_val));
-     PCardinal(m_val)^ := value;
+     New(PLongWord(m_val));
+     PLongWord(m_val)^ := value;
    end;
 end;
 
@@ -252,10 +326,10 @@ end;
 procedure TSVMMem.SetM(m:TSVMMem); inline;
 begin
   case m.m_type of
-    svmtArr: begin
+    svmtArr, svmtClass, svmtRef: begin
+               Clear;
                m_val := m.m_val;
                m_type := m.m_type;
-               Clear;
              end;
     else
       SetV(m.m_val^, m.m_type);
@@ -264,64 +338,64 @@ end;
 
 {** Getters **}
 
-function TSVMMem.GetW:cardinal; inline;
+function TSVMMem.GetW:LongWord;
 begin
   Result := 0;
   case m_type of
-    svmtWord: Result := PCardinal(m_val)^;
+    svmtWord: Result := PLongWord(m_val)^;
     svmtInt:  Result := PInt64(m_val)^;
     svmtReal: Result := Trunc(PDouble(m_val)^);
     svmtStr:  Result := StrToQWord(PString(m_val)^);
     else
-      Error(reVarTypeCast);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.GetW()');
   end;
 end;
 
-function TSVMMem.GetI:int64; inline;
+function TSVMMem.GetI:int64;
 begin
   Result := 0;
   case m_type of
-    svmtWord: Result := PCardinal(m_val)^;
+    svmtWord: Result := PLongWord(m_val)^;
     svmtInt:  Result := PInt64(m_val)^;
     svmtReal: Result := Trunc(PDouble(m_val)^);
     svmtStr:  Result := StrToInt(PString(m_val)^);
     else
-      Error(reVarTypeCast);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.GetI()');
   end;
 end;
 
-function TSVMMem.GetD:double; inline;
+function TSVMMem.GetD:double;
 begin
   Result := 0;
   case m_type of
-    svmtWord: Result := PCardinal(m_val)^;
+    svmtWord: Result := PLongWord(m_val)^;
     svmtInt:  Result := PInt64(m_val)^;
     svmtReal: Result := PDouble(m_val)^;
     svmtStr:  Result := StrToFloat(PString(m_val)^);
     else
-      Error(reVarTypeCast);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.GetD()');
   end;
 end;
 
-function TSVMMem.GetS:string; inline;
+function TSVMMem.GetS:string;
 begin
   Result := '';
   case m_type of
     svmtWord: begin
-                if (PCardinal(m_val)^ >= 0) and (PCardinal(m_val)^ <= 255) then
-                 Result := Chr(PCardinal(m_val)^)
+                if (PLongWord(m_val)^ >= 0) and (PLongWord(m_val)^ <= 255) then
+                 Result := Chr(PLongWord(m_val)^)
                 else
-                 Result := IntToStr(PCardinal(m_val)^);
+                 Result := IntToStr(PLongWord(m_val)^);
               end;
     svmtInt:  Result := IntToStr(PInt64(m_val)^);
     svmtReal: Result := FloatToStr(PDouble(m_val)^);
     svmtStr:  Result := PString(m_val)^;
     else
-      Error(reVarTypeCast);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.GetS()');
   end;
 end;
 
-function TSVMMem.GetB:boolean; inline;
+function TSVMMem.GetB:boolean;
 begin
   Result := false;
   case m_type of
@@ -330,7 +404,7 @@ begin
     svmtReal: Result := PDouble(m_val)^ = -1;
     svmtStr:  Result := LowerCase(PString(m_val)^) = 'true';
     else
-      Error(reVarTypeCast);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.GetB()');
   end;
 end;
 
@@ -341,10 +415,8 @@ begin
   case m_type of
     svmtWord: SetW(not GetW);
     svmtInt: SetI(not GetI);
-    svmtReal: Error(reVarInvalidOp);
-    svmtStr:  Error(reVarInvalidOp);
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpNot()');
   end;
 end;
 
@@ -357,7 +429,7 @@ begin
                 svmtReal: SetB(GetW             = m.GetD);
                 svmtStr:  SetB(IntToStr(GetW)   = m.GetS);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpEq()');
               end;
 
     svmtInt:  case m.m_type of
@@ -366,7 +438,7 @@ begin
                 svmtReal: SetB(GetI             = m.GetD);
                 svmtStr:  SetB(IntToStr(GetI)   = m.GetS);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpEq()');
               end;
 
     svmtReal: case m.m_type of
@@ -375,7 +447,7 @@ begin
                 svmtReal: SetB(GetD             = m.GetD);
                 svmtStr:  SetB(FloatToStr(GetD) = m.GetS);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpEq()');
               end;
 
     svmtStr:  case m.m_type of
@@ -384,10 +456,13 @@ begin
                 svmtReal: SetB(GetS             = FloatToStr(m.GetD));
                 svmtStr:  SetB(GetS             = m.GetS);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpEq()');
               end;
+
+    svmtNull: SetB(m.m_type = svmtNull);
+
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpEq()');
   end;
 end;
 
@@ -400,7 +475,7 @@ begin
                 svmtReal: SetB(GetW             > m.GetD);
                 svmtStr:  SetB(GetW             > StrToQWord(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBg()');
               end;
 
     svmtInt:  case m.m_type of
@@ -409,7 +484,7 @@ begin
                 svmtReal: SetB(GetI             > m.GetD);
                 svmtStr:  SetB(GetI             > StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBg()');
               end;
 
     svmtReal: case m.m_type of
@@ -418,7 +493,7 @@ begin
                 svmtReal: SetB(GetD             > m.GetD);
                 svmtStr:  SetB(GetD             > StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBg()');
               end;
 
     svmtStr:  case m.m_type of
@@ -427,10 +502,10 @@ begin
                 svmtReal: SetB(StrToFloat(GetS) > m.GetD);
                 svmtStr:  SetB(StrToFloat(GetS) > StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBg()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBg()');
   end;
 end;
 
@@ -443,7 +518,7 @@ begin
                 svmtReal: SetB(GetW             >= m.GetD);
                 svmtStr:  SetB(GetW             >= StrToQWord(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBe()');
               end;
 
     svmtInt:  case m.m_type of
@@ -452,7 +527,7 @@ begin
                 svmtReal: SetB(GetI             >= m.GetD);
                 svmtStr:  SetB(GetI             >= StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBe()');
               end;
 
     svmtReal: case m.m_type of
@@ -461,7 +536,7 @@ begin
                 svmtReal: SetB(GetD             >= m.GetD);
                 svmtStr:  SetB(GetD             >= StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBe()');
               end;
 
     svmtStr:  case m.m_type of
@@ -470,10 +545,10 @@ begin
                 svmtReal: SetB(StrToFloat(GetS) >= m.GetD);
                 svmtStr:  SetB(StrToFloat(GetS) >= StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBe()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpBe()');
   end;
 end;
 
@@ -486,7 +561,7 @@ begin
                 svmtReal: SetW(GetW             and m.GetI);
                 svmtStr:  SetW(GetW             and StrToQWord(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAnd()');
               end;
 
     svmtInt:  case m.m_type of
@@ -495,7 +570,7 @@ begin
                 svmtReal: SetI(GetI             and m.GetI);
                 svmtStr:  SetI(GetI             and StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAnd()');
               end;
 
     svmtReal: case m.m_type of
@@ -504,7 +579,7 @@ begin
                 svmtReal: SetI(GetI             and m.GetI);
                 svmtStr:  SetI(GetI             and StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAnd()');
               end;
 
     svmtStr:  case m.m_type of
@@ -513,10 +588,10 @@ begin
                 svmtReal: SetB(GetB             and m.GetB);
                 svmtStr:  SetB(GetB             and m.GetB);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAnd()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAnd()');
   end;
 end;
 
@@ -529,7 +604,7 @@ begin
                 svmtReal: SetW(GetW             or m.GetI);
                 svmtStr:  SetW(GetW             or StrToQWord(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpOr()');
               end;
 
     svmtInt:  case m.m_type of
@@ -538,7 +613,7 @@ begin
                 svmtReal: SetI(GetI             or m.GetI);
                 svmtStr:  SetI(GetI             or StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpOr()');
               end;
 
     svmtReal: case m.m_type of
@@ -547,7 +622,7 @@ begin
                 svmtReal: SetI(GetI             or m.GetI);
                 svmtStr:  SetI(GetI             or StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpOr()');
               end;
 
     svmtStr:  case m.m_type of
@@ -556,10 +631,10 @@ begin
                 svmtReal: SetB(GetB             or m.GetB);
                 svmtStr:  SetB(GetB             or m.GetB);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpOr()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpOr()');
   end;
 end;
 
@@ -572,7 +647,7 @@ begin
                 svmtReal: SetW(GetW             xor m.GetI);
                 svmtStr:  SetW(GetW             xor StrToQWord(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpXor()');
               end;
 
     svmtInt:  case m.m_type of
@@ -581,7 +656,7 @@ begin
                 svmtReal: SetI(GetI             xor m.GetI);
                 svmtStr:  SetI(GetI             xor StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpXor()');
               end;
 
     svmtReal: case m.m_type of
@@ -590,7 +665,7 @@ begin
                 svmtReal: SetI(GetI             xor m.GetI);
                 svmtStr:  SetI(GetI             xor StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpXor()');
               end;
 
     svmtStr:  case m.m_type of
@@ -599,10 +674,10 @@ begin
                 svmtReal: SetB(GetB             xor m.GetB);
                 svmtStr:  SetB(GetB             xor m.GetB);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpXor()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpXor()');
   end;
 end;
 
@@ -615,7 +690,7 @@ begin
                 svmtReal: SetW(GetW             shl m.GetI);
                 svmtStr:  SetW(GetW             shl StrToQWord(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShl()');
               end;
 
     svmtInt:  case m.m_type of
@@ -624,7 +699,7 @@ begin
                 svmtReal: SetI(GetI             shl m.GetI);
                 svmtStr:  SetI(GetI             shl StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShl()');
               end;
 
     svmtReal: case m.m_type of
@@ -633,10 +708,10 @@ begin
                 svmtReal: SetI(GetI             shl m.GetI);
                 svmtStr:  SetI(GetI             shl StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShl()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShl()');
   end;
 end;
 
@@ -649,7 +724,7 @@ begin
                 svmtReal: SetW(GetW             shr m.GetI);
                 svmtStr:  SetW(GetW             shr StrToQWord(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShr()');
               end;
 
     svmtInt:  case m.m_type of
@@ -658,7 +733,7 @@ begin
                 svmtReal: SetI(GetI             shr m.GetI);
                 svmtStr:  SetI(GetI             shr StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShr()');
               end;
 
     svmtReal: case m.m_type of
@@ -667,10 +742,10 @@ begin
                 svmtReal: SetI(GetI             shr m.GetI);
                 svmtStr:  SetI(GetI             shr StrToInt(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShr()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpShr()');
   end;
 end;
 
@@ -683,7 +758,7 @@ begin
     svmtInt: SetI(GetI + 1);
     svmtReal: SetD(GetD + 1);
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpInc()');
   end;
 end;
 
@@ -694,7 +769,7 @@ begin
     svmtInt: SetI(GetI - 1);
     svmtReal: SetD(GetD - 1);
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpDec()');
   end;
 end;
 
@@ -705,7 +780,7 @@ begin
     svmtInt: SetI(-GetI);
     svmtReal: SetD(-GetD);
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpNeg()');
   end;
 end;
 
@@ -718,7 +793,7 @@ begin
                 svmtReal: SetD(GetW             + m.GetD);
                 svmtStr:  SetD(GetW             + StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAdd()');
               end;
 
     svmtInt:  case m.m_type of
@@ -727,7 +802,7 @@ begin
                 svmtReal: SetD(GetI             + m.GetD);
                 svmtStr:  SetD(GetI             + StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAdd()');
               end;
 
     svmtReal: case m.m_type of
@@ -736,7 +811,7 @@ begin
                 svmtReal: SetD(GetD             + m.GetD);
                 svmtStr:  SetD(GetD             + StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAdd()');
               end;
 
     svmtStr:  case m.m_type of
@@ -745,10 +820,10 @@ begin
                 svmtReal: SetS(GetS             + FloatToStr(m.GetD));
                 svmtStr:  SetS(GetS             + m.GetS);
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAdd()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpAdd()');
   end;
 end;
 
@@ -761,7 +836,7 @@ begin
                 svmtReal: SetD(GetW             - m.GetD);
                 svmtStr:  SetD(GetW             - StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpSub()');
               end;
 
     svmtInt:  case m.m_type of
@@ -770,7 +845,7 @@ begin
                 svmtReal: SetD(GetI             - m.GetD);
                 svmtStr:  SetD(GetI             - StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpSub()');
               end;
 
     svmtReal: case m.m_type of
@@ -779,10 +854,10 @@ begin
                 svmtReal: SetD(GetD             - m.GetD);
                 svmtStr:  SetD(GetD             - StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpSub()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpSub()');
   end;
 end;
 
@@ -795,7 +870,7 @@ begin
                 svmtReal: SetD(GetW             / m.GetD);
                 svmtStr:  SetD(GetW             / StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpDiv()');
               end;
 
     svmtInt:  case m.m_type of
@@ -804,7 +879,7 @@ begin
                 svmtReal: SetD(GetI             / m.GetD);
                 svmtStr:  SetD(GetI             / StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpDiv()');
               end;
 
     svmtReal: case m.m_type of
@@ -813,10 +888,10 @@ begin
                 svmtReal: SetD(GetD             / m.GetD);
                 svmtStr:  SetD(GetD             / StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpDiv()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpDiv()');
   end;
 end;
 
@@ -829,7 +904,7 @@ begin
                 svmtReal: SetD(GetW             * m.GetD);
                 svmtStr:  SetD(GetW             * StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMul()');
               end;
 
     svmtInt:  case m.m_type of
@@ -838,7 +913,7 @@ begin
                 svmtReal: SetD(GetI             * m.GetD);
                 svmtStr:  SetD(GetI             * StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMul()');
               end;
 
     svmtReal: case m.m_type of
@@ -847,10 +922,10 @@ begin
                 svmtReal: SetD(GetD             * m.GetD);
                 svmtStr:  SetD(GetD             * StrToFloat(m.GetS));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMul()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMul()');
   end;
 end;
 
@@ -863,7 +938,7 @@ begin
                 svmtReal: SetI(Trunc(GetW       / m.GetD));
                 svmtStr:  SetI(Trunc(GetW       / StrToFloat(m.GetS)));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpIDiv()');
               end;
 
     svmtInt:  case m.m_type of
@@ -872,7 +947,7 @@ begin
                 svmtReal: SetI(Trunc(GetI       / m.GetD));
                 svmtStr:  SetI(Trunc(GetI       / StrToFloat(m.GetS)));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpIDiv()');
               end;
 
     svmtReal: case m.m_type of
@@ -881,10 +956,10 @@ begin
                 svmtReal: SetI(Trunc(GetD / m.GetD));
                 svmtStr:  SetI(Trunc(GetD / StrToFloat(m.GetS)));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpIDiv()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpIDiv()');
   end;
 end;
 
@@ -897,7 +972,7 @@ begin
                 svmtReal: SetW(GetW             mod Trunc(m.GetD));
                 svmtStr:  SetW(GetW             mod Trunc(StrToFloat(m.GetS)));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMod()');
               end;
 
     svmtInt:  case m.m_type of
@@ -906,7 +981,7 @@ begin
                 svmtReal: SetW(GetI             mod Trunc(m.GetD));
                 svmtStr:  SetW(GetI             mod Trunc(StrToFloat(m.GetS)));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMod()');
               end;
 
     svmtReal: case m.m_type of
@@ -915,104 +990,126 @@ begin
                 svmtReal: SetW(Trunc(GetD) mod Trunc(m.GetD));
                 svmtStr:  SetW(Trunc(GetD) mod Trunc(StrToFloat(m.GetS)));
                 else
-                  Error(reVarInvalidOp);
+                  RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMod()');
               end;
     else
-      Error(reVarInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.OpMod()');
   end;
 end;
 
 {** Arrays **}
 
-procedure TSVMMem.ArrSetSize(newsize: cardinal); inline;
+procedure TSVMMem.ArrSetSize(newsize: LongWord); inline;
+var
+  c, l: LongWord;
+  p: pointer;
 begin
   case m_type of
-    svmtArr, svmtClass: SetLength(PMemArray(m_val)^, newsize);
+    svmtArr, svmtClass:
+      begin
+        l := Length(PMemArray(m_val)^);
+        if l > newsize then
+         begin
+           c := newsize;
+           while c < l do
+            begin
+              p := PMemArray(m_val)^[c];
+              if p <> nil then
+               Dec(TSVMMem(p).m_refc);
+              inc(c);
+            end;
+         end;
+
+        SetLength(PMemArray(m_val)^, newsize);
+      end;
     svmtStr: SetLength(PString(m_val)^, newsize);
     else
-      Error(reInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.ArrSetSize()');
   end;
 end;
 
-function  TSVMMem.ArrGetSize: cardinal; inline;
+function  TSVMMem.ArrGetSize: LongWord; inline;
 begin
   Result := 0;
   case m_type of
     svmtArr, svmtClass: Result := Length(PMemArray(m_val)^);
     svmtStr: Result := Length(PString(m_val)^);
     else
-      Error(reInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.ArrGetSize()');
   end;
 end;
 
-procedure TSVMMem.ArrSet(index: cardinal; val:pointer); inline;
+procedure TSVMMem.ArrSet(index: LongWord; val:pointer); inline;
+var
+  p: pointer;
 begin
   case m_type of
-    svmtArr, svmtClass: PMemArray(m_val)^[index] := val;
+    svmtArr, svmtClass:
+      begin
+        p := PMemArray(m_val)^[index];
+        if TObject(p) is TSVMMem then
+         Dec(TSVMMem(p).m_refc);
+
+        PMemArray(m_val)^[index] := val;
+      end;
     svmtStr: PString(m_val)^[index + 1] := TSVMMem(val).GetS[1];
     else
-      Error(reInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.ArrSet()');
   end;
 end;
 
-function  TSVMMem.ArrGet(index: cardinal; grabber:PGrabber): pointer; inline;
+function  TSVMMem.ArrGet(index: LongWord; Grabber: TGrabber): pointer; inline;
 begin
   Result := nil;
   case m_type of
     svmtArr, svmtClass: Result := PMemArray(m_val)^[index];
-    svmtStr: begin
-               Result := TSVMMem.CreateFS(PString(m_val)^[index + 1]);
-               grabber^.AddTask(Result);
-             end;
+    svmtStr: Result := NewSVMM_FS(PString(m_val)^[index + 1], Grabber);
     else
-      Error(reInvalidOp);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.ArrGet()');
   end;
 end;
 
 {** Any **}
 
-function TSVMMem.GetSize:cardinal; inline;
+function TSVMMem.GetSize:LongWord; inline;
 begin
   Result := 0;
   case m_type of
-    svmtWord: Result := SizeOf(Cardinal);
+    svmtWord: Result := SizeOf(LongWord);
     svmtInt:  Result := SizeOf(Int64);
     svmtReal: Result := SizeOf(Double);
     svmtStr:  Result := Length(PString(m_val)^);
     svmtArr, svmtClass:  Result := Length(PMemArray(m_val)^) * SizeOf(Pointer);
     else
-      Error(reVarTypeCast);
+      RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.GetSize()');
   end;
 end;
 
-function CreateSVMMemCopy(m:TSVMMem):TSVMMem; inline;
+function CreateSVMMemCopy(m:TSVMMem; Grabber: TGrabber):TSVMMem; inline;
 var
-  c, l: cardinal;
+  c, l: LongWord;
 begin
   Result := nil;
-  if m.m_type = svmtClass then
-   Result := m
-  else
-  if m.m_type = svmtArr then
+  if m.m_type in [svmtArr, svmtClass] then
    begin
-     Result := TSVMMem.Create;
-     Result.m_type := svmtArr;
-     new(PMemArray(Result.m_val));
      l := Length(PMemArray(m.m_val)^);
-     SetLength(PMemArray(Result.m_val)^, l);
+     Result := NewSVMM_Arr(l, Grabber);
+     Result.m_type := m.m_type;
      c := 0;
      while c < l do
       begin
         PMemArray(Result.m_val)^[c] := PMemArray(m.m_val)^[c];
+
+        if PMemArray(Result.m_val)^[c] <> nil then
+         inc(TSVMMem(PMemArray(Result.m_val)^[c]).m_refc);
+
         inc(c);
       end;
    end
   else
    begin
-     Result := TSVMMem.Create;
-     Result.m_val := nil;
-     Result.m_type := m.m_type;
-     Result.SetV(m.m_val^, m.m_type);
+     Result := NewSVMM(Grabber);
+     Result.SetM(m);
    end;
 end;
 

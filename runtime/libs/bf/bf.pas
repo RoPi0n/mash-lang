@@ -1,100 +1,120 @@
 library bf;
 
-uses SysUtils, svm_api in '..\svm_api.pas';
+{$mode objfpc}{$H+}
+{$define FPC_USE_WIN64_SEH}
+uses
+  SysUtils;
 
-procedure DHalt(Stack:PStack); cdecl;
+{$I '..\libapi.inc'}
+
+procedure DHalt(pctx: pointer); stdcall;
 begin
   halt;
 end;
 
-procedure DStrToInt(Stack:PStack); cdecl;
+procedure DGetSystemSlash(pctx: pointer); stdcall;
 var
-  s:string;
+  s: string;
 begin
-  s := TSVMMem(Stack^.popv).GetS;
-  Stack^.push(TSVMMem.CreateF(StrToInt(s), svmtInt));
+  s := '/';
+
+  {$IfDef Windows}
+  s := '\';
+  {$EndIf}
+
+  {$IfDef DOS}
+  s := '\';
+  {$EndIf}
+
+  __Return_String(pctx, @s);
 end;
 
-procedure DStrToFloat(Stack:PStack); cdecl;
+procedure DStrToInt(pctx: pointer); stdcall;
 var
-  s:string;
-  f:double;
+  s: string;
 begin
-  s := TSVMMem(Stack^.popv).GetS;
-  f := StrToFloat(s);
-  Stack^.push(TSVMMem.CreateF(f, svmtReal));
+  s := '';
+  __Next_String(pctx, @s);
+  __Return_Float(pctx, StrToInt64(s));
 end;
-
-procedure DStrUpper(Stack:PStack); cdecl;
+procedure DStrToFloat(pctx: pointer); stdcall;
 var
-  s:string;
+  s: string;
 begin
-  s := TSVMMem(Stack^.popv).GetS;
-  Stack^.push(TSVMMem.CreateFS(UpperCase(s)));
+  s := '';
+  __Next_String(pctx, @s);
+  __Return_Float(pctx, StrToFloat(s));
 end;
 
-procedure DStrLower(Stack:PStack); cdecl;
+procedure DStrUpper(pctx: pointer); stdcall;
 var
-  s:string;
+  s: string;
 begin
-  s := TSVMMem(Stack^.popv).GetS;
-  Stack^.push(TSVMMem.CreateFS(LowerCase(s)));
+  s := '';
+  __Next_String(pctx, @s);
+  s := UpperCase(s);
+  __Return_String(pctx, @s);
 end;
 
-procedure DIntToStr(Stack:PStack); cdecl;
+procedure DStrLower(pctx: pointer); stdcall;
 var
-  s:int64;
+  s: string;
 begin
-  s := TSVMMem(Stack^.popv).GetI;
-  Stack^.push(TSVMMem.CreateFS(IntToStr(s)));
+  s := '';
+  __Next_String(pctx, @s);
+  s := LowerCase(s);
+  __Return_String(pctx, @s);
 end;
 
-procedure DFloatToStr(Stack:PStack); cdecl;
+procedure DIntToStr(pctx: pointer); stdcall;
 var
-  s:double;
+  s: string;
 begin
-  s := TSVMMem(Stack^.popv).GetD;
-  Stack^.push(TSVMMem.CreateFS(FloatToStr(s)));
+  s := IntToStr(__Next_Int(pctx));
+  __Return_String(pctx, @s);
 end;
 
-procedure DSleep(Stack:PStack); cdecl;
-begin
-  sleep(TSVMMem(Stack^.popv).GetW);
-end;
-
-//DateTime
-procedure DNow(Stack:PStack); cdecl;
+procedure DFloatToStr(pctx: pointer); stdcall;
 var
-  f:double;
+  s: string;
 begin
-  f := now;
-  Stack^.push(TSVMMem.CreateF(f, svmtReal));
+  s := FloatToStr(__Next_Float(pctx));
+  __Return_String(pctx, @s);
 end;
 
-procedure DRandomize(Stack:PStack); cdecl;
+procedure DSleep(pctx: pointer); stdcall;
+begin
+  sleep(__Next_Word(pctx));
+end;
+
+procedure DNow(pctx: pointer); stdcall;
+begin
+  __Return_Float(pctx, Now);
+end;
+
+procedure DRandomize(pctx: pointer); stdcall;
 begin
   Randomize;
 end;
 
-procedure DRandom(Stack:PStack); cdecl;
-var
-  f:double;
+procedure DRandom(pctx: pointer); stdcall;
 begin
-  f := Random;
-  Stack^.push(TSVMMem.CreateF(f, svmtReal));
+  __Return_Float(pctx, Random);
 end;
 
-procedure DRandomB(Stack:PStack); cdecl;
-var
-  f:double;
+procedure DRandomB(pctx: pointer); stdcall;
 begin
-  f := Random(TSVMMem(Stack^.popv).GetW);
-  Stack^.push(TSVMMem.CreateF(f, svmtReal));
+  __Return_Float(pctx, Random(__Next_Int(pctx)));
 end;
 
-procedure DTickCnt(Stack:PStack); cdecl;
+procedure DTickCnt(pctx: pointer); stdcall;
 begin
-  Stack^.push(TSVMMem.CreateFW(GetTickCount64));
+  __Return_Word(pctx, GetTickCount64);
+end;
+
+procedure DRaise(pctx: pointer); stdcall;
+begin
+  raise Exception.Create('Raised external exception.');
 end;
 
 {EXPORTS DB}
@@ -111,6 +131,8 @@ exports DRANDOMIZE          name 'RANDOMIZE';
 exports DRANDOM             name 'RANDOM';
 exports DRANDOMB            name 'RANDOMB';
 exports DTICKCNT            name 'TICKCNT';
+exports DGetSystemSlash     name 'GETSYSTEMSLASH';
+exports DRaise              name 'RAISE';
 
 begin
 end.

@@ -3,14 +3,14 @@ uses <crt>
 uses <threads>
 
 proc TestProc():
+  PrintLn("TestProc()")
   Sleep(1000)
 end
 
 proc main():
   PrintLn("Started...")
-  Thr ?= Parallel(TestProc)
+  Thr ?= Async(TestProc)
   Thr -> WaitFor()
-  Thr -> Free()
   PrintLn("End!")
   InputLn()
 end

@@ -2,7 +2,7 @@ uses <bf>
 uses <crt>
 
 proc main():
-  var a = 0
+  a ?= 0
   while a < 20:
     PrintLn(a)
     inc a

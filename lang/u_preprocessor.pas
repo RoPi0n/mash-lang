@@ -463,7 +463,7 @@ begin
   else
   {** End **}
   if s = 'end' then
-    Result := GenEnd
+    Result := GenEnd(varmgr)
   else
   {** Switch **}
   if IsSwitch(s) then
@@ -503,6 +503,7 @@ begin
      Delete(s, 1, 5);
      s := Trim(s);
      s1:= PopLocalVariables(varmgr);
+
      Result := PushLocalVariables(varmgr) +
                PreprocessStr(s, varmgr) +
                s1;

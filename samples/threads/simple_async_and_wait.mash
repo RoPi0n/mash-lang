@@ -3,16 +3,18 @@ uses <crt>
 
 proc main():
   async a:
-    print("The ")
-    sleep(1000)
+    sleep(1500)
     print("is ")
   end
 
   async b:
+    sleep(500)
     print("Mash ")
     sleep(500)
     print("language ")
   end
+
+  print("The ")
 
   wait a, b
 

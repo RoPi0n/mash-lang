@@ -125,7 +125,6 @@ begin
                        + 'push ' + GetVar(LpCounter, varmgr) + sLineBreak
                        + 'push ' + GetVar(LpDest, varmgr) + sLineBreak
                        + 'bg' + sLineBreak
-                       + 'gpm' + sLineBreak
                        + 'jz' + sLineBreak
                        + 'pop' + sLineBreak
                        + 'push ' + GetVar(LpCounter, varmgr) + sLineBreak
@@ -137,11 +136,7 @@ begin
                        sLineBreak + 'push ' + GetVar(LpCounter, varmgr) +
                        sLineBreak + 'inc' +
                        sLineBreak + 'pushcp ' + ForNum + sLineBreak + 'jp' +
-                       sLineBreak + ForNum + '_for_end:' +
-                       sLineBreak + 'push ' + GetVar(LpCounter, varmgr) +
-                       sLineBreak + 'rem' +
-                       sLineBreak + 'push ' + GetVar(LpDest, varmgr) +
-                       sLineBreak + 'rem',
+                       sLineBreak + ForNum + '_for_end:',
 
                        ForNum + '_for_end'));
 end;
@@ -189,7 +184,6 @@ begin
                        + 'push ' + GetVar(LpDest, varmgr) + sLineBreak
                        + 'push ' + GetVar(LpCounter, varmgr) + sLineBreak
                        + 'be' + sLineBreak
-                       + 'gpm' + sLineBreak
                        + 'jz' + sLineBreak
                        + 'pop' + sLineBreak
                        + 'push ' + GetVar(LpCounter, varmgr) + sLineBreak
@@ -201,11 +195,7 @@ begin
                        sLineBreak + 'push ' + GetVar(LpCounter, varmgr) +
                        sLineBreak + 'dec' +
                        sLineBreak + 'pushcp ' + ForNum + sLineBreak + 'jp' +
-                       sLineBreak + ForNum + '_for_end:' +
-                       sLineBreak + 'push ' + GetVar(LpCounter, varmgr) +
-                       sLineBreak + 'rem' +
-                       sLineBreak + 'push ' + GetVar(LpDest, varmgr) +
-                       sLineBreak + 'rem',
+                       sLineBreak + ForNum + '_for_end:',
 
                        ForNum + '_for_end'));
 end;

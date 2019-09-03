@@ -21,22 +21,18 @@ end;
 
 function ParseLaunch(s:string; varmgr:TVarManager):string;
 var
-  BlockName, Pops, Marks: string;
+  BlockName, Dupls, Marks: string;
 begin
   BlockName := '__gen_launch_' + IntToStr(LaunchBlCounter);
   Inc(LaunchBlCounter);
 
-  Pops := PopLocalVariables(varmgr);
-  Marks := MarkLocalVariables(varmgr);
+  Dupls := DublicateLocalVariables(varmgr);
 
-  Result := sLineBreak + DublicateLocalVariablesAndPushOrigins(varmgr) +
-            sLineBreak + 'pushn' + sLineBreak + 'pushcp ' + BlockName + '_entry' +
+  Result := sLineBreak + 'pushn' + sLineBreak + 'pushcp ' + BlockName + '_entry' +
             sLineBreak + 'cthr' + sLineBreak + 'rthr' +
-            sLineBreak + Pops +
             sLineBreak + 'pushcp ' + BlockName + '_end' + sLineBreak + 'jp' +
             sLineBreak + BlockName + '_entry:' +
-            sLineBreak + 'pop' +
-            sLineBreak + Marks;
+            sLineBreak + 'pop' + sLineBreak + Dupls;
 
   BlockStack.Add(TCodeBlock.Create(btLaunch, '',
                                    'threxit' + sLineBreak + BlockName + '_end:',
@@ -51,7 +47,7 @@ end;
 
 function ParseAsync(s:string; varmgr:TVarManager):string;
 var
-  BlockName, Pops, Marks, Method: string;
+  BlockName, Dupls, Marks, Method: string;
 begin
   s := Trim(s);
   Delete(s, 1, 6);
@@ -66,26 +62,20 @@ begin
   else
    Method := '__global';
 
-  Pops := PopLocalVariables(varmgr);
-  Marks := MarkLocalVariables(varmgr);
+  Dupls := DublicateLocalVariables(varmgr);
 
-  Result := sLineBreak + DublicateLocalVariablesAndPushOrigins(varmgr) +
-            sLineBreak + 'pushc ' + GetConst('1', varmgr) +
-            sLineBreak + 'gpm' +
-            sLineBreak + 'peek ' + GetVar(Method + '__async_flag_' + s, varmgr) +
+  Result := sLineBreak + 'pushc ' + GetConst('1', varmgr) +
+            sLineBreak + 'peek ' + GetVar(s, varmgr) +
             sLineBreak + 'pushcp ' + BlockName + '_entry' +
             sLineBreak + 'cthr' + sLineBreak + 'rthr' +
-            sLineBreak + Pops +
             sLineBreak + 'pushcp ' + BlockName + '_end' + sLineBreak + 'jp' +
             sLineBreak + BlockName + '_entry:' +
-            sLineBreak + 'pop' +
-            sLineBreak + Marks;
+            sLineBreak + 'pop' + sLineBreak + Dupls;
 
   BlockStack.Add(TCodeBlock.Create(btAsync, '',
                                    BlockName + '_exit:' + sLineBreak +
                                    'pushc ' + GetConst('0', varmgr) + sLineBreak +
-                                   'gpm' + sLineBreak +
-                                   'push ' + GetVar(Method + '__async_flag_' + s, varmgr) +
+                                   'push ' + GetVar(s, varmgr) +
                                    sLineBreak + 'mov' + sLineBreak +
                                    'threxit' + sLineBreak + BlockName + '_end:',
                                    BlockName + '_exit'));
@@ -118,12 +108,15 @@ begin
      s := Trim(s);
 
      Result := Result + sLineBreak +
+               'pushcp __async_await_loop_for_flag_first_check_' + AsyncFlag + sLineBreak +
+               'jp' + sLineBreak +
                '__async_await_loop_for_flag_' + AsyncFlag + ':' + sLineBreak +
                'pushcp ' + GetConst('1', varmgr) + sLineBreak +
                'pushcp sleep' + sLineBreak +
                'invoke' + sLineBreak +
+               '__async_await_loop_for_flag_first_check_' + AsyncFlag + ':' + sLineBreak +
                'pushcp __async_await_loop_for_flag_' + AsyncFlag + sLineBreak +
-               'push ' + GetVar(Method + '__async_flag_' + AsyncFlag, varmgr) +
+               'push ' + GetVar(AsyncFlag, varmgr) +
                sLineBreak + 'jn' + sLineBreak + 'pop' + sLineBreak;
    end;
 end;

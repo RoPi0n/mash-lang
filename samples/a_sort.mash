@@ -1,4 +1,3 @@
-uses <bf>
 uses <crt>
 uses <algs>
 
@@ -26,7 +25,6 @@ proc BSort(array):
   end
 end
 
-
 /*
  *  Print array into console.
  *  Written on Mash!
@@ -41,21 +39,50 @@ end
 
 
 proc main():
-  // QuickSort
+  Randomize()
+
+  templatearr ?= new[100000]
   arr ?= new[100000]
 
   for (i ?= 0; i < 100000; i++):
-    arr[99999 - i] ?= copy(i)
+    templatearr[i] ?= random()
+  end
+
+  // QuickSort
+  for (i ?= 0; i < 100000; i++):
+    arr[i] ?= templatearr[i]
   end
 
   t ?= TickCnt()
   QuickSort(arr)
   t ?= TickCnt() - t
   PrintLn("QuickSort: " + t + " ms.")
+
+  // ThreadedQuickSort
+  for (i ?= 0; i < 100000; i++):
+    arr[i] ?= templatearr[i]
+  end
+
+  t ?= TickCnt()
+  ThrQuickSort(arr, 16)
+  t ?= TickCnt() - t
+  PrintLn("ThreadedQuickSort: " + t + " ms.")
+
+  // RadixSort
+  for (i ?= 0; i < 100000; i++):
+    arr[i] ?= templatearr[i]
+  end
+
+
+  t ?= TickCnt()
+  RadixSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("RadixSort: " + t + " ms.")
+
   gc()
 
   // HeapSort
-  arr ?= new[100000]
+  /*arr ?= new[100000]
 
   for (i ?= 0; i < 100000; i++):
     arr[99999 - i] ?= copy(i)
@@ -65,7 +92,7 @@ proc main():
   HeapSort(arr)
   t ?= TickCnt() - t
   PrintLn("HeapSort: " + t + " ms.")
-  gc()
+  gc() */
 
   // BubbleSort
   /*arr ?= new[1000]
