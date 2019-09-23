@@ -109,7 +109,7 @@ var
   r: TSVMMem;
   p: pointer;
 begin
-  if (ChkCnt < 16) and (stack.i_pos > 1) then
+  if ChkCnt < 16 then
    begin
      i := stack.i_pos div 2;
      Inc(ChkCnt);
@@ -136,12 +136,10 @@ begin
            while c < l do
             begin
               p := PMemArray(r.m_val)^[c];
-              try
-                if p <> nil then
-                 Dec(TSVMMem(p).m_refc);
-              finally
-                Inc(c);
-              end;
+              if p <> nil then
+                Dec(TSVMMem(p).m_refc);
+
+              Inc(c);
             end;
          end;
 
@@ -151,8 +149,6 @@ begin
 
      inc(i);
    end;
-
-  //writeln(stack.i_pos);
 end;
 
 procedure TGrabber.Term;

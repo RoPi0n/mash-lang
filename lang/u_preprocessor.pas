@@ -264,6 +264,7 @@ var
 begin
   Result := '';
   s := Trim(s);
+
   {** Include **}
   if Tk(s, 1) = 'uses' then
   begin

@@ -79,9 +79,9 @@ begin
   PStack(pctx^.pStack)^.push( NewSVMM_FI(Int64(val), TGrabber(pctx^.pGrabber)) );
 end;
 
-procedure __Return_Ref(pctx: PCallingContext; val: pointer); stdcall;
+procedure __Return_Ref(pctx: PCallingContext; val: pointer; dcbp: PDestructorCallBack); stdcall;
 begin
-  PStack(pctx^.pStack)^.push( NewSVMM_Ref(val, TGrabber(pctx^.pGrabber)) );
+  PStack(pctx^.pStack)^.push( NewSVMM_Ref(val, TGrabber(pctx^.pGrabber), dcbp) );
 end;
 
 exports __Next_Type     name '__Next_Type';

@@ -8,14 +8,14 @@ uses
 
 {$I '..\libapi.inc'}
 
-procedure CRITSECT_CREATE(pctx: pointer); stdcall;
+procedure CRITSECT_DESTRUCTOR(pCritSect: pointer); stdcall;
 begin
-  __Return_Ref(pctx, TCriticalSection.Create);
+  TCriticalSection(pCritSect).Free;
 end;
 
-procedure CRITSECT_FREE(pctx: pointer); stdcall;
+procedure CRITSECT_CREATE(pctx: pointer); stdcall;
 begin
-  TCriticalSection(__Next_Ref(pctx)).Free;
+  __Return_Ref(pctx, TCriticalSection.Create, @CRITSECT_DESTRUCTOR);
 end;
 
 procedure CRITSECT_ENTER(pctx: pointer); stdcall;
@@ -35,7 +35,6 @@ end;
 
 {EXPORTS DB}
 exports CRITSECT_CREATE        name 'CRITICAL_SECTION_CREATE';
-exports CRITSECT_FREE          name 'CRITICAL_SECTION_FREE';
 exports CRITSECT_ENTER         name 'CRITICAL_SECTION_ENTER';
 exports CRITSECT_LEAVE         name 'CRITICAL_SECTION_LEAVE';
 exports CRITSECT_TRYENTER      name 'CRITICAL_SECTION_TRYENTER';

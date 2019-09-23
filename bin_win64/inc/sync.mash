@@ -5,7 +5,6 @@
 // imports from sync.lib
 
 import __CRITSECT_CREATE   "sync.lib"  "CRITICAL_SECTION_CREATE"
-import __CRITSECT_FREE     "sync.lib"  "CRITICAL_SECTION_FREE"
 import __CRITSECT_ENTER    "sync.lib"  "CRITICAL_SECTION_ENTER"
 import __CRITSECT_LEAVE    "sync.lib"  "CRITICAL_SECTION_LEAVE"
 import __CRITSECT_TRYENTER "sync.lib"  "CRITICAL_SECTION_TRYENTER"
@@ -19,7 +18,7 @@ class CriticalSection:
     var Critical_Section
 
   public:
-    proc Create, Free
+    proc Create
 
     //Methods
     proc Enter, Leave
@@ -28,10 +27,6 @@ end
 
 proc CriticalSection::Create():
   $Critical_Section ?= __CRITSECT_CREATE()
-end
-
-proc CriticalSection::Free():
-  __CRITSECT_FREE($Critical_Section)
 end
 
 proc CriticalSection::Enter():

@@ -3,17 +3,16 @@ uses <crt>
 uses <strings>
 
 proc main():
-  var s = new("test")
-
+  s ?= "test"
   s[1] ?= "T"
 
-  println(c_Chr(s[1]), LnBreak, s_len(s))
+  println(s[1], LnBreak, len(s))
   s_del(s, 1, 2)
   println(s)
 
   s = "The Moscow is a capital of great Russia!"
   println(s_copy(s, 5, 6))
-  println(s_len(s))
+  println(len(s))
   println(s_reverse(s))
   println(s_leftstr(s, 10))
   println(s_rightstr(s, 7))

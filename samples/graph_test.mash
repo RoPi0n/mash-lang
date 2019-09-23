@@ -1,11 +1,139 @@
 uses <bf>
 uses <crt>
 uses <graph>
+uses <math>
 
 proc main():
-  Graph_InitGraph(0, 0, "")
-  Graph.SetColor(15)
-  Graph_MoveTo(100, 100)
-  Graph_LineTo(200, 200)
+  Graph.Init()
+
+  x0 ?= Graph.GetMaxX() \ 2
+  y0 ?= Graph.GetMaxY() \ 2
+
+  Graph.MoveTo(x0, 0)
+  Graph.LineTo(x0, Graph.GetMaxY())
+
+  Graph.MoveTo(0, y0)
+  Graph.LineTo(Graph.GetMaxX(), y0)
+
+  for i in -10..10:
+    x ?= x0 + 80 * i
+    Graph.MoveTo(x, y0)
+    Graph.LineTo(x, y0 + 5)
+    Graph.LineTo(x, y0 - 5)
+
+    Graph.MoveTo(x - 10, y0 + 10)
+    Graph.OutText(i)
+
+    y ?= y0 + 80 * i
+    Graph.MoveTo(x0, y)
+    Graph.LineTo(x0 + 5, y)
+    Graph.LineTo(x0 - 5, y)
+
+    Graph.MoveTo(x0 + 10, y)
+    Graph.OutText(-i)
+
+    gc()
+  end
+
+  /*first ?= true
+  for(i ?= -5; i < 5; i += 0.01):
+    x ?= Trunc(x0 + i * 100)
+    y ?= Trunc(y0 - (i*i) * 100)
+
+    if first:
+      Graph.MoveTo(x, y)
+      first = false
+    else:
+      Graph.LineTo(x, y)
+    end
+  end
+
+  first ?= true
+  for(i ?= -15; i < 15; i += 0.01):
+    x ?= Trunc(x0 + i * 100)
+    y ?= Trunc(y0 - sqrt(abs(i)) * 100)
+
+    if first:
+      Graph.MoveTo(x, y)
+      first = false
+    else:
+      Graph.LineTo(x, y)
+    end
+  end
+
+  first ?= true
+  for(i ?= -15; i < 15; i += 0.01):
+    x ?= Trunc(x0 + i * 50)
+
+    if ( i < (-0.1) ) | ( i > 0.1 ):
+      y ?= Trunc(y0 - (10 / i) * 100)
+
+      if first:
+        Graph.MoveTo(x, y)
+        first = false
+      else:
+        Graph.LineTo(x, y)
+      end
+
+    else:
+      first = true
+    end
+  end
+
+  first ?= true
+  for(fi ?= 0.01; fi < 72; fi += 0.01):
+    r ?= 2 / fi
+
+    c ?= cm.uniteViaExp(r, fi)
+
+    x ?= Trunc(x0 + c -> Re * 100)
+    y ?= Trunc(y0 - c -> Im * 100)
+
+    if first:
+      Graph.MoveTo(x, y)
+      first = false
+    else:
+      Graph.LineTo(x, y)
+    end
+
+    gc()
+  end
+
+  for(x ?= 0; x < 0.6; x += 0.01):
+    for(y ?= -0.5; y < 0.5; y += 0.01):
+
+      r ?= 2*(x*x + y*y) + Sqrt(x*x + y*y) - 2*x
+
+      if (r < 0.015) & (r >= 0):
+        Graph.FillEllipse(Trunc(x0 + x * 100),
+                          Trunc(y0 - y * 100),
+                          1, 1)
+      end
+
+      gc()
+    end
+  end  */
+
+  first ?= true
+  for(fi ?= 0.01; fi < 360; fi += 0.01):
+    r ?= Exp(sin(fi)) -
+         2*cos(4*fi) +
+         sin((2*fi - m_pi) / 24)
+
+    c ?= cm.uniteViaExp(r, fi)
+
+    x ?= Trunc(x0 + c -> Re * 80)
+    y ?= Trunc(y0 - c -> Im * 80)
+
+    if first:
+      Graph.MoveTo(x, y)
+      first = false
+    else:
+      Graph.LineTo(x, y)
+    end
+
+    gc()
+  end
+
   InputLn()
 end

@@ -28,6 +28,7 @@ var
 
   Current_CodeLine: cardinal = 1;
   Current_CodeFile: string = '';
+  MainDefined: boolean = false;
 
 implementation
 

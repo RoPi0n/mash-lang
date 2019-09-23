@@ -682,10 +682,13 @@ begin
    Result := EXCEPTION_EXECUTE_HANDLER
   else
    begin
-     Exception(ExceptionInfo^.ExceptionRecord^.ExceptionInformation[1]).Free;
-     //ExceptionInfo^.ExceptionRecord^.ExceptionCode := 0;
+     try
+       Exception(ExceptionInfo^.ExceptionRecord^.ExceptionInformation[1]).Free;
+       //ExceptionInfo^.ExceptionRecord^.ExceptionCode := 0;
+     finally
+       Result := EXCEPTION_CONTINUE_EXECUTION;
+     end;
 
-     Result := EXCEPTION_CONTINUE_EXECUTION;
      VEHExceptions.Add(Pointer(GetCurrentThreadId));
      Inc(VEHExceptions_Count);
    end;
@@ -755,7 +758,7 @@ type
        vm^.mem^[c] := svm_memory^[c];
 
        if svm_memory^[c] <> nil then
-        if TObject(svm_memory^[c]) is TSVMMem then
+        //if TObject(svm_memory^[c]) is TSVMMem then
          Inc(TSVMMem(svm_memory^[c]).m_refc);
 
        inc(c);
@@ -785,7 +788,7 @@ type
     while c < ml do
      begin
        if vm^.mem^[c] <> nil then
-        if TObject(vm^.mem^[c]) is TSVMMem then
+        //if TObject(vm^.mem^[c]) is TSVMMem then
          Dec(TSVMMem(vm^.mem^[c]).m_refc);
 
        inc(c);
@@ -978,7 +981,7 @@ type
               p := self.stack.popv;
               Dec(TSVMMem(p).m_refc);
 
-              r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
+              r := CreateSVMMemCopy(TSVMMem(p), Grabber);
 
               p := self.stack.popv;
               Dec(TSVMMem(p).m_refc);
@@ -994,7 +997,7 @@ type
               p := self.stack.popv;
               Dec(TSVMMem(p).m_refc);
 
-              r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
+              r := CreateSVMMemCopy(TSVMMem(p), Grabber);
 
               p := self.stack.popv;
               Dec(TSVMMem(p).m_refc);
@@ -1009,7 +1012,7 @@ type
             begin
               p := self.stack.popv;
               Dec(TSVMMem(p).m_refc);
-              r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
+              r := CreateSVMMemCopy(TSVMMem(p), Grabber);
 
               p := self.stack.popv;
               Dec(TSVMMem(p).m_refc);
@@ -1382,7 +1385,7 @@ type
               p2 := TSVMMem(p).ArrGet(r.GetW, Grabber);
 
               if p2 <> nil then
-               if TObject(p2) is TSVMMem then
+               //if TObject(p2) is TSVMMem then
                 Inc(TSVMMem(p2).m_refc);
 
               self.stack.push(p2);
@@ -1879,7 +1882,7 @@ begin
    begin
      writeln('MASH!');
      writeln('Stack-based virtual machine.');
-     writeln('Version: 1.9');
+     writeln('Version: 1.9.4');
 	 writeln('Using: ',ExtractFileName(ParamStr(0)),' <svmexe file> [args]');
    end;
 

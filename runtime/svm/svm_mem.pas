@@ -18,10 +18,14 @@ type
 
   TSVMType = (svmtNull, svmtWord, svmtInt, svmtReal, svmtStr, svmtArr, svmtClass, svmtRef);
 
+  TDestructorCallBack = procedure(p: pointer); stdcall;
+  PDestructorCallBack = ^TDestructorCallBack;
+
   TSVMMem = class
     m_val: pointer;
     m_type: TSVMType;
     m_refc: integer;
+    m_dcbp: PDestructorCallBack;
 
     constructor MCreate;
     constructor MCreateF(const value; t:TSVMType);
@@ -143,6 +147,7 @@ begin
   Result := TSVMMem.MCreate;
   Result.m_type := svmtRef;
   Result.m_val := ref;
+  Result.m_refc := 0;
   Grabber.Reg(Result);
 end;
 
@@ -153,6 +158,7 @@ begin
   m_val := nil;
   m_type := svmtNull;
   m_refc := 0;
+  m_dcbp := nil;
 end;
 
 constructor TSVMMem.MCreateF(const value; t:TSVMType);
@@ -160,6 +166,7 @@ begin
   m_val := nil;
   m_type := t;
   m_refc := 0;
+  m_dcbp := nil;
   SetV(value, t);
 end;
 
@@ -167,7 +174,8 @@ constructor TSVMMem.MCreateFS(s:string);
 begin
   m_val := nil;
   m_type := svmtStr;
-  m_refc := 0;
+  m_refc := 0;  
+  m_dcbp := nil;
   SetS(S);
 end;
 
@@ -175,7 +183,8 @@ constructor TSVMMem.MCreateFW(w:LongWord);
 begin
   m_val := nil;
   m_type := svmtWord;
-  m_refc := 0;
+  m_refc := 0;  
+  m_dcbp := nil;
   SetW(w);
 end;
 
@@ -183,7 +192,8 @@ constructor TSVMMem.MCreateArr(size:LongWord = 0);
 begin
   m_type := svmtArr;
   new(PMemArray(m_val));
-  m_refc := 0;
+  m_refc := 0;  
+  m_dcbp := nil;
   SetLength(PMemArray(m_val)^, size);
 end;
 
@@ -195,16 +205,20 @@ end;
 procedure TSVMMem.Clear; inline;
 begin
   case m_type of
-    svmtNull, svmtRef: { no actions };
+    svmtNull: { no actions };
     svmtWord: Dispose(PLongWord(m_val));
     svmtInt:  Dispose(PInt64(m_val));
     svmtReal: Dispose(PDouble(m_val));
     svmtStr:  Dispose(PString(m_val));
+
     svmtArr, svmtClass:
               begin
                 SetLength(PMemArray(m_val)^, 0);
                 Dispose(PMemArray(m_val));
               end;
+
+    svmtRef: if m_dcbp <> nil then
+              TDestructorCallBack(m_dcbp)(m_val);
     else
       RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.Clear()');
   end;
@@ -226,7 +240,7 @@ begin
   else
    begin
      if m_val <> nil then
-      FreeMem(m_val);
+      Clear;
 
      m_type := t;
      case t of
@@ -262,7 +276,7 @@ begin
   else
    begin
      if m_val <> nil then
-      FreeMem(m_val);
+      Clear;
 
      m_type := svmtWord;
      New(PLongWord(m_val));
@@ -277,7 +291,7 @@ begin
   else
    begin
      if m_val <> nil then
-      FreeMem(m_val);
+      Clear;
 
      m_type := svmtInt;
      New(PInt64(m_val));
@@ -292,7 +306,7 @@ begin
   else
    begin
      if m_val <> nil then
-      FreeMem(m_val);
+      Clear;
 
      m_type := svmtReal;
      New(PDouble(m_val));
@@ -307,7 +321,7 @@ begin
   else
    begin
      if m_val <> nil then
-      FreeMem(m_val);
+      Clear;
 
      m_type := svmtStr;
      New(PString(m_val));
@@ -324,12 +338,22 @@ begin
 end;
 
 procedure TSVMMem.SetM(m:TSVMMem); inline;
+var
+  ps: PString;
 begin
   case m.m_type of
     svmtArr, svmtClass, svmtRef: begin
                Clear;
                m_val := m.m_val;
                m_type := m.m_type;
+             end;
+
+    svmtStr: begin
+               Clear;
+               new(ps);
+               ps^ := PString(m.m_val)^;
+               m_val := ps;
+               m_type:= svmtStr;
              end;
     else
       SetV(m.m_val^, m.m_type);
@@ -1021,6 +1045,11 @@ begin
          end;
 
         SetLength(PMemArray(m_val)^, newsize);
+        while l < newsize do
+         begin
+           PMemArray(m_val)^[l] := nil;
+           inc(l);
+         end;
       end;
     svmtStr: SetLength(PString(m_val)^, newsize);
     else
@@ -1047,12 +1076,17 @@ begin
     svmtArr, svmtClass:
       begin
         p := PMemArray(m_val)^[index];
-        if TObject(p) is TSVMMem then
+        if p <> nil then
+        //if TObject(p) is TSVMMem then
          Dec(TSVMMem(p).m_refc);
 
         PMemArray(m_val)^[index] := val;
       end;
-    svmtStr: PString(m_val)^[index + 1] := TSVMMem(val).GetS[1];
+    svmtStr:
+      begin
+        PString(m_val)^[index + 1] := TSVMMem(val).GetS[1];
+        Dec(TSVMMem(val).m_refc);
+      end
     else
       RaiseSafeException; //raise EInvalidSVMTypeCast.Create('At TSVMMem.ArrSet()');
   end;
@@ -1091,26 +1125,27 @@ var
 begin
   Result := nil;
   if m.m_type in [svmtArr, svmtClass] then
-   begin
-     l := Length(PMemArray(m.m_val)^);
-     Result := NewSVMM_Arr(l, Grabber);
-     Result.m_type := m.m_type;
-     c := 0;
-     while c < l do
-      begin
-        PMemArray(Result.m_val)^[c] := PMemArray(m.m_val)^[c];
+    begin
+      l := Length(PMemArray(m.m_val)^);
+      Result := NewSVMM_Arr(l, Grabber);
+      Result.m_type := m.m_type;
+      c := 0;
+      while c < l do
+       begin
+         PMemArray(Result.m_val)^[c] := PMemArray(m.m_val)^[c];
 
-        if PMemArray(Result.m_val)^[c] <> nil then
-         inc(TSVMMem(PMemArray(Result.m_val)^[c]).m_refc);
+         if PMemArray(Result.m_val)^[c] <> nil then
+          inc(TSVMMem(PMemArray(Result.m_val)^[c]).m_refc);
 
-        inc(c);
-      end;
-   end
+         inc(c);
+       end;
+    end
   else
-   begin
-     Result := NewSVMM(Grabber);
-     Result.SetM(m);
-   end;
+     begin
+       Result := NewSVMM(Grabber);
+       Result.m_refc := 0;
+       Result.SetM(m);
+     end;
 end;
 
 end.

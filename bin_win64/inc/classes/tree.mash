@@ -13,8 +13,11 @@ class Tree(class):
     var Value
     proc Create
 
-    func AddNode, GetNode
-    proc DelNode, Clear
+    func AddNode,
+         GetNode
+
+    proc DelNode,
+         Clear
 end
 
 proc Tree::Create(val):

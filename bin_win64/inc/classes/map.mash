@@ -7,13 +7,23 @@ uses <classes\types>
 
 class Map(class):
   protected:
-    var Objects, Keys
+    var Objects,
+        Keys
 
   public:
     proc Create
 
-    proc Add, Delete, DeleteAt, Clear
-    func Get, At, KeyAt, IndexOf, KeyIndexOf, Size
+    proc Add,
+         Delete,
+         DeleteAt,
+         Clear
+
+    func Get,
+         At,
+         KeyAt,
+         IndexOf,
+         KeyIndexOf,
+         Size
 end
 
 proc Map::Create():

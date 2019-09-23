@@ -90,6 +90,10 @@ end
 
 proc __print(obj):
   switch typeof(obj):
+    case TypeNull:
+      _print("(null)")
+    end
+
     case TypeClass:
       if obj -> type == Exception:
         _print("Exception <" + obj -> ClassName +

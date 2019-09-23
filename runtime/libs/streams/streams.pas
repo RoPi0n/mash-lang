@@ -6,9 +6,14 @@ uses SysUtils, Classes;
 
 {STREAM}
 
+procedure _Stream_Destructor(pStream: pointer); stdcall;
+begin
+  TStream(pStream).Free;
+end;
+
 procedure _Stream_Create(pctx: pointer); stdcall;
 begin
-  __Return_Ref(pctx, TStream.Create);
+  __Return_Ref(pctx, TStream.Create, @_Stream_Destructor);
 end;
 
 procedure _Stream_Seek(pctx: pointer); stdcall;
@@ -169,21 +174,16 @@ begin
   TStream(__Next_Ref(pctx)).Size := 0;
 end;
 
-procedure _Stream_Free(pctx: pointer); stdcall;
-begin
-  TStream(__Next_Ref(pctx)).Free;
-end;
-
 {MEMORYSTREAM}
+
+procedure _MemoryStream_Destructor(pStream: pointer); stdcall;
+begin
+  TMemoryStream(pStream).Free;
+end;
 
 procedure _MemoryStream_Create(pctx: pointer); stdcall;
 begin
-  __Return_Ref(pctx, TMemoryStream.Create);
-end;
-
-procedure _MemoryStream_Free(pctx: pointer); stdcall;
-begin
-  TMemoryStream(__Next_Ref(pctx)).Free;
+  __Return_Ref(pctx, TMemoryStream.Create, @_MemoryStream_Destructor);
 end;
 
 procedure _MemoryStream_LoadFromStream(pctx: pointer); stdcall;
@@ -214,14 +214,16 @@ end;
 
 {FILESTREAM}
 
-procedure _FileStream_Create(pctx: pointer); stdcall;
+procedure _FileStream_Destructor(pStream: pointer); stdcall;
 begin
-  __Return_Ref(pctx, TFileStream.Create(__Next_String(pctx), __Next_Word(pctx)));
+  TFileStream(pStream).Free;
 end;
 
-procedure _FileStream_Free(pctx: pointer); stdcall;
+procedure _FileStream_Create(pctx: pointer); stdcall;
 begin
-  TFileStream(__Next_Ref(pctx)).Free;
+  __Return_Ref(pctx,
+               TFileStream.Create(__Next_String(pctx), __Next_Word(pctx)),
+               @_FileStream_Destructor);
 end;
 
 {EXPORTS DB}
@@ -243,14 +245,14 @@ exports _Stream_ReadFloat              name '_Stream_ReadFloat';
 exports _Stream_ReadStr                name '_Stream_ReadStr';
 exports _Stream_GetSize                name '_Stream_GetSize';
 exports _Stream_Clear                  name '_Stream_Clear';
-exports _Stream_Free                   name '_Stream_Free';
+
 exports _MemoryStream_Create           name '_MemoryStream_Create';
-exports _MemoryStream_Free             name '_MemoryStream_Free';
 exports _MemoryStream_LoadFromStream   name '_MemoryStream_LoadFromStream';
 exports _MemoryStream_StoreToStream    name '_MemoryStream_StoreToStream';
 exports _MemoryStream_LoadFromFile     name '_MemoryStream_LoadFromFile';
 exports _MemoryStream_SaveToFile       name '_MemoryStream_SaveToFile';
+
 exports _FileStream_Create             name '_FileStream_Create';
-exports _FileStream_Free               name '_FileStream_Free';
+
 begin
 end.

@@ -1,0 +1,197 @@
+uses <math\base>
+
+func matrix.summ(a, b):
+  lY ?= len(a)
+  lX ?= len(a[0])
+
+  r ?= new[lY][lX]
+
+  for(y ?= 0; y < lY; y++):
+    for(x ?= 0; x < lX; x++):
+      r[y][x] ?= a[y][x] + b[y][x]
+    end
+  end
+
+  return r
+end
+
+func matrix.diff(a, b):
+  lY ?= len(a)
+  lX ?= len(a[0])
+
+  r ?= new[lY][lX]
+
+  for(y ?= 0; y < lY; y++):
+    for(x ?= 0; x < lX; x++):
+      r[y][x] ?= a[y][x] - b[y][x]
+    end
+  end
+
+  return r
+end
+
+proc matrix.add(a, b):
+  lY ?= len(a)
+  lX ?= len(a[0])
+
+  for(y ?= 0; y < lY; y++):
+    for(x ?= 0; x < lX; x++):
+      a[y][x] += b[y][x]
+    end
+  end
+end
+
+proc matrix.sub(a, b):
+  lY ?= len(a)
+  lX ?= len(a[0])
+
+  for(y ?= 0; y < lY; y++):
+    for(x ?= 0; x < lX; x++):
+      a[y][x] -= b[y][x]
+    end
+  end
+end
+
+func matrix.compare(a, b):
+  lY ?= len(a)
+  lX ?= len(a[0])
+
+  if (lY == len(b)) & (lX == len(b[0])):
+    r ?= true
+    for(y ?= 0; y < lY; y++):
+      for(x ?= 0; x < lX; x++):
+        r &= a[y][x] == b[y][x]
+      end
+    end
+
+    return r
+
+  else:
+    return false
+  end
+end
+
+func matrix.fNumMultiply(m, x):
+  lY ?= len(a)
+  lX ?= len(a[0])
+
+  r ?= new[lY][lX]
+
+  for(y ?= 0; y < lY; y++):
+    for(x ?= 0; x < lX; x++):
+      r[y][x] ?= a[y][x] * x
+    end
+  end
+
+  return r
+end
+
+proc matrix.NumMultiply(m, x):
+  for line in m:
+    for a in line:
+      a *= x
+    end
+  end
+end
+
+func matrix.Multiply(a, b):
+  s ?= 0
+
+  lines_a   ?= len(a)
+  columns_a ?= len(a[0])
+  columns_b ?= len(b[0])
+
+  r ?= new[lines_a][columns_b]
+
+  if lines_a == columns_b:
+    for(y ?= 0; y < lines_a; y++):
+      for(x ?= 0; x < columns_b; x++):
+        for(z ?= 0; z < columns_a; z++):
+          s += a[y][z] * b[z][x]
+        end
+
+        r[y][x] ?= copy(s)
+        s = 0
+      end
+    end
+  else:
+    raise new Exception("matrix.Multiply() -> Invalid size of matrixes!")
+  end
+
+  return r
+end
+
+
+func matrix.OffsetCoord(a, maxA):
+  r ?= copy(a)
+
+  while r < 0:
+    r += maxA
+  end
+
+  while r >= maxA:
+    r -= maxA
+  end
+
+  return r
+end
+
+func matrix.atToroidalCoord(m, x, y):
+  return m[ matrix.OffsetCoord(y, len(m)) ][ matrix.OffsetCoord(x, len(m[0])) ]
+end
+
+func matrix.det(m):
+  m_lines   ?= len(m)
+  m_columns ?= len(m[0])
+
+  if (m_lines == m_columns) & (m_lines == 2):
+    return m[0][0] * m[1][1] - m[0][1] * m[1][0]
+  end
+
+  summ1 ?= 0
+  summ2 ?= 0
+
+  t  ?= 0
+  tX ?= 0
+
+  for(x ?= 0; x < m_columns; x++):
+    t = m[0][x]
+    tX = x + 1
+    for(y ?= 1; y < m_lines; y++):
+      t *= m[y][matrix.OffsetCoord(tX, m_columns)]
+      tX++
+    end
+    summ1 += t
+
+    gc
+  end
+
+  for(x ?= m_columns - 1; x >= 0; x--):
+    t = m[0][x]
+    tX = x - 1
+    for(y ?= 1; y < m_lines; y++):
+      t *= m[y][matrix.OffsetCoord(tX, m_columns)]
+      tX--
+    end
+    summ2 += t
+
+    gc
+  end
+
+  return summ1 - summ2
+end
+
+func matrix.transp(m):
+  m_lines ?= len(m)
+  m_columns ?= len(m[0])
+
+  r ?= new[m_columns][m_lines]
+
+  for(y ?= 0; y < m_lines; y++):
+    for(x ?= 0; x < m_columns; x++):
+      r[x][y] ?= m[y][x]
+    end
+  end
+
+  return r
+end

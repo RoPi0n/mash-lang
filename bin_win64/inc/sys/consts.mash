@@ -1,0 +1,11 @@
+int  true  -1
+int  false  0
+
+proc __GetVM_Null():
+  pushn
+end
+
+var null = __GetVM_Null(),
+    sysslash = GetSystemSlash()
+
+var LnBreak = Chr(13, 10)

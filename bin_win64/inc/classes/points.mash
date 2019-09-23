@@ -2,10 +2,13 @@
 // Point's
 ////////////////////////////////////////////////////////////////////////////////
 
-class point(class):
+class point:
   public:
     var x, y
-    proc Create, Set
+
+    proc Create,
+         Set
+
     func Compare
 end
 
@@ -23,7 +26,7 @@ func point::Compare(p):
   return ($x == p->x) & ($y == p->y)
 end
 
-class point3d(class):
+class point3d:
   public:
     var x, y, z
     proc Create, Set

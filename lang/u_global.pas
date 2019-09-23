@@ -75,7 +75,7 @@ begin
         Delete(s, 1, 1);
       end
       else
-      if copy(s, 1, 2) = '  ' then
+      if (copy(s, 1, 2) = '  ') or (copy(s, 1, 2) = ' (') then
         Delete(s, 1, 1)
       else
       begin

@@ -24,6 +24,16 @@ func GetMax(arr, n):
   return mx
 end
 
+func GetMin(arr, n):
+  mn ?= arr[0]
+  for (i ?= 1; i < n; i++):
+    if arr[i] < mn:
+      mn = arr[i]
+    end
+  end
+  return mn
+end
+
 /*
  *  Quick sorting algorithm implementation.
  */
@@ -52,11 +62,11 @@ proc FromToQSort(arr, left, right):
   end
 
   if left < j:
-    FromToQSort(arr, left, j)
+    safe FromToQSort(arr, left, j)
   end
 
   if i < right:
-    FromToQSort(arr, i, right)
+    safe FromToQSort(arr, i, right)
   end
 end
 
@@ -108,11 +118,11 @@ proc FromToThrQSort(arr, left, right, lvl, maxlvl):
     wait ThrL, ThrR
   else:
     if left < j:
-      FromToThrQSort(arr, left, j, lvl, maxlvl)
+      safe FromToThrQSort(arr, left, j, lvl, maxlvl)
     end
 
     if i < right:
-      FromToThrQSort(arr, i, right, lvl, maxlvl)
+      safe FromToThrQSort(arr, i, right, lvl, maxlvl)
     end
   end
 end
@@ -188,16 +198,16 @@ proc CountSort(arr, n, e):
     count[(arr[i] \ e) % 10]++
   end
 
-  for (i ?= 1; i < 10; i++):
+  for (i = 1; i < 10; i++):
     count[i] += count[i - 1]
   end
 
-  for (i ?= n - 1; i >= 0; i--):
+  for (i = n - 1; i >= 0; i--):
     output[count[(arr[i] \ e) % 10] - 1] ?= arr[i]
     count[(arr[i] \ e) % 10]--
   end
 
-  for (i ?= 0; i < n; i++):
+  for (i = 0; i < n; i++):
     arr[i] ?= output[i]
   end
 end
@@ -287,8 +297,10 @@ func FromToInterpolarSearch(arr, left, right, key):
   found ?= false
 
   while (arr[left] < key) & (arr[right] > key) & (~found):
+
     pos = left + ( (key - arr[left]) * (right - left) ) /
                    (arr[right] - arr[left])
+
     if arr[pos] < key:
       left = pos + 1
     else:

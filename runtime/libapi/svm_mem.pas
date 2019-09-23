@@ -42,10 +42,14 @@ type
 
   TSVMType = (svmtNull, svmtWord, svmtInt, svmtReal, svmtStr, svmtArr, svmtClass, svmtRef);
 
+  TDestructorCallBack = procedure(p: pointer); stdcall;
+  PDestructorCallBack = ^TDestructorCallBack;
+
   TSVMMem = class
     m_val: pointer;
     m_type: TSVMType;
     m_refc: Integer;
+    m_dcbp: PDestructorCallBack;
 
     constructor MCreate;
     constructor MCreateF(const value; t:TSVMType);
@@ -165,6 +169,7 @@ begin
   m_val := nil;
   m_type := svmtNull;
   m_refc := 0;
+  m_dcbp := nil;
 end;
 
 constructor TSVMMem.MCreateF(const value; t:TSVMType);
@@ -173,13 +178,15 @@ begin
   m_type := t;
   m_refc := 0;
   SetV(value, t);
+  m_dcbp := nil;
 end;
 
 constructor TSVMMem.MCreateFS(s:string);
 begin
   m_val := nil;
   m_type := svmtStr;
-  m_refc := 0;
+  m_refc := 0;  
+  m_dcbp := nil;
   SetS(S);
 end;
 
@@ -187,7 +194,8 @@ constructor TSVMMem.MCreateFW(w:LongWord);
 begin
   m_val := nil;
   m_type := svmtWord;
-  m_refc := 0;
+  m_refc := 0;  
+  m_dcbp := nil;
   SetW(w);
 end;
 
@@ -195,7 +203,8 @@ constructor TSVMMem.MCreateArr(size:LongWord = 0);
 begin
   m_type := svmtArr;
   new(PMemArray(m_val));
-  m_refc := 0;
+  m_refc := 0;  
+  m_dcbp := nil;
   SetLength(PMemArray(m_val)^, size);
 end;
 
@@ -207,7 +216,7 @@ end;
 procedure TSVMMem.Clear; inline;
 begin
   case m_type of
-    svmtNull, svmtRef: { no actions };
+    svmtNull: { no actions };
     svmtWord: Dispose(PLongWord(m_val));
     svmtInt:  Dispose(PInt64(m_val));
     svmtReal: Dispose(PDouble(m_val));
@@ -217,6 +226,9 @@ begin
                 SetLength(PMemArray(m_val)^, 0);
                 Dispose(PMemArray(m_val));
               end;
+
+    svmtRef: if m_dcbp <> nil then
+              TDestructorCallBack(m_dcbp)(m_val);
     else
       raise EInvalidSVMOperation.Create('At TSVMMem.Clear()');
   end;

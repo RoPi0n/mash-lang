@@ -34,6 +34,11 @@ begin
   __Return_Float(pctx, ArcCos(__Next_Float(pctx)));
 end;
 
+procedure FArcTg(pctx: pointer); stdcall;
+begin
+  __Return_Float(pctx, arctan(__Next_Float(pctx)));
+end;
+
 procedure FLog10(pctx: pointer); stdcall;
 begin
   __Return_Float(pctx, Log10(__Next_Float(pctx)));
@@ -69,6 +74,7 @@ exports FTG      name 'TG';
 exports FCTG     name 'CTG';
 exports FARCSIN  name 'ARCSIN';
 exports FARCCOS  name 'ARCCOS';
+exports FARCTG   name 'ARCTG';
 exports FLOG10   name 'LOG10';
 exports FLOG2    name 'LOG2';
 exports FLOGN    name 'LOGN';

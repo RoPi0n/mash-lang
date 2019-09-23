@@ -54,7 +54,7 @@ var
 begin
     try
       writeln('Mash lang!');
-      writeln('Version: 0.1.5, Pavel Shiryaev (c) from 2018.');
+      writeln('Version: 0.4, Pavel Chernov (c) from 2018.');
       writeln('See more at: https://github.com/RoPi0n/mash-lang');
       if ParamCount = 0 then
        begin
@@ -225,21 +225,25 @@ begin
        end;
       FreePreprocessor(varmgr);
 
+      if not MainDefined then
+       PrpError('Method "main" not found!');
+
       code.Text :=
          //Initialization + Initialization code
          'word __addrtsz ' + IntToStr(varmgr.DefinedVars.Count) + sLineBreak +
-         'pushc __addrtsz' + sLineBreak + 'gpm' + sLineBreak + 'msz' +
-         sLineBreak + 'gc' + sLineBreak + InitCode.Text +
+         'pushcp __addrtsz' + sLineBreak + 'msz' +
+         sLineBreak + InitCode.Text +
 
          //Code
          sLineBreak + code.Text + sLineBreak +
 
          //Entry point call
-         'pushc __entrypoint' + slinebreak + 'gpm' + slinebreak + 'jc' +
-         sLineBreak + 'pushc __haltpoint' + sLineBreak + 'gpm' + sLineBreak + 'jp' +
+         'pushcp __entrypoint' + slinebreak + 'jc' +
+         sLineBreak + 'pushcp __haltpoint' + sLineBreak + 'jp' +
 
          // Postinit code + haltpoint
-         sLineBreak + PostInitCode.Text + sLineBreak + '__haltpoint:' + sLineBreak + 'gc';
+         sLineBreak + PostInitCode.Text + sLineBreak + '__haltpoint:' +
+         sLineBreak + 'stkdrop' + sLineBreak + 'gc';
 
       code.SaveToFile('data.tmp');
       code.LoadFromFile('data.tmp');

@@ -77,6 +77,9 @@ begin
   BlockStack.Add(CB);
   CB.mName := pn;
 
+  if pn = 'main' then
+   MainDefined := true;
+
   Result := 'pushcp __gen_' + pn + '_method_end_block' + sLineBreak + 'jp' + sLineBreak + pn + ':';
 
   ProcEnterList.Add(pn);

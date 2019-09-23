@@ -22,7 +22,7 @@ type
   function NewSVMM_FI(i:int64; Grabber: TGrabber): TSVMMem;
   function NewSVMM_FD(d:double; Grabber: TGrabber): TSVMMem;
   function NewSVMM_Arr(size:cardinal; Grabber: TGrabber): TSVMMem;
-  function NewSVMM_Ref(ref:pointer; Grabber: TGrabber): TSVMMem;
+  function NewSVMM_Ref(ref:pointer; Grabber: TGrabber; dcbp: PDestructorCallBack): TSVMMem;
   
   {** Stack **}
 type
@@ -165,12 +165,13 @@ begin
   Grabber.Reg(Result);
 end;
 
-function NewSVMM_Ref(ref:pointer; Grabber: TGrabber): TSVMMem;
+function NewSVMM_Ref(ref:pointer; Grabber: TGrabber; dcbp: PDestructorCallBack): TSVMMem;
 begin
   Result := TSVMMem.MCreate;
   Result.m_val := ref;
   Result.m_type := svmtRef;
   Result.m_refc := 0;
+  Result.m_dcbp := dcbp;
   Grabber.Reg(Result);
 end;
 

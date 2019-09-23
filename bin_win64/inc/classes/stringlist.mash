@@ -8,8 +8,11 @@ uses <classes\streams>
 
 class StringList(List):
   public:
-    proc SetText, SaveToFile, LoadFromFile
-    func GetText
+    proc SetText,
+         SaveToFile,
+         LoadFromFile
+
+    func ToString
 end
 
 proc StringList::SetText(text):
@@ -25,7 +28,7 @@ proc StringList::SetText(text):
   end
 end
 
-func StringList::GetText():
+func StringList::ToString():
   r ?= ""
   for(i ?= 0; i < $size; i++):
     r += $Items[i]

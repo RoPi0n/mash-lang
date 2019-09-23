@@ -24,15 +24,14 @@ import _Stream_ReadFloat              "streams.lib" "_Stream_ReadFloat"
 import _Stream_ReadStr                "streams.lib" "_Stream_ReadStr"
 import _Stream_GetSize                "streams.lib" "_Stream_GetSize"
 import _Stream_Clear                  "streams.lib" "_Stream_Clear"
-import _Stream_Free                   "streams.lib" "_Stream_Free"
+
 import _MemoryStream_Create           "streams.lib" "_MemoryStream_Create"
-import _MemoryStream_Free             "streams.lib" "_MemoryStream_Free"
 import _MemoryStream_LoadFromStream   "streams.lib" "_MemoryStream_LoadFromStream"
 import _MemoryStream_StoreToStream    "streams.lib" "_MemoryStream_StoreToStream"
 import _MemoryStream_LoadFromFile     "streams.lib" "_MemoryStream_LoadFromFile"
 import _MemoryStream_SaveToFile       "streams.lib" "_MemoryStream_SaveToFile"
+
 import _FileStream_Create             "streams.lib" "_FileStream_Create"
-import _FileStream_Free               "streams.lib" "_FileStream_Free"
 
 /*
  *  Base TStream class
@@ -47,35 +46,41 @@ class TStream:
 
   public:
     // constructor & destructor
-    proc Create, Free
+    proc Create
 
     // main methods
-    proc Seek, Clear
-    func GetCaretPos, GetSize
+    proc Seek,
+         Clear
 
-    // streams operations
-    proc WriteFromMemoryStream, ReadFromMemoryStream, CopyFromStream
+    func GetCaretPos,
+         GetSize
 
-    // writers
-    proc Write, WriteU, WriteByte, WriteWord, WriteInt, WriteFloat, WriteStr
+    // streams I/O operations
+    proc WriteFromMemoryStream,
+         ReadFromMemoryStream,
+         CopyFromStream
 
-    // readers
-    func ReadByte, ReadWord, ReadInt, ReadFloat, ReadStr
+    // I/O operations
+
+    proc Write,
+         WriteU,
+         WriteByte,
+         WriteWord,
+         WriteInt,
+         WriteFloat,
+         WriteStr
+
+    func ReadByte,
+         ReadWord,
+         ReadInt,
+         ReadFloat,
+         ReadStr
 end
 
 // constructor & destructor
 
-proc TStream::Create(...):
-  if argcount > 0:
-    pop resource
-    $StreamPtr ?= ?resource
-  else:
-    $StreamPtr ?= _Stream_Create()
-  end
-end
-
-proc TStream::Free():
-  _Stream_Free($StreamPtr)
+proc TStream::Create(resource):
+  $StreamPtr ?= ?resource
 end
 
 // some methods
@@ -198,25 +203,19 @@ end
 class MemoryStream(TStream):
   public:
     // constructor & destructor
-    proc Create, Free
+    proc Create
 
     // some methods
-    proc LoadFromStream, StoreToStream, LoadFromFile, SaveToFile
+    proc LoadFromStream,
+         StoreToStream,
+         LoadFromFile,
+         SaveToFile
 end
 
 // constructor & destructor
 
-proc MemoryStream::Create(...):
-  if argcount > 0:
-    pop resource
-    $StreamPtr ?= ?resource
-  else:
-    $StreamPtr ?= _MemoryStream_Create()
-  end
-end
-
-proc MemoryStream::Free():
-  _MemoryStream_Free($StreamPtr)
+proc MemoryStream::Create():
+  $StreamPtr ?= _MemoryStream_Create()
 end
 
 // some methods
@@ -244,7 +243,7 @@ end
 class FileStream(TStream):
   public:
     // constructor & destructor
-    proc Create, Free
+    proc Create
 end
 
 // FileStream modes
@@ -266,8 +265,4 @@ proc FileStream::Create(fpath, openmode):
   fp ?= PreparePath(fpath)
   println(fp)
   $StreamPtr ?= _FileStream_Create(fp, openmode)
-end
-
-proc FileStream::Free():
-  _FileStream_Free($StreamPtr)
 end

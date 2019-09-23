@@ -7,8 +7,19 @@ uses <classes\types>
 class vector(class):
   public:
     var Items
-    proc Create, Push_Back, Rem_Back, Rem_First, ForEach
-    func Pop_Back, Pop_First, Peek_Back, Peek_First, At, Size
+
+    proc Create,
+         Push_Back,
+         Rem_Back,
+         Rem_First,
+         ForEach
+
+    func Pop_Back,
+         Pop_First,
+         Peek_Back,
+         Peek_First,
+         At,
+         Size
 end
 
 proc vector::Create():

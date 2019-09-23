@@ -34,8 +34,13 @@ proc thr_terminate(thr):
   tthr
 end
 
-enum ThreadPriority [tpIdle, tpLowest, tpLower, tpNormal,
-                     tpHigher, tpHighest, tpTimeCritical]
+enum ThreadPriority [tpIdle,
+                     tpLowest,
+                     tpLower,
+                     tpNormal,
+                     tpHigher,
+                     tpHighest,
+                     tpTimeCritical]
 
 proc thr_setpriority(thr, priority):
   push priority
@@ -57,11 +62,18 @@ class TThread:
     var ThreadContext
 
   public:
-    var Resumed, Terminated
-    proc Create
+    var Resumed,
+        Terminated
 
-    proc Execute //for overriding
-    proc Suspend, Resume, Terminate, WaitFor, ReJoin, SetPriority //Control proc's
+    proc Create,
+
+         Execute, //for overriding
+         Suspend,
+         Resume,
+         Terminate,
+         WaitFor,
+         ReJoin,
+         SetPriority //Control proc's
 end
 
 proc TThread::Execute():
