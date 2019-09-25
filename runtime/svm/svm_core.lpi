@@ -73,6 +73,11 @@
         <OptimizationLevel Value="3"/>
       </Optimizations>
     </CodeGeneration>
+    <Linking>
+      <Options>
+        <ExecutableType Value="Library"/>
+      </Options>
+    </Linking>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

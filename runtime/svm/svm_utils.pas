@@ -20,6 +20,8 @@ var
   VEHExceptions: TThreadList;
   VEHExceptions_Count: word = 0;
 
+  SEH_Handler: Pointer;
+
 procedure RaiseSafeException;
 
 {$EndIf}

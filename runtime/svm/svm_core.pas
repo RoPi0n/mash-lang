@@ -1,4 +1,4 @@
-//{$Define BuildInLibrary}
+{$Define BuildInLibrary}
 
 {$ifdef BuildInLibrary}
   library svm_core;
@@ -138,7 +138,7 @@ type
 type
   TByteArr = array of byte;
   PByteArr = ^TByteArr;
-  TDbgCallBack = procedure(p:pointer); cdecl;
+  TDbgCallBack = procedure(p:pointer); stdcall;
   PDbgCallBack = ^TDbgCallBack;
   TAppType = (atBin, atCns, atGUI);
 
@@ -912,6 +912,11 @@ type
             begin
               self.stack.drop;
               Inc(self.ip);
+
+              {$IfDef BuildInLibrary}
+                if DbgCallBack <> nil then
+                  TDbgCallBack(DbgCallBack)(@self);
+              {$EndIf}
             end;
 
             bcSWP:
@@ -969,11 +974,20 @@ type
               Dec(TSVMMem(p).m_refc);
 
               self.ip := TSVMMem(p).GetW;
+
+              {$IfDef BuildInLibrary}
+                if DbgCallBack <> nil then
+                  TDbgCallBack(DbgCallBack)(@self);
+              {$EndIf}
             end;
 
             bcJR:
             begin
               self.ip := Self.cbstack.popv;
+              {$IfDef BuildInLibrary}
+                if DbgCallBack <> nil then
+                  TDbgCallBack(DbgCallBack)(@self);
+              {$EndIf}
             end;
 
             bcEQ:
@@ -1440,11 +1454,16 @@ type
               pcctx^.pStack := @self.stack;
               pcctx^.pGrabber := grabber;
 
+              Inc(self.ip);
+
               TExternalFunction(self.extern_methods^.GetFunc(r.GetW))(pcctx);
 
               dispose(pcctx);
 
-              Inc(self.ip);
+              {$IfDef BuildInLibrary}
+                if DbgCallBack <> nil then
+                  TDbgCallBack(DbgCallBack)(@self);
+              {$EndIf}
             end;
 
             bcPHN:
@@ -1620,8 +1639,9 @@ type
 
             bcDBP:
             begin
-              TDbgCallBack(DbgCallBack)(@self);
-              //TExternalFunction(self.extern_methods^.methods[0])(@self);
+              if DbgCallBack <> nil then
+                TDbgCallBack(DbgCallBack)(@self);
+
               Inc(self.ip);
             end;
 
@@ -1758,22 +1778,42 @@ type
   end;
 
 {***** Main *******************************************************************}
-{$ifdef BuildInLibrary}
+{$IfDef BuildInLibrary}
 
-function SVM_Create:PSVM; stdcall;
+procedure SVM_Init; stdcall;
 begin
-  New(Result);
-  new(Result^.bytes);
-  New(Result^.consts);
-  New(Result^.extern_methods);
-  New(Result^.mem);
-  Result^.isMainThread := true;
-  Result^.stack.init(Result);
-  Result^.cbstack.init;
-  Result^.grabber.init;
+  {$IfDef Windows}
+    VEHExceptions := TThreadList.Create;
+
+    SEH_Handler := nil;
+    SEH_Handler := AddVectoredExceptionHandler(0, @WinSVMVectoredHandler);
+  {$EndIf}
 end;
 
-procedure SVM_Free(SVM:PSVM); stdcall;
+procedure SVM_Free; stdcall;
+begin
+  {$IfDef Windows}
+    VEHExceptions := TThreadList.Create;
+
+    SEH_Handler := nil;
+    SEH_Handler := AddVectoredExceptionHandler(0, @WinSVMVectoredHandler);
+  {$EndIf}
+end;
+
+function SVM_CreateVM:PSVM; stdcall;
+begin
+  new(Result);
+  new(Result^.bytes);
+  new(Result^.consts);
+  new(Result^.extern_methods);
+  new(Result^.mem);
+
+  Result^.isMainThread := true;
+  Result^.stack.init;
+  Result^.cbstack.init;
+end;
+
+procedure SVM_FreeVM(SVM:PSVM); stdcall;
 begin
   Dispose(SVM^.consts);
   Dispose(SVM^.extern_methods);
@@ -1815,8 +1855,10 @@ begin
   SVM^.RunThread;
 end;
 
-exports SVM_Create          name '_SVM_CREATE';
+exports SVM_Init            name '_SVM_INIT';
 exports SVM_Free            name '_SVM_FREE';
+exports SVM_CreateVM        name '_SVM_CREATE_VM';
+exports SVM_FreeVM          name '_SVM_FREE_VM';
 exports SVM_LoadExeFromFile name '_SVM_LOADEXEFROMFILE';
 exports SVM_Run             name '_SVM_RUN';
 exports SVM_RegAPI          name '_SVM_REGAPI';
@@ -1824,10 +1866,267 @@ exports SVM_SetDbgCallBack  name '_SVM_DEBUGCALLBACK';
 exports SVM_CheckErr        name '_SVM_CHECKERR';
 exports SVM_Continue        name '_SVM_CONTINUE';
 
+{** Libs API **}
+
+{** Allocations **}
+
+function NewSVMM(Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreate;
+  Result.m_refc := 0;
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_F(const value; t:TSVMType; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateF(value, t);
+  Result.m_refc := 0;
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_FS(s:string; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateFS(s);
+  Result.m_refc := 0;
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_FW(w:cardinal; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateFW(w);
+  Result.m_refc := 0;
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_FI(i:int64; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreate;
+  Result.m_refc := 0;
+  Result.SetV(i, svmtInt);
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_FD(d:double; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreate;
+  Result.m_refc := 0;
+  Result.SetV(d, svmtReal);
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_Arr(size:cardinal; Grabber: TGrabber): TSVMMem;
+begin
+  Result := TSVMMem.MCreateArr(size);
+  Result.m_refc := 0;
+  Grabber.Reg(Result);
+end;
+
+function NewSVMM_Ref(ref:pointer; Grabber: TGrabber; dcbp: PDestructorCallBack): TSVMMem;
+begin
+  Result := TSVMMem.MCreate;
+  Result.m_val := ref;
+  Result.m_type := svmtRef;
+  Result.m_refc := 0;
+  Result.m_dcbp := dcbp;
+  Grabber.Reg(Result);
+end;
+
+{** API Stack **}
+
+type
+  TAPIStack = object
+   public
+      items: array of pointer;
+      size, i_pos: cardinal;
+      procedure push(p: pointer);
+      function peek: pointer;
+      procedure pop;
+      function popv: pointer;
+      procedure swp;
+      procedure drop;
+   end;
+
+  PAPIStack = ^TAPIStack;
+
+procedure TAPIStack.push(p: pointer);
+begin
+  items[i_pos] := p;
+  inc(i_pos);
+
+  try
+    Inc(TSVMMem(p).m_refc);
+  finally
+    if i_pos >= size then
+     begin
+       size := size + StackBlockSize;
+       SetLength(items, size)
+     end;
+  end;
+end;
+
+function TAPIStack.peek: pointer;
+begin
+  Result := items[i_pos - 1];
+end;
+
+procedure TAPIStack.pop;
+begin
+  try
+    Dec(TSVMMem(self.peek).m_refc);
+  finally
+    Dec(i_pos);
+    if size - i_pos > StackBlockSize then
+     begin
+       size := size - StackBlockSize;
+       SetLength(items, size);
+     end;
+  end;
+end;
+
+function TAPIStack.popv: pointer;
+begin
+  Dec(i_pos);
+  Result := items[i_pos];
+
+  try
+    Dec(TSVMMem(Result).m_refc);
+  finally
+    if size - i_pos > StackBlockSize then
+     begin
+       size := size - StackBlockSize;
+       SetLength(items, size);
+     end;
+  end;
+end;
+
+procedure TAPIStack.swp;
+var
+  p: pointer;
+begin
+  p := items[i_pos - 2];
+  items[i_pos - 2] := items[i_pos - 1];
+  items[i_pos - 1] := p;
+end;
+
+procedure TAPIStack.drop;
+var
+   c: cardinal;
+begin
+   c := 0;
+   while c < i_pos do
+    begin
+      try
+        Dec(TSVMMem(items[c]).m_refc);
+      finally
+        inc(c);
+      end;
+    end;
+
+   SetLength(items, StackBlockSize);
+   size := StackBlockSize;
+   i_pos := 0;
+end;
+
+{** Exports **}
+
+function __Next_Type(pctx: PCallingContext): byte; stdcall;
+begin
+  Result := byte(TSVMMem(PAPIStack(pctx^.pStack)^.peek).m_type);
+end;
+
+function __Next_Word(pctx: PCallingContext): longword; stdcall;
+begin
+  Result := TSVMMem(PAPIStack(pctx^.pStack)^.popv).GetW;
+end;
+
+function __Next_Int(pctx: PCallingContext): int64; stdcall;
+begin
+  Result := TSVMMem(PAPIStack(pctx^.pStack)^.popv).GetI;
+end;
+
+function __Next_Float(pctx: PCallingContext): double; stdcall;
+begin
+  Result := TSVMMem(PAPIStack(pctx^.pStack)^.popv).GetD;
+end;
+
+procedure __Next_String(pctx: PCallingContext; str: PString); stdcall;
+begin
+  str^ := TSVMMem(PAPIStack(pctx^.pStack)^.popv).GetS;
+end;
+
+function __Next_Bool(pctx: PCallingContext): boolean; stdcall;
+begin
+  Result := TSVMMem(PAPIStack(pctx^.pStack)^.popv).GetB;
+end;
+
+function __Next_Ref(pctx: PCallingContext): pointer; stdcall;
+begin
+  Result := TSVMMem(PAPIStack(pctx^.pStack)^.popv).m_val;
+end;
+
+{***** Pushing arguments *****}
+
+procedure __Return_Word(pctx: PCallingContext; val: longword); stdcall;
+begin
+  PAPIStack(pctx^.pStack)^.push( NewSVMM_FW(val, TGrabber(pctx^.pGrabber)) );
+end;
+
+procedure __Return_Int(pctx: PCallingContext; val: int64); stdcall;
+begin
+  PAPIStack(pctx^.pStack)^.push( NewSVMM_FI(val, TGrabber(pctx^.pGrabber)) );
+end;
+
+procedure __Return_Float(pctx: PCallingContext; val: double); stdcall;
+begin
+  PAPIStack(pctx^.pStack)^.push( NewSVMM_FD(val, TGrabber(pctx^.pGrabber)) );
+end;
+
+procedure __Return_String(pctx: PCallingContext; val: PString); stdcall;
+var
+  s: string;
+begin
+  s := val^;
+  PAPIStack(pctx^.pStack)^.push( NewSVMM_FS(s, TGrabber(pctx^.pGrabber)) );
+end;
+
+procedure __Return_Bool(pctx: PCallingContext; val: boolean); stdcall;
+begin
+  PAPIStack(pctx^.pStack)^.push( NewSVMM_FI(Int64(val), TGrabber(pctx^.pGrabber)) );
+end;
+
+procedure __Return_Ref(pctx: PCallingContext; val: pointer; dcbp: PDestructorCallBack); stdcall;
+begin
+  PAPIStack(pctx^.pStack)^.push( NewSVMM_Ref(val, TGrabber(pctx^.pGrabber), dcbp) );
+end;
+
+{** Callback mechanic **}
+
+procedure __Make_CallBack(pctx: PCallingContext; addr: TInstructionPointer); stdcall;
+begin
+  PSVM(pctx^.pVM)^.cbstack.push(PSVM(pctx^.pVM)^.ip + 1); //adding +1 for avoid looping
+  PSVM(pctx^.pVM)^.ip := addr;
+end;
+
+exports __Next_Type     name '__Next_Type';
+exports __Next_Word     name '__Next_Word';
+exports __Next_Int      name '__Next_Int';
+exports __Next_Float    name '__Next_Float';
+exports __Next_String   name '__Next_String';
+exports __Next_Bool     name '__Next_Bool';
+exports __Next_Ref      name '__Next_Ref';
+
+exports __Return_Word   name '__Return_Word';
+exports __Return_Int    name '__Return_Int';
+exports __Return_Float  name '__Return_Float';
+exports __Return_String name '__Return_String';
+exports __Return_Bool   name '__Return_Bool';
+exports __Return_Ref    name '__Return_Ref';
+exports __Make_CallBack name '__Make_CallBack';
+
 begin
 end.
 
-{$else}
+{$Else}
 
 procedure CheckHeader(pb:PByteArr);
 begin
@@ -1838,11 +2137,11 @@ begin
         (chr(pb^[6]) = '_') and (chr(pb^[7]) = 'C') and (chr(pb^[8]) = 'N') and
         (chr(pb^[9]) = 'S') then
          begin
-           {$ifdef Windows}
-             {$ifdef BuildGUI}
+           {$IfDef Windows}
+             {$IfDef BuildGUI}
                AllocConsole;
-             {$endif}
-           {$endif}
+             {$EndIf}
+           {$EndIf}
            AppType := atCns;
            Exit;
          end;
@@ -1851,11 +2150,11 @@ begin
         (chr(pb^[6]) = '_') and (chr(pb^[7]) = 'G') and (chr(pb^[8]) = 'U') and
         (chr(pb^[9]) = 'I') then
          begin
-           {$ifdef Windows}
-             {$ifndef BuildGUI}
+           {$IfDef Windows}
+             {$IfNDef BuildGUI}
                FreeConsole;
-             {$endif}
-           {$endif}
+             {$EndIf}
+           {$EndIf}
            AppType := atGUI;
            Exit;
          end;
@@ -1866,18 +2165,15 @@ end;
 
 var
   svm:TSVM;
-  {$IfDef Windows}
-    SEH_Handler: Pointer;
-  {$EndIf}
 begin
   {$IfDef Windows}
     VEHExceptions := TThreadList.Create;
-    //VEHExceptions.;
 
     SEH_Handler := nil;
     SEH_Handler := AddVectoredExceptionHandler(0, @WinSVMVectoredHandler);
   {$EndIf}
 
+  {$IfNDef BuildGUI}
   if ParamCount<1 then
    begin
      writeln('MASH!');
@@ -1885,6 +2181,7 @@ begin
      writeln('Version: 1.9.4');
 	 writeln('Using: ',ExtractFileName(ParamStr(0)),' <svmexe file> [args]');
    end;
+  {$EndIf}
 
   new(svm.bytes);
   new(svm.consts);
@@ -1906,4 +2203,4 @@ begin
     FreeAndNil(VEHExceptions);
   {$EndIf}
 end.
-{$endif}
+{$EndIf}

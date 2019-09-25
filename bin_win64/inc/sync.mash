@@ -51,17 +51,13 @@ class TAtomic:
 
   public:
     var Value
-    proc Create, Free
+    proc Create
     proc Lock, UnLock
 end
 
 proc TAtomic::Create(Value):
   $Locker = new CriticalSection()
   $Value ?= new(Value)
-end
-
-proc TAtomic::Free():
-  $Locker -> Free()
 end
 
 proc TAtomic::Lock():
