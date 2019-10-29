@@ -1,5 +1,6 @@
 unit u_prep_launch;
-
+{$Mode objfpc}
+{$H+}
 interface
   uses SysUtils, u_prep_global, u_globalvars, u_variables,
        u_local_variables, u_prep_codeblock;

@@ -80,7 +80,6 @@ type
       procedure Button2Click(Sender: TObject);
       procedure Button3Click(Sender: TObject);
       procedure Button4Click(Sender: TObject);
-      procedure DbgStartStopButtonClick(Sender: TObject);
       procedure FormCreate(Sender: TObject);
       procedure FormResize(Sender: TObject);
       procedure MenuItem10Click(Sender: TObject);
@@ -395,7 +394,7 @@ begin
       ShowPreviewPanel;
 end;
 
-function BuildThread(p: pointer): longint;
+function BuildThread(p: pointer): Int64;
 begin
    Result := 0;
    TProcess(p).Execute;
@@ -405,7 +404,7 @@ procedure TMainFrm.BuildFile(fp, flags: string);
 var
    AProcess: TProcess;
    sl: TStringList;
-   thr: cardinal;
+   thr: QWord;
 begin
    LogMemo.Lines.Clear;
    LogMemo.Repaint;
@@ -540,20 +539,6 @@ begin
    DebuggerPanel.Width := 0;
 end;
 
-procedure TMainFrm.DbgStartStopButtonClick(Sender: TObject);
-begin
-   if DbgStopIt then
-    begin
-      DebuggerFrame1.DbgStartStopButton.Caption := 'Stop';
-      DbgStopIt := False;
-    end
-   else
-    begin
-      DebuggerFrame1.DbgStartStopButton.Caption := 'Resume';
-      DbgStopIt := True;
-    end;
-end;
-
 procedure TMainFrm.MenuItem12Click(Sender: TObject);
 begin
    LogsPanel.Height := 196;
@@ -638,7 +623,7 @@ begin
          EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
          EdtFrm.Saved := True;
          EdtFrm.UpdateState;
-         BuildFile(EdtFrm.DefFile, '/bin /mdbg+ /o-');
+         BuildFile(EdtFrm.DefFile, '/bin /o-');
          DebugFile(MainFrm, ChangeFileExt(EdtFrm.DefFile, '.vmc'),
             ChangeFileExt(EdtFrm.DefFile, '.mdbg'));
        end

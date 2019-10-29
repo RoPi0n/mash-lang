@@ -6,7 +6,7 @@ uses <math\matrix>
 proc main():
   plt ?= new math.plot(math.plot.Decart, 80)
 
-  cube ?= [ new point3d(-2, -2, 0),
+  rect ?= [ new point3d(-2, -2, 0),
             new point3d(-2,  2, 0),
             new point3d( 2,  2, 0),
             new point3d( 2, -2, 0),
@@ -22,7 +22,7 @@ proc main():
   k    ?= 0.05
 
   while true:
-    for p in cube:
+    for p in rect:
       dX ?= p -> x * cos(al) - p -> y * sin(al)
       dY ?= dX * sin(al) + p -> y * cos(al)
 

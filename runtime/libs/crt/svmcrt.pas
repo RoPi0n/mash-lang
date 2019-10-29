@@ -4,7 +4,7 @@ library svmcrt;
 uses
   crt;
 
-{$I '..\libapi.inc'}
+{$I '..\svm.inc'}
 
 procedure _CursorBig(pctx: pointer); stdcall;
 begin

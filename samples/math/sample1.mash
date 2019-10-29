@@ -2,7 +2,7 @@ uses <crt>
 uses <math\plots>
 
 func fnc(x):
-  return 1 / x
+  return if( (x > 1) & (x < 2), null, 1 / x )
 end
 
 proc main():

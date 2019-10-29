@@ -1,238 +1,105 @@
 object DebuggerFrame: TDebuggerFrame
   Left = 0
-  Height = 561
+  Height = 167
   Top = 0
-  Width = 348
-  ClientHeight = 561
-  ClientWidth = 348
+  Width = 217
+  ClientHeight = 167
+  ClientWidth = 217
   Color = clWhite
   Font.Height = -13
   Font.Name = 'Consolas'
   ParentColor = False
   ParentFont = False
   TabOrder = 0
-  DesignLeft = 500
-  DesignTop = 83
-  object Panel1: TPanel
+  DesignLeft = 266
+  DesignTop = 196
+  object Panel6: TPanel
     Left = 0
-    Height = 24
+    Height = 167
     Top = 0
-    Width = 348
-    Align = alTop
-    Alignment = taLeftJustify
-    BevelOuter = bvNone
-    BorderStyle = bsSingle
-    Caption = ' VM static address table:'
-    Color = clBtnFace
-    ParentColor = False
-    TabOrder = 0
-  end
-  object Panel2: TPanel
-    Left = 0
-    Height = 328
-    Top = 24
-    Width = 348
+    Width = 217
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 328
-    ClientWidth = 348
-    TabOrder = 1
-    object DbgVarsLB: TListBox
+    ClientHeight = 167
+    ClientWidth = 217
+    TabOrder = 0
+    object Panel7: TPanel
       Left = 0
-      Height = 328
+      Height = 24
       Top = 0
-      Width = 348
-      Align = alClient
-      Font.Height = -11
-      Font.Name = 'Consolas'
-      Items.Strings = (
-        'Full name:                         Addr:    Value:'
-      )
-      ItemHeight = 13
-      ParentFont = False
-      TabOrder = 0
-    end
-  end
-  object Panel4: TPanel
-    Left = 0
-    Height = 204
-    Top = 357
-    Width = 348
-    Align = alBottom
-    BevelOuter = bvNone
-    ClientHeight = 204
-    ClientWidth = 348
-    TabOrder = 2
-    object Panel5: TPanel
-      Left = 0
-      Height = 204
-      Top = 0
-      Width = 174
-      Align = alClient
-      ClientHeight = 204
-      ClientWidth = 174
-      TabOrder = 0
-      object Panel3: TPanel
-        Left = 1
-        Height = 24
-        Top = 1
-        Width = 172
-        Align = alTop
-        Alignment = taLeftJustify
-        BevelOuter = bvNone
-        BorderStyle = bsSingle
-        Caption = ' Stack:'
-        Color = clBtnFace
-        ParentColor = False
-        TabOrder = 0
-      end
-      object DbgStackLB: TListBox
-        Left = 1
-        Height = 178
-        Top = 25
-        Width = 172
-        Align = alClient
-        Font.Height = -11
-        Font.Name = 'Consolas'
-        Items.Strings = (
-          'Pos:  Addr:    Value:'
-        )
-        ItemHeight = 13
-        ParentFont = False
-        TabOrder = 1
-      end
-    end
-    object Splitter2: TSplitter
-      Left = 174
-      Height = 204
-      Top = 0
-      Width = 5
-      Align = alRight
+      Width = 217
+      Align = alTop
+      Alignment = taLeftJustify
+      BevelOuter = bvNone
+      BorderStyle = bsSingle
+      Caption = ' VM thead:'
       Color = clBtnFace
       ParentColor = False
-      ResizeAnchor = akRight
+      TabOrder = 0
     end
-    object Panel6: TPanel
-      Left = 179
-      Height = 204
-      Top = 0
-      Width = 169
-      Align = alRight
-      BevelOuter = bvNone
-      ClientHeight = 204
-      ClientWidth = 169
-      TabOrder = 2
-      object Panel7: TPanel
-        Left = 0
-        Height = 24
-        Top = 0
-        Width = 169
-        Align = alTop
-        Alignment = taLeftJustify
-        BevelOuter = bvNone
-        BorderStyle = bsSingle
-        Caption = ' VM thead:'
-        Color = clBtnFace
-        ParentColor = False
-        TabOrder = 0
-      end
-      object Label1: TLabel
-        Left = 8
-        Height = 15
-        Top = 45
-        Width = 49
-        Caption = 'CIP: ?.'
-        ParentColor = False
-      end
-      object Label2: TLabel
-        Left = 8
-        Height = 15
-        Top = 61
-        Width = 49
-        Caption = 'CIA: ?.'
-        ParentColor = False
-      end
-      object Label3: TLabel
-        Left = 8
-        Height = 15
-        Top = 77
-        Width = 49
-        Caption = 'CIV: ?.'
-        ParentColor = False
-      end
-      object Label4: TLabel
-        Left = 8
-        Height = 15
-        Top = 109
-        Width = 98
-        Caption = 'Stack size: ?.'
-        ParentColor = False
-      end
-      object Label5: TLabel
-        Left = 8
-        Height = 15
-        Top = 125
-        Width = 119
-        Caption = 'CB-Stack size: ?.'
-        ParentColor = False
-      end
-      object Label6: TLabel
-        Left = 8
-        Height = 15
-        Top = 93
-        Width = 98
-        Caption = 'Table size: ?.'
-        ParentColor = False
-      end
-      object DbgMakeDumpButton: TButton
-        Left = 8
-        Height = 25
-        Top = 168
-        Width = 75
-        Caption = 'Dump logs'
-        OnClick = DbgMakeDumpButtonClick
-        TabOrder = 1
-      end
-      object DbgStartStopButton: TButton
-        Left = 88
-        Height = 25
-        Top = 168
-        Width = 75
-        Caption = 'Stop'
-        TabOrder = 2
-      end
-      object Label8: TLabel
-        Left = 8
-        Height = 15
-        Top = 141
-        Width = 119
-        Caption = 'GC-Stack size: ?.'
-        ParentColor = False
-      end
-      object Label9: TLabel
-        Left = 8
-        Height = 15
-        Top = 29
-        Width = 91
-        Caption = 'Thread ID: ?.'
-        ParentColor = False
-      end
+    object Label1: TLabel
+      Left = 8
+      Height = 15
+      Top = 45
+      Width = 49
+      Caption = 'CIP: ?.'
+      ParentColor = False
     end
-  end
-  object Splitter1: TSplitter
-    Cursor = crVSplit
-    Left = 0
-    Height = 5
-    Top = 352
-    Width = 348
-    Align = alBottom
-    Color = clBtnFace
-    ParentColor = False
-    ResizeAnchor = akBottom
-  end
-  object SaveDialog1: TSaveDialog
-    Filter = '*.*|*.*'
-    left = 172
-    top = 198
+    object Label2: TLabel
+      Left = 8
+      Height = 15
+      Top = 61
+      Width = 49
+      Caption = 'CIA: ?.'
+      ParentColor = False
+    end
+    object Label3: TLabel
+      Left = 8
+      Height = 15
+      Top = 77
+      Width = 49
+      Caption = 'CIV: ?.'
+      ParentColor = False
+    end
+    object Label4: TLabel
+      Left = 8
+      Height = 15
+      Top = 109
+      Width = 98
+      Caption = 'Stack size: ?.'
+      ParentColor = False
+    end
+    object Label5: TLabel
+      Left = 8
+      Height = 15
+      Top = 125
+      Width = 119
+      Caption = 'CB-Stack size: ?.'
+      ParentColor = False
+    end
+    object Label6: TLabel
+      Left = 8
+      Height = 15
+      Top = 93
+      Width = 98
+      Caption = 'Table size: ?.'
+      ParentColor = False
+    end
+    object Label8: TLabel
+      Left = 8
+      Height = 15
+      Top = 141
+      Width = 119
+      Caption = 'GC-Stack size: ?.'
+      ParentColor = False
+    end
+    object Label9: TLabel
+      Left = 8
+      Height = 15
+      Top = 29
+      Width = 91
+      Caption = 'Thread ID: ?.'
+      ParentColor = False
+    end
   end
 end

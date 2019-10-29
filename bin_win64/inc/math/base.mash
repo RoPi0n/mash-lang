@@ -44,6 +44,18 @@ func abs(a):
   end
 end
 
+func sgn(a):
+  if a == 0:
+    return 0
+  end
+
+  if a < 0:
+    return -1
+  else:
+    return 1
+  end
+end
+
 func Log(a):
   return LogN(m_e, a)
 end

@@ -2,7 +2,7 @@ library Streams;
 
 uses SysUtils, Classes;
 
-{$I '..\libapi.inc'}
+{$I '..\svm.inc'}
 
 {STREAM}
 
@@ -203,13 +203,27 @@ begin
 end;
 
 procedure _MemoryStream_LoadFromFile(pctx: pointer); stdcall;
+var
+  fp: string;
 begin
-  TMemoryStream(__Next_Ref(pctx)).LoadFromFile(__Next_String(pctx));
+  fp := __Next_String(pctx);
+
+  if not (Pos(':', fp) > 0) then
+    fp := ExtractFilePath(ParamStr(1)) + fp;
+
+  TMemoryStream(__Next_Ref(pctx)).LoadFromFile(fp);
 end;
 
 procedure _MemoryStream_SaveToFile(pctx: pointer); stdcall;
+var
+  fp: string;
 begin
-  TMemoryStream(__Next_Ref(pctx)).SaveToFile(__Next_String(pctx));
+  fp := __Next_String(pctx);
+
+  if not (Pos(':', fp) > 0) then
+    fp := ExtractFilePath(ParamStr(1)) + fp;
+
+  TMemoryStream(__Next_Ref(pctx)).SaveToFile(fp);
 end;
 
 {FILESTREAM}
@@ -220,9 +234,16 @@ begin
 end;
 
 procedure _FileStream_Create(pctx: pointer); stdcall;
+var
+  fp: string;
 begin
+  fp := __Next_String(pctx);
+
+  if not (Pos(':', fp) > 0) then
+    fp := ExtractFilePath(ParamStr(1)) + fp;
+
   __Return_Ref(pctx,
-               TFileStream.Create(__Next_String(pctx), __Next_Word(pctx)),
+               TFileStream.Create(fp, __Next_Word(pctx)),
                @_FileStream_Destructor);
 end;
 

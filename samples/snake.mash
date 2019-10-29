@@ -45,15 +45,13 @@ end
 
 proc DrawBorders():
   for y in 1..22:
-    for x in 1..42:
-      if y in [1, 22]:
-        PutCh(x, y, border_char)
-      else:
-        if x in [1, 42]:
-          PutCh(x, y, border_char)
-        end
-      end
-    end
+    PutCh(1, y, border_char)
+    PutCh(42, y, border_char)
+  end
+
+  for x in 1..42:
+    PutCh(x, 1, border_char)
+    PutCh(x, 22, border_char)
   end
 end
 

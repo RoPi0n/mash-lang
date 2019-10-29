@@ -4,7 +4,7 @@ library files;
 
 uses SysUtils;
 
-{$I '..\libapi.inc'}
+{$I '..\svm.inc'}
 
 procedure _FileExists(pctx: pointer); stdcall;
 begin

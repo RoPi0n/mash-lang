@@ -4,7 +4,7 @@ library DGraph;
 
 uses SysUtils, Graph;
 
-{$I '..\libapi.inc'}
+{$I '..\svm.inc'}
 
 {FUNCTIONS}
 procedure _ARC(pctx: Pointer); stdcall;

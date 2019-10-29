@@ -6,7 +6,7 @@ uses
   SysUtils,
   syncobjs;
 
-{$I '..\libapi.inc'}
+{$I '..\svm.inc'}
 
 procedure CRITSECT_DESTRUCTOR(pCritSect: pointer); stdcall;
 begin

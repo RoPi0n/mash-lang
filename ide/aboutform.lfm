@@ -1,15 +1,15 @@
 object AboutFrm: TAboutFrm
   Left = 577
-  Height = 147
+  Height = 154
   Top = 147
-  Width = 418
+  Width = 425
   BorderStyle = bsDialog
-  Caption = 'SVMASM IDE'
-  ClientHeight = 147
-  ClientWidth = 418
+  Caption = 'Mash IDE - About'
+  ClientHeight = 154
+  ClientWidth = 425
   Color = clWhite
   Position = poScreenCenter
-  LCLVersion = '1.8.2.0'
+  LCLVersion = '2.0.4.0'
   object Image1: TImage
     Left = 8
     Height = 128
@@ -241,8 +241,8 @@ object AboutFrm: TAboutFrm
     Left = 144
     Height = 15
     Top = 48
-    Width = 137
-    Caption = 'Developer: Pavel Shiryaev.'
+    Width = 138
+    Caption = 'Developer: Pavel Chernov.'
     ParentColor = False
   end
   object Label4: TLabel

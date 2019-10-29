@@ -5,7 +5,12 @@ unit debugger;
 interface
 
 uses
-  Classes, SysUtils, Dialogs, Windows, Forms, svm_mem;
+  Classes, SysUtils, Dialogs, Forms
+  {$ifdef Windows}
+  , windows,
+  JwaWinBase,
+  JwaWinNT
+  {$endif};
 
 type
   TInstructionPointer = cardinal;
@@ -24,6 +29,7 @@ type
 
   TCallBackStack = object
     items: array of TInstructionPointer;
+    size, i_pos: cardinal;
   end;
 
   PCallBackStack = ^TCallBackStack;
@@ -40,35 +46,35 @@ type
 
   PTRBlocks = ^TTRBlocks;
 
-  TGrabber = object
-    tasks: array of pointer;
-  end;
-
-  PGrabber = ^TGrabber;
-
   TStack = object
   public
     items: array of pointer;
-    procedure push(p: pointer);
-    function peek: pointer;
-    procedure pop;
-    function popv: pointer;
-    procedure swp;
+    size, i_pos: cardinal;
   end;
 
   PStack = ^TStack;
 
+  TGrabber = object
+    tasks: TStack;
+    ChkCnt: byte;
+  end;
+
+  PGrabber = ^TGrabber;
+
+
   TSVM = object
+  public
+    ip,end_ip: TInstructionPointer;
     mainclasspath: string;
     mem: PMemory;
+    grabber: TGrabber;
     stack: TStack;
     cbstack: TCallBackStack;
     bytes: PByteArr;
-    ip, end_ip: TInstructionPointer;
-    grabber: TGrabber;
     consts: PConstSection;
     extern_methods: PImportSection;
     try_blocks: TTRBlocks;
+    isMainThread: boolean;
   end;
 
   PSVM = ^TSVM;
@@ -81,18 +87,25 @@ type
     procedure Execute; override;
   end;
 
-function SVM_Create: PSVM; stdcall; external 'svmlib.dll' Name '_SVM_CREATE';
-procedure SVM_Free(SVM: PSVM); stdcall; external 'svmlib.dll' Name '_SVM_FREE';
-procedure SVM_SetDbgCallBack(SVM: PSVM; DbgCB: Pointer); stdcall;
-  external 'svmlib.dll' Name '_SVM_DEBUGCALLBACK';
-procedure SVM_RegAPI(SVM: PSVM; ExtFunc: Pointer); stdcall;
-  external 'svmlib.dll' Name '_SVM_REGAPI';
-procedure SVM_LoadExeFromFile(SVM: PSVM; MainClassPath: PString); stdcall;
-  external 'svmlib.dll' Name '_SVM_LOADEXEFROMFILE';
-procedure SVM_Run(SVM: PSVM); stdcall; external 'svmlib.dll' Name '_SVM_RUN';
-procedure SVM_CheckErr(SVM: PSVM; E: Exception); stdcall;
-  external 'svmlib.dll' Name '_SVM_CHECKERR';
-procedure SVM_Continue(SVM: PSVM); stdcall; external 'svmlib.dll' Name '_SVM_CONTINUE';
+{** Imports from svm.lib **}
+
+const
+  svmapi = 'svm.lib';
+
+procedure SVM_Init; stdcall; external svmapi name '_SVM_INIT';
+procedure SVM_Free; stdcall; external svmapi name '_SVM_FREE';
+
+function SVM_CreateVM:PSVM; stdcall; external svmapi name '_SVM_CREATE_VM';
+procedure SVM_FreeVM(SVM:PSVM); stdcall; external svmapi name '_SVM_FREE_VM';
+
+procedure SVM_RegAPI(SVM:PSVM; ExtFunc:Pointer); stdcall; external svmapi name '_SVM_REGAPI';
+procedure SVM_SetDbgCallBack(SVM:PSVM; DbgCB:Pointer); stdcall; external svmapi name '_SVM_DEBUGCALLBACK';
+procedure SVM_Run(SVM:PSVM); stdcall; external svmapi name '_SVM_RUN';
+procedure SVM_LoadExeFromFile(SVM:PSVM; MainClassPath:PString); stdcall; external svmapi name '_SVM_LOADEXEFROMFILE';
+procedure SVM_CheckErr(SVM:PSVM; E:Exception); stdcall; external svmapi name '_SVM_CHECKERR';
+procedure SVM_Continue(SVM:PSVM); stdcall; external svmapi name '_SVM_CONTINUE';
+
+
 
 procedure DebugFile(Form: TForm; svmexe, debuginfo: string);
 
@@ -111,52 +124,6 @@ implementation
 
 uses
   MainForm;
-
-{** Stack **}
-procedure TStack.push(p: pointer);
-begin
-  SetLength(Self.Items, Length(Self.Items) + 1);
-  Self.Items[Length(Self.Items) - 1] := p;
-end;
-
-function TStack.peek: pointer;
-begin
-  Result := Self.Items[Length(Self.Items) - 1];
-end;
-
-procedure TStack.pop;
-begin
-  SetLength(Self.Items, Length(Self.Items) - 1);
-end;
-
-function TStack.popv: pointer;
-begin
-  Result := Self.Items[Length(Self.Items) - 1];
-  SetLength(Self.Items, Length(Self.Items) - 1);
-end;
-
-procedure TStack.swp;
-var
-  p: Pointer;
-begin
-  p := Self.Items[Length(Self.Items) - 2];
-  Self.Items[Length(Self.Items) - 2] := Self.Items[Length(Self.Items) - 1];
-  Self.Items[Length(Self.Items) - 1] := p;
-end;
-
-function FrmStrWidth(s: string; nw: cardinal): string;
-begin
-  nw := nw - Length(s);
-  if nw < 0 then
-    s := copy(s, 1, nw - 3) + '...'
-  else
-    while nw > 0 do
-    begin
-      s := s + ' ';
-      Dec(nw);
-    end;
-  Result := s;
-end;
 
 
 {** Debugger **}
@@ -181,18 +148,26 @@ begin
   end;
 end;
 
-procedure BreakPointProc(vm: PSVM); cdecl;
+function FrmStrWidth(s: string; nw: cardinal): string;
+begin
+  nw := nw - Length(s);
+  if nw < 0 then
+    s := copy(s, 1, nw - 3) + '...'
+  else
+    while nw > 0 do
+    begin
+      s := s + ' ';
+      Dec(nw);
+    end;
+  Result := s;
+end;
+
+procedure BreakPointProc(vm: PSVM); stdcall;
 var
   c: cardinal;
   s, bf: string;
 begin
   try
-    while DbgStopIt do
-    begin
-      Application.ProcessMessages;
-      Sleep(1);
-    end;
-
     if not EnableDebugInfoUsing then
     begin
       DebugInfoVars.Clear;
@@ -204,80 +179,16 @@ begin
       end;
     end;
 
-    codeline := TSVMMem(vm^.stack.popv).GetW;
-    codefile := TSVMMem(vm^.stack.popv).GetS;
-
-    TMainFrm(Frm).DebuggerFrame1.DbgVarsLB.Items.BeginUpdate;
-    TMainFrm(Frm).DebuggerFrame1.DbgVarsLB.Items.Clear;
-    TMainFrm(Frm).DebuggerFrame1.DbgVarsLB.Items.Add(
-      'Full name / Num.:                  Addr:      Value:'
-      );
-
-    c := 0;
-    while c < Length(vm^.mem^) do
-    begin
-      s := FrmStrWidth(DebugInfoVars[c], 32) + '   ';
-      if cardinal(vm^.mem^[c]) <> 0 then
-        s := s + '0x' + IntToHex(cardinal(vm^.mem^[c]), 8) + ' '
-      else
-        s := s + '<null>     ';
-
-      try
-        bf := TSVMMem(vm^.mem^[c]).GetS;
-      except
-        bf := '?';
-      end;
-
-      s := s + bf;
-
-      TMainFrm(Frm).DebuggerFrame1.DbgVarsLB.Items.Add(s);
-      Inc(c);
-    end;
-
-    TMainFrm(Frm).DebuggerFrame1.DbgVarsLB.Items.EndUpdate;
-    TMainFrm(Frm).DebuggerFrame1.DbgVarsLB.Update;
-
-
-    TMainFrm(Frm).DebuggerFrame1.DbgStackLB.Items.BeginUpdate;
-    TMainFrm(Frm).DebuggerFrame1.DbgStackLB.Items.Clear;
-    TMainFrm(Frm).DebuggerFrame1.DbgStackLB.Items.Add(
-      'Num:  Addr:      Value:'
-      );
-
-    c := 0;
-    while c < Length(vm^.stack.items) do
-    begin
-      s := FrmStrWidth(IntToStr(c) + '.', 6) + '0x' +
-        IntToHex(cardinal(vm^.stack.items[c]), 8) + ' ';
-
-      try
-        bf := TSVMMem(vm^.stack.items[c]).GetS;
-      except
-        bf := '?';
-      end;
-
-      s := s + bf;
-
-      TMainFrm(Frm).DebuggerFrame1.DbgStackLB.Items.Add(s);
-      Inc(c);
-    end;
-
-    TMainFrm(Frm).DebuggerFrame1.DbgStackLB.Items.EndUpdate;
-    TMainFrm(Frm).DebuggerFrame1.DbgStackLB.Update;
-
-
     with TMainFrm(Frm).DebuggerFrame1 do
     begin
       Label1.Caption := 'CIP: 0x' + IntToHex(vm^.ip, 8) + '.';
-      Label2.Caption := 'CIA: 0x' + IntToHex(cardinal(vm^.bytes), 8) +
-        ' + 0x' + IntToHex(vm^.ip, 8) + '.';
       Label3.Caption := 'CIV: 0x' +
-        IntToHex(PByte(cardinal(vm^.bytes) + vm^.ip)^, 2) + '.';
+        IntToHex(PByte(vm^.bytes + vm^.ip)^, 2) + '.';
       Label6.Caption := 'Table: ' + IntToStr(Length(vm^.mem^)) + ' bl.';
-      Label4.Caption := 'Stack: ' + IntToStr(Length(vm^.stack.items)) + ' bl.';
-      Label5.Caption := 'CB-Stack: ' + IntToStr(Length(vm^.cbstack.items)) +
+      Label4.Caption := 'Stack: ' + IntToStr(vm^.stack.i_pos) + ' rec.';
+      Label5.Caption := 'CB-Stack: ' + IntToStr(vm^.cbstack.i_pos) +
         ' jumps.';
-      Label8.Caption := 'GC-Stack: ' + IntToStr(Length(vm^.grabber.tasks)) + ' bl.';
+      Label8.Caption := 'GC-Stack: ' + IntToStr(vm^.grabber.tasks.i_pos) + ' rec.';
       Label9.Caption := 'Thread ID: ' + IntToStr(GetCurrentThreadId) + '.';
     end;
 
@@ -287,6 +198,57 @@ begin
   end;
 end;
 
+{$IfDef Windows}
+
+// For Win 32/64 VEH exceptions.
+
+type
+  EUnknownException = class(Exception);
+
+{function GetRegistrationHead: PExceptionRegistrationRecord;
+  external 'kernel32.dll' name 'GetRegistrationHead';
+
+procedure RtlRaiseException(ExceptionRecord: PExceptionRecord);
+  external 'kernel32.dll' name 'RtlRaiseException';
+
+function NtContinue(ThreadContext:PContext; RaiseAlert: boolean): THandle;
+  external 'ntdll.dll' name 'NtContinue';
+
+function NtRaiseException(ExceptionRecord: PExceptionRecord; ThreadContext:
+                          PContext; HandleException: boolean): THandle;
+  external 'ntdll.dll' name 'NtRaiseException';}
+
+
+function WinSVMVectoredHandler(ExceptionInfo: PExceptionPointers): Longint; stdcall;
+var
+  pExceptReg: PExceptionRegistrationRecord;
+begin
+  if byte(ExceptionInfo^.ExceptionRecord^.ExceptionCode) in [
+          byte(Windows.EXCEPTION_FLT_DIVIDE_BY_ZERO),
+          byte(Windows.EXCEPTION_ACCESS_VIOLATION),
+          byte(Windows.EXCEPTION_ARRAY_BOUNDS_EXCEEDED),
+          byte(Windows.EXCEPTION_FLT_INVALID_OPERATION),
+          byte(Windows.EXCEPTION_FLT_OVERFLOW),
+          byte(Windows.EXCEPTION_FLT_UNDERFLOW),
+          byte(Windows.EXCEPTION_NONCONTINUABLE_EXCEPTION)
+     ]
+  then
+    Result := EXCEPTION_EXECUTE_HANDLER  //Todo
+  else
+   begin
+     try
+       Exception(ExceptionInfo^.ExceptionRecord^.ExceptionInformation[1]).Free;
+       //ExceptionInfo^.ExceptionRecord^.ExceptionCode := 0;
+     finally
+       Result := EXCEPTION_CONTINUE_EXECUTION;
+     end;
+
+     //Todo
+   end;
+end;
+
+{$EndIf}
+
 procedure DebugFile(Form: TForm; svmexe, debuginfo: string);
 var
   vm: PSVM;
@@ -294,6 +256,7 @@ var
   c, x: cardinal;
   fs: TFileStream;
   ExceptFlag: boolean;
+  sehhandler: pointer;
 begin
   TMainFrm(Form).DebuggerPanel.Width := 385;
   Frm := Form;
@@ -335,66 +298,35 @@ begin
     FreeAndNil(fs);
   end;
 
-  SetErrorMode(SEM_FAILCRITICALERRORS);
-
   DebuggingInProcess := True;
 
+  {$IfDef Windows}
+    sehhandler := nil;
+    sehhandler := AddVectoredExceptionHandler(0, @WinSVMVectoredHandler);;
+  {$EndIf}
+
+  SVM_Init;
   try
-    vm := SVM_Create;
+    vm := SVM_CreateVM;
     SVM_SetDbgCallBack(vm, @BreakPointProc);
     SVM_LoadExeFromFile(vm, @svmexe);
     HelpThread := THelpThread.Create;
     AllocConsole;
     SetConsoleTitle('Mash IDE debugger std I/O thread.');
 
-    try
-      SVM_Run(vm);
-    except
-      on E: Exception do
-      begin
-        if E.ClassName <> 'EAccessViolation' then
-        case MessageBox(0, PChar('Exception catched!' + sLineBreak +
-            sLineBreak + 'Exception type: ' + E.ClassName + '.' +
-            sLineBreak + 'Exception message: ' + E.Message + '.' +
-            sLineBreak + sLineBreak + 'Last successfully debugged:' +
-            sLineBreak + '- Code file: "' + codefile + '".' +
-            sLineBreak + '- Line: ' + IntToStr(codeline) + '.' +
-            sLineBreak + sLineBreak + 'Handle exception and resume code execution?'),
-            'Mash IDE debugger', MB_YESNO) of
-          idYes: ExceptFlag := True;
-          idNo: ExceptFlag := False;
-        end;
-        while ExceptFlag do
-        begin
-          try
-            SVM_Continue(vm);
-            ExceptFlag := False;
-          except
-            on E: Exception do
-              if E.ClassName <> 'EAccessViolation' then
-              case MessageBox(0, PChar('Exception catched!' +
-                  sLineBreak + sLineBreak + 'Exception type: ' +
-                  E.ClassName + '.' + sLineBreak + 'Exception message: ' +
-                  E.Message + '.' + sLineBreak + sLineBreak +
-                  'Last successfully debugged:' + sLineBreak +
-                  '- Code file: "' + codefile + '".' + sLineBreak +
-                  '- Line: ' + IntToStr(codeline) + '.' + sLineBreak +
-                  sLineBreak + 'Handle exception and resume code execution?'),
-                  'Mash IDE debugger', MB_YESNO) of
-                idYes: ExceptFlag := True;
-                idNo: ExceptFlag := False;
-              end;
+    SVM_Run(vm);
 
-          end;
-        end;
-      end;
-    end;
     FreeConsole;
     FreeAndNil(HelpThread);
-    //SVM_Free(vm);
   finally
-    SVM_Free(vm);
+    SVM_FreeVM(vm);
+    SVM_Free;
   end;
+
+  {$IfDef Windows}
+    if SEHHandler <> nil then
+     RemoveVectoredExceptionHandler(SEHHandler);
+  {$EndIf}
 
   DebuggingInProcess := False;
 end;

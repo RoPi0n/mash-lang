@@ -2,15 +2,19 @@
 // Base types
 ////////////////////////////////////////////////////////////////////////////////
 
-uses <bf>
 uses <strings>
+uses <classes\list>
 uses <classes\streams>
 
 class StringList(List):
   public:
     proc SetText,
+
          SaveToFile,
-         LoadFromFile
+         LoadFromFile,
+
+         SaveToStream,
+         LoadFromStream
 
     func ToString
 end
@@ -39,18 +43,18 @@ func StringList::ToString():
   return r
 end
 
-proc StringList::SaveToFile(fpath):
-  st ?= new FileStream(fpath, fmCreate)
-  st -> WriteStr($GetText())
-  st -> Free()
+proc StringList::SaveToStream(st):
+  st -> WriteStr($ToString())
 end
 
-proc StringList::LoadFromFile(fpath):
-  st ?= new FileStream(fpath, fmOpenRead)
-  s ?= ""
+proc StringList::SaveToFile(fpath):
+  st ?= new FileStream(fpath, fmCreate)
+  st -> WriteStr($ToString())
+end
+
+proc StringList::LoadFromStream(st):
   sz ?= st -> GetSize()
-  st -> ReadStr(s, sz)
-  st -> Free()
+  s ?= st -> ReadStr(sz)
 
   $Clear()
   p ?= s_Pos(LnBreak, s)
@@ -62,4 +66,9 @@ proc StringList::LoadFromFile(fpath):
   if Len(s) > 0:
     $Add(s)
   end
+end
+
+proc StringList::LoadFromFile(fpath):
+  st ?= new FileStream(fpath, fmOpenRead)
+  $LoadFromStream(st)
 end

@@ -5,7 +5,7 @@ library bf;
 uses
   SysUtils;
 
-{$I '..\libapi.inc'}
+{$I '..\svm.inc'}
 
 procedure DHalt(pctx: pointer); stdcall;
 begin

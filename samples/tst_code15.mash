@@ -1,5 +1,5 @@
 uses <crt>
-uses <classes\calls>
+uses <calls>
 
 func f(a, b):
   return a + b
@@ -11,16 +11,13 @@ end
 
 class xclass:
   var a
-  proc create, free
+  proc create
 end
 
 proc xclass::create(a):
   $a ?= a
 end
 
-proc xclass::Free():
-  Free($)
-end
 
 proc main():
   while true:
@@ -30,8 +27,6 @@ proc main():
     m -> call(10, 20)
     f(10, 20)
 
-    m -> Free()
-    h -> Free()
     gc()
   end
 

@@ -2,7 +2,7 @@ library lmath;
 
 uses Math;
 
-{$I '..\libapi.inc'}
+{$I '..\svm.inc'}
 
 procedure FSin(pctx: pointer); stdcall;
 begin

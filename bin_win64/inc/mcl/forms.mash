@@ -1,0 +1,208 @@
+uses <threads>
+uses <calls>
+uses <mcl\canvas>
+
+/*
+ *  Application
+ */
+
+import _mcl_App_Init "mcl.lib" "_MCL_APP_INIT"
+import _mcl_App_Run  "mcl.lib" "_MCL_APP_RUN"
+import _mcl_App_Term "mcl.lib" "_MCL_APP_TERM"
+
+var app.running = false
+
+// If we included that unit - we want to use it ofc -> Initializing MCL.
+_mcl_app_init()
+
+
+proc app.run():
+  app.running = true
+  _mcl_app_run()
+end
+
+proc app.term():
+  app.running = false
+  _mcl_app_term()
+end
+
+/*
+ *  App.Form
+ */
+
+import _mcl_Frm_create       "mcl.lib" "_MCL_FRM_CREATE"
+
+import _mcl_Frm_Get_Width    "mcl.lib" "_MCL_FRM_GET_WIDTH"
+import _mcl_Frm_Get_Height   "mcl.lib" "_MCL_FRM_GET_HEIGHT"
+import _mcl_Frm_Get_Left     "mcl.lib" "_MCL_FRM_GET_LEFT"
+import _mcl_Frm_Get_Top      "mcl.lib" "_MCL_FRM_GET_TOP"
+import _mcl_Frm_Get_Caption  "mcl.lib" "_MCL_FRM_GET_CAPTION"
+
+import _mcl_Frm_Set_Width    "mcl.lib" "_MCL_FRM_SET_WIDTH"
+import _mcl_Frm_Set_Height   "mcl.lib" "_MCL_FRM_SET_HEIGHT"
+import _mcl_Frm_Set_Left     "mcl.lib" "_MCL_FRM_SET_LEFT"
+import _mcl_Frm_Set_Top      "mcl.lib" "_MCL_FRM_SET_TOP"
+import _mcl_Frm_Set_Caption  "mcl.lib" "_MCL_FRM_SET_CAPTION"
+
+import _mcl_Frm_Focus        "mcl.lib" "_MCL_FRM_FOCUS"
+import _mcl_Frm_Get_Canvas   "mcl.lib" "_MCL_FRM_GET_CANVAS"
+
+import _mcl_Frm_Reg_Handler  "mcl.lib" "_MCL_FRM_REG_HANDLER"
+import _mcl_Frm_Handle       "mcl.lib" "_MCL_FRM_HANDLE"
+
+// Constants & Types
+
+enum MCL_Frm_Handler_Type [ fhClick,
+                            fhCloseQuery,
+                            fhCreate,
+                            fhDoubleClick,
+                            fhHide,
+                            fhKeyDown,
+                            fhKeyPress,
+                            fhKeyUp,
+                            fhMouseDown,
+                            fhMouseEnter,
+                            fhMouseLeave,
+                            fhMouseUp,
+                            fhMouseMove,
+                            fhMouseWheel,
+                            fhMouseWheelDown,
+                            fhMouseWheelHorz,
+                            fhMouseWheelLeft,
+                            fhMouseWheelRight,
+                            fhMouseWheelUp,
+                            fhResize,
+                            fhShow,
+                            fhWindowStateChange ]
+
+enum MCLMouseButton [ mbLeft,
+                      mbRight,
+                      mbMiddle,
+                      mbExtra1,
+                      mbExtra2 ]
+
+//App.Form base class
+
+class App.Form:
+  private:
+    var NativeFormRef,
+        HandlerThread
+
+  public:
+    var  Canvas
+
+    proc Create,
+         GetCanvas,
+         SetHandler
+
+    // Events
+    proc OnCreate,
+         OnCloseQuery,
+         OnHide,
+         OnKeyDown,
+         OnKeyUp,
+         OnKeyPress,
+         OnClick,
+         OnDoubleClick,
+         OnMouseEnter,
+         OnMouseLeave,
+         OnMouseDown,
+         OnMouseUp,
+         OnMouseMove
+end
+
+proc App.Form.Events.HandlerProc(Form):
+  Form -> OnCreate()
+  while true:
+    m ?= _mcl_Frm_Handle(Form -> NativeFormRef)
+
+    if m <> 0:
+      call m
+    else:
+      Sleep(1)
+    end
+
+    gc()
+  end
+end
+
+proc App.Form::SetHandler(EventType, Handler):
+  _mcl_Frm_Reg_Handler($NativeFormRef, EventType, this, Handler)
+end
+
+proc __Frm_Check_And_Set_Handler(FrmRef, Ev, SelfInstance, Handler, DefHandler):
+  if Handler <> DefHandler:
+    SelfInstance -> SetHandler(Ev, Handler)
+  end
+end
+
+proc App.Form::Create():
+  $NativeFormRef ?= _mcl_Frm_Create()
+  $Canvas ?= new App.Canvas($GetCanvas())
+
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhClick, this, $OnClick, App.Form::OnClick)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhDoubleClick, this, $OnDoubleClick, App.Form::OnDoubleClick)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhCloseQuery, this, $OnCloseQuery, App.Form::OnCloseQuery)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhHide, this, $OnHide, App.Form::OnHide)
+
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhKeyDown, this, $OnKeyDown, App.Form::OnKeyDown)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhKeyUp, this, $OnKeyUp, App.Form::OnKeyUp)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhKeyPress, this, $OnKeyPress, App.Form::OnKeyPress)
+
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhMouseEnter, this, $OnMouseEnter, App.Form::OnMouseEnter)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhMouseLeave, this, $OnMouseLeave, App.Form::OnMouseLeave)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhMouseDown, this, $OnMouseDown, App.Form::OnMouseDown)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhMouseUp, this, $OnMouseUp, App.Form::OnMouseUp)
+  __Frm_Check_And_Set_Handler($NativeFormRef, fhMouseMove, this, $OnMouseMove, App.Form::OnMouseMove)
+
+  $HandlerThread ?= Async(App.Form.Events.HandlerProc, this)
+end
+
+func App.Form::GetCanvas():
+  return _mcl_Frm_Get_Canvas($NativeFormRef)
+end
+
+// For overriding
+
+proc App.Form::OnCreate():
+end
+
+proc App.Form::OnCloseQuery():
+end
+
+proc App.Form::OnHide():
+end
+
+// Keyboard
+
+proc App.Form::OnKeyDown(key):
+end
+
+proc App.Form::OnKeyUp(key):
+end
+
+proc App.Form::OnKeyPress(key):
+end
+
+// Mouse
+
+proc App.Form::OnClick():
+end
+
+proc App.Form::OnDoubleClick():
+end
+
+proc App.Form::OnMouseEnter():
+end
+
+proc App.Form::OnMouseLeave():
+end
+
+proc App.Form::OnMouseDown(x, y, button):
+end
+
+proc App.Form::OnMouseUp(x, y, button):
+end
+
+proc App.Form::OnMouseMove(x, y):
+end

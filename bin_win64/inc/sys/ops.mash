@@ -107,6 +107,10 @@ func ptr(a):
   return @a
 end
 
+func rel(a):
+  return ?a
+end
+
 func __PopRest(args_count):
   t ?= 0
   args ?= new[args_count]

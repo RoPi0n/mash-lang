@@ -1,0 +1,29 @@
+/*
+ *  MCL Canvas
+ */
+
+import _mcl_cnv_MoveTo     "mcl.lib" "_MCL_CNV_MOVETO"
+import _mcl_cnv_LineTo     "mcl.lib" "_MCL_CNV_LINETO"
+
+class App.Canvas:
+  private:
+    var NativeCanvasRef
+
+  public:
+    proc Create
+
+    proc MoveTo,
+         LineTo
+end
+
+proc App.Canvas::Create(ref):
+  $NativeCanvasRef ?= ref
+end
+
+proc App.Canvas::MoveTo(x, y):
+  _mcl_cnv_MoveTo($NativeCanvasRef, x, y)
+end
+
+proc App.Canvas::LineTo(x, y):
+  _mcl_cnv_LineTo($NativeCanvasRef, x, y)
+end

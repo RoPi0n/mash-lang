@@ -1,11 +1,13 @@
 unit svm_mem;
 
-{$mode objfpc}{$H+}{$inline on}
+{$mode objfpc}
+{$H+}
+{$inline on}
 
 interface
 
 uses
-  SysUtils, svm_grabber, svm_utils;
+  SysUtils, svm_grabber, svm_exceptions;
 
 const
   TSVMTypeAddr = 255;
@@ -32,6 +34,7 @@ type
     constructor MCreateFS(s:string);
     constructor MCreateFW(w:LongWord);
     constructor MCreateArr(size:LongWord = 0);
+    constructor MCreateRef(ref: Pointer);
 
     destructor Destroy; override;
 
@@ -197,6 +200,14 @@ begin
   SetLength(PMemArray(m_val)^, size);
 end;
 
+constructor TSVMMem.MCreateRef(ref: Pointer);
+begin
+  m_type := svmtRef;
+  m_refc := 0;
+  m_dcbp := nil;
+  m_val  := ref;
+end;
+
 destructor TSVMMem.Destroy;
 begin
   Clear;
@@ -346,6 +357,7 @@ begin
                Clear;
                m_val := m.m_val;
                m_type := m.m_type;
+               m_dcbp := m.m_dcbp;
              end;
 
     svmtStr: begin

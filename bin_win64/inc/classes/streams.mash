@@ -80,7 +80,7 @@ end
 // constructor & destructor
 
 proc TStream::Create(resource):
-  $StreamPtr ?= ?resource
+  $StreamPtr ?= resource
 end
 
 // some methods
@@ -206,34 +206,44 @@ class MemoryStream(TStream):
     proc Create
 
     // some methods
-    proc LoadFromStream,
-         StoreToStream,
-         LoadFromFile,
-         SaveToFile
+    proc LoadFromStream, StoreToStream,
+         LoadFromFile,   SaveToFile
 end
 
 // constructor & destructor
 
-proc MemoryStream::Create():
-  $StreamPtr ?= _MemoryStream_Create()
+proc MemoryStream::Create([args]):
+  switch len(args):
+    case 0:
+      $StreamPtr ?= _MemoryStream_Create()
+    end
+
+    case 1:
+      $StreamPtr ?= args[0] -> StreamPtr
+    end
+
+    else:
+      raise new Exception("MemoryStream::Create -> Wrong number of paramethers!")
+  end
 end
 
 // some methods
 
 proc MemoryStream::LoadFromStream(mstream):
-  _MemoryStream_LoadFromStream($StreamPtr, mstream)
+  _MemoryStream_LoadFromStream($StreamPtr, mstream -> StreamPtr)
 end
 
 proc MemoryStream::StoreToStream(mstream):
-  _MemoryStream_StoreToStream($StreamPtr, mstream)
+  _MemoryStream_StoreToStream($StreamPtr, mstream -> StreamPtr)
 end
 
-proc MemoryStream::LoadFromFile(fpath):
-  _MemoryStream_LoadFromFile($StreamPtr, PreparePath(fpath))
+proc MemoryStream::LoadFromFile(fp):
+  _MemoryStream_LoadFromFile(fp, $StreamPtr)
 end
 
-proc MemoryStream::SaveToFile(fpath):
-  _MemoryStream_SaveToFile($StreamPtr, PreparePath(fpath))
+proc MemoryStream::SaveToFile(fp):
+  println("we here")
+  _MemoryStream_SaveToFile(fp, $StreamPtr)
 end
 
 /*
@@ -249,9 +259,9 @@ end
 // FileStream modes
 
 word fmCreate         0xFF00
-word fmOpenRead       0x0000
-word fmOpenWrite      0x0001
-word fmOpenReadWrite  0x0002
+word fmOpenRead       0
+word fmOpenWrite      1
+word fmOpenReadWrite  2
 
 word fmShareCompat    0x0000
 word fmShareExclusive 0x0010
@@ -262,7 +272,5 @@ word fmShareDenyNone  0x0040
 // constructor & destructor
 
 proc FileStream::Create(fpath, openmode):
-  fp ?= PreparePath(fpath)
-  println(fp)
-  $StreamPtr ?= _FileStream_Create(fp, openmode)
+  $StreamPtr ?= _FileStream_Create(fpath, openmode)
 end

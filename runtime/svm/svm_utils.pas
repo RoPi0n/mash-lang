@@ -1,196 +1,167 @@
 unit svm_utils;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}
+{$H+}
 
 interface
 
 uses
-   Classes, SysUtils;
+  Classes,
+  SysUtils,
+  svm_mem,
+  svm_grabber,
+  svm_stack,
+  svm_common
+  {$IfDef Windows}
+   , Windows
+  {$EndIf};
 
 type
-   TMemory = array of pointer;
-   PMemory = ^TMemory;
-   TInstructionPointer = cardinal;
-   PInstructionPointer = ^TInstructionPointer;
+  TSizeArr = array of cardinal;
+  PSizeArr = ^TSizeArr;
 
-{***** Windows VEH ************************************************************}
-{$IfDef Windows}
+function NewArr_Sub(size_arr: PSizeArr; lvl: word; Grabber: TGrabber): TSVMMem; inline;
+function NewArr(stk: PStack; lvl: word; Grabber: TGrabber): TSVMMem; inline;
 
 var
-  VEHExceptions: TThreadList;
-  VEHExceptions_Count: word = 0;
+  GrabbersStorage: TThreadList = nil;
 
-  SEH_Handler: Pointer;
+procedure GlobalGC;
+procedure GlobalTerm;
 
-procedure RaiseSafeException;
-
-{$EndIf}
-
-{***** Stack ******************************************************************}
-const
-   StackBlockSize = 256;
-
-type
-   TStack = object
-   public
-      items: array of pointer;
-      size, i_pos: cardinal;
-      procedure init;
-      procedure push(p: pointer);
-      function peek: pointer;
-      procedure pop;
-      function popv: pointer;
-      procedure swp;
-      procedure drop;
-   end;
-
-   PStack = ^TStack;
-
-{***** CallBack stack *********************************************************}
-
-const
-   CallBackStackBlockSize = 1024;
-
-type
-   TCallBackStack = object
-   public
-      items: array of TInstructionPointer;
-      i_pos, size: cardinal;
-      procedure init;
-      procedure push(ip: TInstructionPointer);
-      function peek: TInstructionPointer;
-      function popv: TInstructionPointer;
-      procedure pop;
-   end;
-
-   PCallBackStack = ^TCallBackStack;
+procedure CheckHeader(pb:PByteArr);
 
 implementation
 
-uses
-   svm_mem;
-
-{$IfDef Windows}
-
-procedure RaiseSafeException;
-begin
-  VEHExceptions.Add(Pointer(GetCurrentThreadId));
-  Inc(VEHExceptions_Count);
-end;
-
-{$EndIf}
-
-procedure TStack.init;
-begin
-   SetLength(items, StackBlockSize);
-   i_pos := 0;
-   size := StackBlockSize;
-end;
-
-procedure TStack.push(p: pointer); inline;
-begin
-   items[i_pos] := p;
-   Inc(i_pos);
-   if i_pos >= size then
-    begin
-      size := size + StackBlockSize;
-      SetLength(items, size);
-    end;
-end;
-
-function TStack.peek: pointer; inline;
-begin
-   Result := items[i_pos - 1];
-end;
-
-procedure TStack.pop; inline;
-begin
-   Dec(i_pos);
-   if size - i_pos > StackBlockSize then
-    begin
-      size := size - StackBlockSize;
-      SetLength(items, size);
-    end;
-end;
-
-function TStack.popv: pointer; inline;
-begin
-   Dec(i_pos);
-   Result := items[i_pos];
-   if size - i_pos > StackBlockSize then
-    begin
-      size := size - StackBlockSize;
-      SetLength(items, size);
-    end;
-end;
-
-procedure TStack.swp; inline;
+function NewArr_Sub(size_arr: PSizeArr; lvl: word; Grabber: TGrabber): TSVMMem; inline;
 var
-   p: pointer;
+  i, l: cardinal;
+  r: TSVMMem;
 begin
-   p := items[i_pos - 2];
-   items[i_pos - 2] := items[i_pos - 1];
-   items[i_pos - 1] := p;
+  Result := NewSVMM_Arr(size_arr^[length(size_arr^) - lvl], Grabber);
+  if lvl > 0 then
+  begin
+    i := 0;
+    l := size_arr^[length(size_arr^) - lvl];
+    while i < l do
+    begin
+      if lvl - 1 > 0 then
+      begin
+        r := NewArr_Sub(size_arr, lvl - 1, Grabber);
+        r.m_refc := 1;
+        Result.ArrSet(i, r);
+      end
+      else
+        Result.ArrSet(i, nil);
+      Inc(i);
+    end;
+  end;
 end;
 
-procedure TStack.drop; inline;
+function NewArr(stk: PStack; lvl: word; Grabber: TGrabber): TSVMMem; inline;
 var
-   c: cardinal;
+  size_arr: TSizeArr;
+  i: word;
+  r: TSVMMem;
 begin
-   c := 0;
-   while c < i_pos do
-    begin
-      if items[c] <> nil then
-       //if TObject(items[c]) is TSVMMem then
-        Dec(TSVMMem(items[c]).m_refc);
-
-      Inc(c);
-    end;
-
-   SetLength(items, StackBlockSize);
-   size := StackBlockSize;
-   i_pos := 0;
+  SetLength(size_arr, lvl);
+  i := 0;
+  while i < lvl do
+  begin
+    r := TSVMMem(stk^.popv);
+    Dec(r.m_refc);
+    size_arr[i] := r.GetW;
+    Inc(i);
+  end;
+  Result := NewArr_Sub(@size_arr, lvl, Grabber);
+  //Result := TSVMMem.CreateArr(TSVMMem(stk^.popv).GetW);
 end;
 
-procedure TCallBackStack.init;
+procedure GlobalGC;
+var
+  lst: TList;
+  c, l: cardinal;
 begin
-   SetLength(items, CallBackStackBlockSize);
-   i_pos := 0;
-   size := CallBackStackBlockSize;
-   Push(High(TInstructionPointer));
+  try
+    lst := GrabbersStorage.LockList;
+    c := 0;
+    l := lst.count;
+
+    while c < l do
+     begin
+       if TGrabber(lst[c]).Stack.i_pos = 0 then
+        begin
+          TGrabber(lst[c]).Free;
+          lst[c] := lst[l - 1];
+          lst.delete(l - 1);
+          dec(l);
+          dec(c);
+        end
+       else
+        TGrabber(lst[c]).Run;
+
+       inc(c);
+     end;
+  finally
+    GrabbersStorage.UnlockList;
+  end;
 end;
 
-procedure TCallBackStack.push(ip: TInstructionPointer); inline;
+procedure GlobalTerm;
+var
+  lst: TList;
+  l: cardinal;
 begin
-   items[i_pos] := ip;
-   Inc(i_pos);
-   if i_pos >= size then
-    begin
-      size := size + CallBackStackBlockSize;
-      SetLength(items, size);
-    end;
+  try
+    lst := GrabbersStorage.LockList;
+    l := lst.count;
+
+    while l > 0 do
+     begin
+       TGrabber(lst[l - 1]).Term;
+       TGrabber(lst[l - 1]).Free;
+       lst.delete(l - 1);
+
+       dec(l);
+     end;
+  finally
+    GrabbersStorage.UnlockList;
+  end;
 end;
 
-function TCallBackStack.popv: TInstructionPointer; inline;
+procedure CheckHeader(pb:PByteArr);
 begin
-   Dec(i_pos);
-   Result := items[i_pos];
-end;
-
-function TCallBackStack.peek: TInstructionPointer; inline;
-begin
-   Result := items[i_pos - 1];
-end;
-
-procedure TCallBackStack.pop; inline;
-begin
-   Dec(i_pos);
-   if size - i_pos > CallBackStackBlockSize then
-    begin
-      size := size - CallBackStackBlockSize;
-      SetLength(items, size);
-    end;
+  if Length(pb^) >= 10 then
+   begin
+     if (chr(pb^[0]) = 'S') and (chr(pb^[1]) = 'V') and (chr(pb^[2]) = 'M') and
+        (chr(pb^[3]) = 'E') and (chr(pb^[4]) = 'X') and (chr(pb^[5]) = 'E') and
+        (chr(pb^[6]) = '_') and (chr(pb^[7]) = 'C') and (chr(pb^[8]) = 'N') and
+        (chr(pb^[9]) = 'S') then
+         begin
+           {$IfDef Windows}
+             {$IfDef BuildGUI}
+               AllocConsole;
+             {$EndIf}
+           {$EndIf}
+           AppType := atCns;
+           Exit;
+         end;
+     if (chr(pb^[0]) = 'S') and (chr(pb^[1]) = 'V') and (chr(pb^[2]) = 'M') and
+        (chr(pb^[3]) = 'E') and (chr(pb^[4]) = 'X') and (chr(pb^[5]) = 'E') and
+        (chr(pb^[6]) = '_') and (chr(pb^[7]) = 'G') and (chr(pb^[8]) = 'U') and
+        (chr(pb^[9]) = 'I') then
+         begin
+           {$IfDef Windows}
+             {$IfNDef BuildGUI}
+               FreeConsole;
+             {$EndIf}
+           {$EndIf}
+           AppType := atGUI;
+           Exit;
+         end;
+   end;
+  raise Exception.Create('Error: Invalid SVMEXE-file header!');
+  halt;
 end;
 
 end.
-
