@@ -3,12 +3,12 @@
 *|  All parts of this project like a software, libraries, sources, web site, forum etc.
 *|  are licensed with BSD-2-Clause license.
 *|
-*|  Autor: Pavel Shiryaev.
+*|  Autor: Pavel Chernov.
 *|  Mail: pavel151@inbox.ru
 *|  GitHub: github.com/RoPi0n/mash-lang
 *|  Site: mash-lang.tech
 *|
-*|  Copyright from 2018, Pavel Shiryaev.
+*|  Copyright from 2018, Pavel Chernov.
 *|
 *|  Redistribution and use in source and binary forms, with or without modification,
 *|  are permitted provided that the following conditions are met:
