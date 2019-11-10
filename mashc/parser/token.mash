@@ -1,0 +1,79 @@
+/*
+ *  Enumeration of language tokens
+ */
+
+var DQuote = chr(34)  // "
+
+enum MashTokenType [ttToken, ttDigit, ttString, ttWord, ttEndOfLine, ttNull]
+
+var MashTokens = [
+      "proc", "func",
+
+      "(", ")", "[", "]", "<", ">",
+
+      "==", ">=", "<=", "++", "--",
+      "+=", "-=", "*=", "/=", "\=", "%=",
+      "&=", "|=", "^=", "<<=", ">>=", "<>",
+
+      "?=", "=", "@=", "?", "@",
+      "::", ":", ",",
+
+      "+", "-", "*", "/", "\", "%", "^", "&", "|", "^", "~",
+
+      "if", "else",
+      "switch", "case",
+      "for", "in", "back",
+      "while", "whilst",
+      "class", "$", "this", "->", "new",
+      "try", "catch", "finally",
+      "launch", "async", "wait",
+      "gc",
+      "int", "word", "real", "str", "const",
+      "import", "regapi", "uses",
+      "inline",
+      "end"],
+
+    MashExprTokens = [
+      "+", "-", "*", "/", "\", "%", "^", "&", "|", "^", "~",
+      "?=", "=", "@=", "?", "@",
+
+      "==", ">=", "<=", "++", "--",
+      "+=", "-=", "*=", "/=", "\=", "%=",
+      "&=", "|=", "^=", "<<=", ">>=", "<>",
+
+      "(", ")", "[", "]", "<", ">",
+      "->", "$", "this", "in", ",", "new"],
+
+    MashParamsTokens = ["[", "]"],
+
+    MashOperatorsTokens = [
+      "+", "-", "*", "/", "\", "%", "^", "&", "|", "^",
+      "?=", "=", "@=",
+
+      "<", ">", "==", ">=", "<=",
+      "+=", "-=", "*=", "/=", "\=", "%=",
+      "&=", "|=", "^=", "<<=", ">>=", "<>",
+      "in"],
+
+    MashOperationToken = ["++", "--", "?", "@", "~", "new"]
+
+
+/*
+ *  Token+Info container
+ */
+class MashToken:
+  public:
+    var value,
+        info,
+        line
+
+    proc Create
+end
+
+proc MashToken::Create(value, info, line):
+  $value ?= copy(value)
+  $info  ?= copy(info)
+  $line  ?= copy(line)
+end
+
+

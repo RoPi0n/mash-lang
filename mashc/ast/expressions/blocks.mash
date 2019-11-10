@@ -1,0 +1,120 @@
+uses <classes\list>
+uses "parser\token.mash"
+uses "ast\blocks.mash"
+
+/*
+ * Expressions with one value and operator
+ * A++     A--     -A     ~A     ?A     @A     new A
+ */
+class MashASTE_Operation:
+  var A, Op
+  proc Create
+end
+
+proc MashASTE_Operation::Create(A, Op):
+  $A ?= A
+  $Op ?= Op
+end
+
+/*
+ * Expressions with L and R values
+ * L + R     L - R     L * R     L / R
+ * L \ R     L % R     L & R     L | R
+ * L ^ R     L << R    L >> R    L in R
+ * L > R     L < R
+ * L == R    L >= R    L <= R    L <> R
+ */
+class MashASTE_Expr:
+  var L, R, Op
+  proc Create
+end
+
+proc MashASTE_Expr::Create(L, R, Op):
+  $L ?= L
+  $R ?= R
+  $Op ?= Op
+end
+
+/*
+ * Assignings with L and R values
+ * L ?= R     L = R      L @= R
+ * L += R     L -= R     L *= R     L /= R
+ * L \= R     L %= R     L <<= R    L >>= R
+ * L &= R     L |= R     L ^= R
+ */
+class MashASTE_Assign:
+  var L, R, Op
+  proc Create
+end
+
+proc MashASTE_Assign::Create(L, R, Op):
+  $L ?= L
+  $R ?= R
+  $Op ?= Op
+end
+
+/*
+ * Primitives
+ */
+
+// Object: var/const
+class MashASTP_SimpleObject:
+  var Obj
+  proc Create
+end
+
+proc MashASTP_SimpleObject::Create(Obj):
+  $obj ?= obj
+end
+
+// Object by ref: xx -> yy
+class MashASTP_ObjectByRef:
+  var ObjPath
+  proc Create
+end
+
+proc MashASTP_ObjectByRef::Create():
+  $ObjPath ?= new list()
+end
+
+// Indexed object: var[a][b]..[N]
+class MashASTP_IndexedObject:
+  var Obj, Indexes
+  proc Create
+end
+
+proc MashASTP_IndexedObject::Create(Obj, Indexes):
+  $Obj ?= Obj
+  $Indexes ?= Indexes
+end
+
+// Call: f(args)
+class MashASTP_Call:
+  var Obj, Args
+  proc Create
+end
+
+proc MashASTP_Call::Create(Obj, Args):
+  $Obj ?= Obj
+  $Args ?= Args
+end
+
+// Enumeration: [1, 2, 3, ..., N]
+class MashASTP_Enum:
+  var Objects
+  proc Create
+end
+
+proc MashASTP_Enum::Create():
+  $Objects ?= new list()
+end
+
+// Operator
+class MashASTP_Operator:
+  var Op
+  proc Create
+end
+
+proc MashASTP_Operator::Create(Op):
+  $Op ?= Op
+end

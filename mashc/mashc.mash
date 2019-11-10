@@ -1,0 +1,26 @@
+uses <crt>
+uses "compiler.mash"
+
+proc main():
+  if ParamCount > 1:
+    try:
+      fp ?= ParamList[1]
+
+      code ?= new StringList()
+      code -> LoadFromFile(fp)
+
+      cmp ?= new MashCompiler(code, fp)
+      cmp -> Compile()
+
+      println("Success!")
+    catch E:
+      println("[Error]: ", E -> Message)
+      halt()
+    end
+  else:
+    println("Mash compiler v1.0", LnBreak,
+            "Author: RoPi0n", LnBreak,
+            "GitHub: github.com/RoPi0n/mash-lang", LnBreak, LnBreak,
+            "Using: svm mashc.vmc <source file path> [args]")
+  end
+end

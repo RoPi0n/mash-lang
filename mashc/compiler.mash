@@ -1,0 +1,25 @@
+uses <classes\stringlist>
+uses "parser\parser.mash"
+uses "ast\ast.mash"
+
+class MashCompiler:
+  protected:
+    var code, fp
+
+  public:
+    proc Create,
+         Compile
+end
+
+proc MashCompiler::Create(code, fp):
+  $code ?= code
+  $fp ?= fp
+end
+
+proc MashCompiler::Compile():
+  parser ?= new MashParser($code, $fp)
+  parser -> Parse()
+
+  ast ?= new MashAST(parser -> tokens, $fp)
+  ast -> process()
+end

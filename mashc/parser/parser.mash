@@ -1,0 +1,198 @@
+uses <classes\list>
+uses <classes\stringlist>
+uses "parser\token.mash"
+
+/*
+ *  This class should break mash code to tokens
+ */
+class MashParser:
+  protected:
+    var fp, code, tokens,
+        line,
+
+        commentGoing
+
+  public:
+    proc Create, Parse
+
+  private:
+    proc ParseLine
+end
+
+proc MashParser::Create(code, fp):
+  $code ?= code
+  $fp ?= fp
+  $tokens ?= new list()
+  $line ?= 0
+
+  $commentGoing ?= false
+end
+
+proc MashParser::Parse():
+  while $code -> size > $line:
+    s ?= s_trim($code -> get($line))
+
+    if len(s) > 0:
+      $ParseLine(s)
+      if $tokens -> count() > 0:
+        tk ?= $tokens -> get($tokens -> count() - 1)
+        if tk -> info <> ttEndOfLine:
+          $tokens -> add(new MashToken("", ttEndOfLine, $line))
+        end
+      end
+    end
+
+    $line++
+    gc()
+  end
+end
+
+var AlphaChars = "abcdefghijklmnopqrstuvwxyz_",
+    DigitChars = "0123456789",
+    HexChars   = "0123456789abcdef"
+
+proc MashParser::ParseLine(s):
+  while len(s) > 0:
+    if s_leftstr(s, 2) == "//":
+      break
+    end
+
+    if s_leftstr(s, 2) == "/*":
+      $commentGoing = true
+      s_del(s, 0, 2)
+    end
+
+    while (s_leftstr(s, 1) == DQuote) & (~$commentGoing):
+      s_del(s, 0, 1)
+      line_ended ?= false
+
+      st ?= ""
+      while len(s) > 0:
+        if s[0] == DQuote:
+          line_ended = true
+          s_del(s, 0, 1)
+          break
+        else:
+          st += s[0]
+          s_del(s, 0, 1)
+        end
+      end
+
+      $tokens -> add(new MashToken(st, ttString, $line))
+
+      if ~line_ended:
+        raise new Exception("Missed string end " + DQuote + " symbol at line " +
+                            ($line + 1) + " at file '" + $fp + "'")
+      end
+
+      s = s_trim(s)
+    end
+
+    if ~$commentGoing:
+      s ?= s_trim(s)
+
+      if len(s) > 0:
+        if strlower(s[0]) in AlphaChars: // Searching for word or token
+          wrd ?= ""
+
+          while len(s) > 0:
+            ch ?= strlower(s[0])
+            if (ch in AlphaChars) | (ch in DigitChars):
+              wrd += ch
+              s_del(s, 0, 1)
+            else:
+              break
+            end
+          end
+
+          tt ?= if(wrd in MashTokens, ttToken, ttWord)
+          $tokens -> add(new MashToken(wrd, tt, $line))
+        else:
+          if s[0] in DigitChars: // Searching for digit|float|hex
+            dig ?= ""
+            dot ?= false
+
+            if s_leftstr(s, 2) == "0x":
+              dig ?= "$"
+              s_del(s, 0, 2)
+
+              while (len(s) > 0) & (strlower(s_leftstr(s, 1)) in HexChars):
+                dig += strlower(s[0])
+                s_del(s, 0, 1)
+              end
+            else:
+              while len(s) > 0:
+                if s[0] in DigitChars:
+                  dig += s[0]
+                  s_del(s, 0, 1)
+                else:
+                  if (s[0] == ".") & (~dot) & (s_copy(s, 1, 1) in DigitChars):
+                    dig += s[0]
+                    s_del(s, 0, 1)
+                  else:
+                    break
+                  end
+                end
+              end
+            end
+
+            if len(dig) == 0:
+              raise new Exception("Invalid token (digit?) at line " +
+                                  ($line + 1) + " at file '" + $fp + "'")
+            end
+
+            $tokens -> add(new MashToken(dig, ttDigit, $line))
+          else: // Searching for operator
+            t ?= ""
+            op ?= ""
+            founded ?= false
+            brk ?= false
+            spaces ?= 0
+
+            ts ?= copy(s)
+
+            while (len(ts) > 0) & (~brk):
+              if ts[0] <> " ":
+                t += ts[0]
+              else:
+                spaces++
+              end
+              s_del(ts, 0, 1)
+
+              if t in MashTokens:
+                op ?= copy(t)
+                founded = true
+              end
+
+              brk = true
+              for tk in MashTokens:
+                if t in tk:
+                  brk = false
+                  break
+                end
+              end
+            end
+
+            s_del(s, 0, len(op) + spaces)
+
+            $tokens -> add(new MashToken(op, ttToken, $line))
+          end
+        end // strlower(s[0]) in AlphaChars
+      end // len(s) > 0
+    end
+
+    if $commentGoing:
+      if s_leftstr(s, 2) == "*/":
+        $commentGoing = false
+        s_del(s, 0, 2)
+      else:
+        if len(s) > 0:
+          s_del(s, 0, 1)
+        end
+      end
+    end
+
+    s = s_trim(s)
+    gc()
+  end
+end

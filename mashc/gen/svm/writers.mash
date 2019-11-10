@@ -1,0 +1,7 @@
+uses <classes\streams>
+
+proc writers.w_word(w, out):
+end
+
+proc writers.w_cardinal(w, out):
+end

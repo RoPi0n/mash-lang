@@ -1,0 +1,20 @@
+uses <classes\streams>
+
+class GeneratorSVM:
+  private:
+    var AST,
+        Out
+
+  public:
+    proc Create,
+         Build
+end
+
+proc GeneratorSVM::Create(AST, Out):
+  $AST ?= AST
+  $Out ?= Out
+end
+
+proc GeneratorSVM::Build():
+  // ...
+end

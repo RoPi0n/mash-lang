@@ -1,0 +1,115 @@
+uses <classes\list>
+uses "parser\token.mash"
+
+/*
+ *  Constructions
+ */
+
+// Import
+class MashASTB_Import:
+  var method_name, lib, name
+  proc create
+end
+
+proc MashASTB_Import::Create(m_name, lib, name):
+  $method_name ?= m_name
+  $lib ?= lib
+  $name ?= name
+end
+
+
+
+// Uses
+class MashASTB_Uses:
+  var expr
+  proc create
+end
+
+proc MashASTB_Uses::Create(expr):
+  $expr ?= expr
+end
+
+
+
+// Method
+class MashASTB_Method:
+  var is_function, method_name, is_class_method, class_name,
+      params,
+      nodes
+
+  proc create
+end
+
+proc MashASTB_Method::Create(is_function, method_name, is_class_method, class_name):
+  $is_function ?= is_function
+  $method_name ?= method_name
+  $is_class_method ?= is_class_method
+  $class_name ?= class_name
+
+  $params ?= new list()
+  $nodes ?= new list()
+end
+
+
+
+// If
+class MashASTB_If:
+  var Expr, Nodes, hasElse, NodesElse
+  proc Create
+end
+
+proc MashASTB_If::Create(Expr):
+  $Expr ?= Expr
+  $nodes ?= new list()
+  $hasElse ?= false
+  $nodesElse ?= new list()
+end
+
+
+
+// For
+class MashASTB_For:
+  var ExprInit, ExprCond, ExprActions,
+      Nodes
+
+  proc Create
+end
+
+proc MashASTB_For::Create(ExprInit, ExprCond, ExprActions):
+  $ExprInit ?= ExprInit
+  $ExprCond ?= ExprCond
+  $ExprActions ?= ExprActions
+
+  $Nodes ?= new list()
+end
+
+
+
+// For each (in/back)
+class MashASTB_ForEach:
+  var forVar, isBack, Expr,
+      Nodes
+
+  proc Create
+end
+
+proc MashASTB_ForEach::Create(forVar, isBack, Expr):
+  $forVar ?= forVar
+  $isBack ?= isBack
+  $Expr ?= Expr
+
+  $Nodes ?= new list()
+end
+
+
+/*
+ *  Expressions & other
+ */
+class MashASTB_Expression:
+  var tokens
+  proc create
+end
+
+proc MashASTB_Expression::Create():
+  $tokens ?= new list()
+end
