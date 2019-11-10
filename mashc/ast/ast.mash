@@ -16,6 +16,7 @@ class MashAST(MashBaseAST):
   private:
     func CurrBlock,
          NextNode,
+         NextExprTokens,
          NextExpr,
          NextParam
 end
@@ -89,8 +90,8 @@ func MashAST::NextNode(token_id):
           // Uses
           case "uses":
             token_id++
-            Expr ?= $NextExpr(token_id)
-            blk ?= new MashASTB_Uses(Expr)
+            ExprTokens ?= $NextExprTokens(token_id)
+            blk ?= new MashASTB_Uses(ExprTokens)
             return blk
           end
 
@@ -259,7 +260,7 @@ end
 
 
 
-func MashAST::NextExpr(token_id):
+func MashAST::NextExprTokens(token_id):
   ExprTokens ?= new list()
   tk ?= null
 
@@ -276,6 +277,14 @@ func MashAST::NextExpr(token_id):
       end
     end
   end
+
+  return ExprTokens
+end
+
+
+
+func MashAST::NextExpr(token_id):
+  ExprTokens ?= $NextExprTokens(token_id)
 
   vect ?= new vector()
   Expr ?= new MashExpressionAST(ExprTokens, $fp, vect)
