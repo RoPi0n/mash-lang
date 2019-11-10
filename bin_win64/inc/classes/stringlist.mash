@@ -21,14 +21,12 @@ end
 
 proc StringList::SetText(text):
   $Clear()
-  p ?= s_Pos(LnBreak, text)
-  while p > 0:
-    $Add(s_Copy(text, 1, p - 1))
-    s_Del(text, 1, p + len(LnBreak) - 1)
+  while len(text) > 0:
     p ?= s_Pos(LnBreak, text)
-  end
-  if Len(text) > 0:
-    $Add(text)
+    if p <> (-1):
+      $add(s_Copy(text, 0, p))
+      s_Del(text, 0, p + len(LnBreak))
+    end
   end
 end
 
@@ -54,18 +52,7 @@ end
 
 proc StringList::LoadFromStream(st):
   sz ?= st -> GetSize()
-  s ?= st -> ReadStr(sz)
-
-  $Clear()
-  p ?= s_Pos(LnBreak, s)
-  while p > 0:
-    $Add(s_Copy(s, 0, p))
-    s_Del(s, 0, p + len(LnBreak))
-    p ?= s_Pos(LnBreak, s)
-  end
-  if Len(s) > 0:
-    $Add(s)
-  end
+  $SetText(st -> ReadStr(sz))
 end
 
 proc StringList::LoadFromFile(fpath):
