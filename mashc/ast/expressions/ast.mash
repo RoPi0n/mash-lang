@@ -8,26 +8,32 @@ class MashExpressionAST(MashBaseAST):
   protected:
     var stk,
         nodes,
-        astvect
+        astvect,
+        treevect,
+        treeNode
 
   public:
     proc Create,
-         Process,
-         MakeTree,
+         Process
 
-         NextPrimitive,
+  private:
+    proc NextPrimitive,
          NextBraces,
          NextRectBraces,
          MakeEnum
+
+    func MakeTree
 end
 
 proc MashExpressionAST::Create(tokens, fp, vect):
   MashBaseAST::Create$(tokens, fp)
 
   $astvect ?= vect
+  $treevect ?= new vector()
 
   $stk ?= new list()
   $nodes ?= new list()
+  $treeNode ?= null
 end
 
 proc MashExpressionAST::Process():
@@ -65,11 +71,73 @@ proc MashExpressionAST::Process():
     gc()
   end
 
-  $MakeTree()
+  $treeNode ?= $MakeTree($nodes)
+  while $treevect -> size() > 0:
+    Node ?= $treevect -> pop_first()
+    L ?= $MakeTree(Node -> L)
+    R ?= $MakeTree(Node -> R)
+    Node -> L ?= L
+    Node -> R ?= R
+  end
 end
 
-proc MashExpressionAST::MakeTree():
-  //
+func MashExpressionAST::MakeTree(nodes):
+  left ?= new list()
+  right ?= new list()
+  op ?= null
+  op_obj ?= null
+  op_lvl ?= 0
+
+  while (op == null) & (op_lvl < 6):
+    i ?= 0
+    for n in nodes -> items:
+      if n -> type == MashASTP_Operator:
+        if n -> Op -> value in MashOperationsPriority[op_lvl]:
+          op ?= i
+          op_obj ?= n
+          break
+        end
+      end
+
+      i++
+    end
+    op_lvl++
+  end
+
+  if op <> null:
+    i ?= 0
+    while i < op:
+      left -> add(nodes -> get(i))
+      i++
+    end
+    i++
+
+    while i < nodes -> count():
+      right -> add(nodes -> get(i))
+      i++
+    end
+
+    if (left -> count() == 0) & (right -> count() == 0):
+      raise new Exception("Invalid expression at line " + ($lastTk -> line + 1) +
+                          " at file '" + $fp + "'")
+    end
+
+    println("operation: ", op_obj -> Op -> value)
+
+    Res ?= new MashASTE_OperationLR(null, null, op_obj)
+    Res -> L ?= left
+    Res -> R ?= right
+    $treevect -> push_back(Res)
+
+    return Res
+  else:
+    if nodes -> count() <> 1:
+      raise new Exception("Invalid expression at line " + ($lastTk -> line + 1) +
+                          " at file '" + $fp + "'")
+    end
+
+    return nodes -> get(0)
+  end
 end
 
 func MashExpressionAST::NextPrimitive(token_id):
@@ -151,13 +219,7 @@ func MashExpressionAST::NextPrimitive(token_id):
           ExprTokens ?= $NextBraces(token_id)
           Expr ?= new MashExpressionAST(ExprTokens, $fp, $astvect)
           //Expr -> Process()
-
-          for tk in Expr -> tokens -> items:
-            println(tk -> value)
-          end
-
           $astvect -> push_back(Expr)
-
           return Expr
         end
 
@@ -261,7 +323,7 @@ func MashExpressionAST::MakeEnum(tokens):
       end
 
       case "]":
-        br_cnt--
+        rbr_cnt--
         Expr -> add(tk)
       end
 

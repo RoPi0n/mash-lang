@@ -55,7 +55,22 @@ var MashTokens = [
       "&=", "|=", "^=", "<<=", ">>=", "<>",
       "in"],
 
-    MashOperationToken = ["++", "--", "?", "@", "~", "new"]
+    MashOperationToken = ["++", "--", "?", "@", "~", "-", "new"],
+
+    // For making correct expression AST
+    MashOperationsPriority = [
+       ["?=", "=", "@=", "+=", "-=", "*=",
+        "/=", "\=", "%=", "&=", "|=", "^=",
+        "<<=", ">>="],                      // 1 lvl: 6th
+
+       ["<", ">", "==", ">=", "<=", "<>"],  // 2 lvl: 5th
+       ["^", "&", "|", "^", "in"],          // 3 lvl: 4th
+       ["+", "-"],                          // 4 lvl: 3rd
+       ["*", "/", "\", "%"],                // 5 lvl: 2nd
+       MashOperationToken],                 // 6 lvl: 1st
+
+    MashOperationLeft = ["?", "@", "~", "-", "new"],
+    MashOperationRight = ["++", "--"]
 
 
 /*

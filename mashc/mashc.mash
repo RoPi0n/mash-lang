@@ -6,13 +6,16 @@ proc main():
     try:
       fp ?= ParamList[1]
 
+      tm1 ?= TickCnt()
       code ?= new StringList()
       code -> LoadFromFile(fp)
 
       cmp ?= new MashCompiler(code, fp)
       cmp -> Compile()
+      tm2 ?= TickCnt()
 
-      println("Success!")
+      println("Success!", LnBreak,
+              "Time elapsed: ", tm2 - tm1, " ms.")
     catch E:
       println("[Error]: ", E -> Message)
       halt()
