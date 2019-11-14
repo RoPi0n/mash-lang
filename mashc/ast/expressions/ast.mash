@@ -22,6 +22,7 @@ class MashExpressionAST(MashBaseAST):
          NextRectBraces,
          MakeEnum
 
+    proc PrepareNodes
     func MakeTree
 end
 
@@ -81,7 +82,71 @@ proc MashExpressionAST::Process():
   end
 end
 
+proc MashExpressionAST::PrepareNodes(nodes):
+  // Checking for left ops: <op> R
+  i ?= nodes -> count() - 1
+  while i >= 0:
+    n ?= nodes -> get(i)
+    if n -> type == MashASTP_Operator:
+      if n -> Op -> value in MashOperationLeft:
+        /*
+         * Here we should check next node if it's type - operator
+         * Or if next node doesn't exists
+         */
+        founded ?= false
+        if i == 0:
+          founded = true
+        else:
+          n2 ?= nodes -> get(i - 1)
+          if n2 -> type == MashASTP_Operator:
+            founded = true
+          end
+        end
+
+        if (nodes -> count() - 1 > i) & founded:
+          op ?= n
+          n ?= nodes -> items[i + 1]
+          nodes -> delete(i)
+          nodes -> items[i] ?= new MashASTE_Operation(n, op)
+        end
+      end
+    end
+
+    i--
+  end
+
+  // Checking for right ops: L <op>
+  i ?= 0
+  while i < nodes -> count():
+    n ?= nodes -> get(i)
+    if n -> type == MashASTP_Operator:
+      if n -> Op -> value in MashOperationRight:
+        founded ?= false
+        if i + 1 == nodes -> count():
+          founded = true
+        else:
+          n2 ?= nodes -> get(i + 1)
+          if n2 -> type == MashASTP_Operator:
+            founded = true
+          end
+        end
+
+        if (i > 0) & founded:
+          op ?= n
+          n ?= nodes -> items[i - 1]
+          nodes -> delete(i)
+          nodes -> items[i - 1] ?= new MashASTE_Operation(n, op)
+        end
+      end
+    end
+
+    i++
+  end
+end
+
 func MashExpressionAST::MakeTree(nodes):
+  $PrepareNodes(nodes)
+
   left ?= new list()
   right ?= new list()
   op ?= null
@@ -117,27 +182,23 @@ func MashExpressionAST::MakeTree(nodes):
       i++
     end
 
-    if (left -> count() == 0) & (right -> count() == 0):
-      raise new Exception("Invalid expression at line " + ($lastTk -> line + 1) +
-                          " at file '" + $fp + "'")
+    if (left -> count() > 0) & (right -> count() > 0): // L <op> R
+      Res ?= new MashASTE_OperationLR(null, null, op_obj)
+      Res -> L ?= left
+      Res -> R ?= right
+      $treevect -> push_back(Res)
+
+      return Res
     end
-
-    println("operation: ", op_obj -> Op -> value)
-
-    Res ?= new MashASTE_OperationLR(null, null, op_obj)
-    Res -> L ?= left
-    Res -> R ?= right
-    $treevect -> push_back(Res)
-
-    return Res
   else:
-    if nodes -> count() <> 1:
-      raise new Exception("Invalid expression at line " + ($lastTk -> line + 1) +
-                          " at file '" + $fp + "'")
+    if nodes -> count() == 1:
+      return nodes -> get(0)
     end
-
-    return nodes -> get(0)
   end
+
+  // If don't return anything -> Error
+  raise new Exception("Invalid expression at line " + ($lastTk -> line + 1) +
+                      " at file '" + $fp + "'")
 end
 
 func MashExpressionAST::NextPrimitive(token_id):
@@ -351,9 +412,3 @@ func MashExpressionAST::MakeEnum(tokens):
 
   return Res
 end
-
-
-
-
-
-
