@@ -22,7 +22,7 @@ class MashExpressionAST(MashBaseAST):
          NextRectBraces,
          MakeEnum
 
-    proc PrepareNodes
+    func PrepareNodes
     func MakeTree
 end
 
@@ -45,28 +45,6 @@ proc MashExpressionAST::Process():
 
     if prim <> null:
       $nodes -> add(prim)
-
-      /*switch prim -> type:
-        case MashASTP_SimpleObject:
-          println("simple object: ", prim -> obj -> value)
-        end
-
-        case MashASTP_ObjectByRef:
-          p ?= new list()
-          for t in prim -> objPath -> items:
-            p -> add(t -> obj -> value)
-          end
-          println("object by ref: ", p -> items)
-        end
-
-        case MashASTP_Call:
-          println("call...")
-        end
-
-        case MashASTP_Operator:
-          println("operator: ", prim -> op -> value)
-        end
-      end*/
     end
 
     gc()
@@ -82,17 +60,19 @@ proc MashExpressionAST::Process():
   end
 end
 
-proc MashExpressionAST::PrepareNodes(nodes):
+func MashExpressionAST::PrepareNodes(nodes):
+  new_nodes ?= new list()
+  for n in nodes -> items:
+    new_nodes -> add(n)
+  end
+  nodes ?= new_nodes
+
   // Checking for left ops: <op> R
   i ?= nodes -> count() - 1
   while i >= 0:
     n ?= nodes -> get(i)
     if n -> type == MashASTP_Operator:
       if n -> Op -> value in MashOperationLeft:
-        /*
-         * Here we should check next node if it's type - operator
-         * Or if next node doesn't exists
-         */
         founded ?= false
         if i == 0:
           founded = true
@@ -142,10 +122,12 @@ proc MashExpressionAST::PrepareNodes(nodes):
 
     i++
   end
+
+  return nodes
 end
 
 func MashExpressionAST::MakeTree(nodes):
-  $PrepareNodes(nodes)
+  nodes ?= $PrepareNodes(nodes)
 
   left ?= new list()
   right ?= new list()
@@ -190,15 +172,15 @@ func MashExpressionAST::MakeTree(nodes):
 
       return Res
     end
-  else:
-    if nodes -> count() == 1:
-      return nodes -> get(0)
-    end
+  end
+
+  if nodes -> count() == 1:
+    return nodes -> get(0)
   end
 
   // If don't return anything -> Error
   raise new Exception("Invalid expression at line " + ($lastTk -> line + 1) +
-                      " at file '" + $fp + "'")
+                      " at file '" + $fp + "'.")
 end
 
 func MashExpressionAST::NextPrimitive(token_id):
@@ -229,7 +211,7 @@ func MashExpressionAST::NextPrimitive(token_id):
       tk ?= $token(token_id + 1)
       if $TkCheck(tk) == "->":
         raise new Exception("Invalid token after -> at line " + (tk -> line + 1) +
-                            " at file '" + $fp + "'")
+                            " at file '" + $fp + "'.")
       end
     end
 
@@ -306,7 +288,7 @@ func MashExpressionAST::NextBraces(token_id):
 
     if tk == null:
       raise new Exception("Unclosed '(' at line " + (token -> line + 1) +
-                          " at file '" + $fp + "'")
+                          " at file '" + $fp + "'.")
     end
 
     switch tk -> value:
@@ -337,7 +319,7 @@ func MashExpressionAST::NextRectBraces(token_id):
 
     if tk == null:
       raise new Exception("Unclosed '[' at line " + (token -> line + 1) +
-                          " at file '" + $fp + "'")
+                          " at file '" + $fp + "'.")
     end
 
     switch tk -> value:

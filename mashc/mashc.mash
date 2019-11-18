@@ -2,20 +2,12 @@ uses <crt>
 uses "compiler.mash"
 
 proc main():
-  if ParamCount > 1:
+  if ParamCount > 2:
     try:
-      fp ?= ParamList[1]
-
-      tm1 ?= TickCnt()
-      code ?= new StringList()
-      code -> LoadFromFile(fp)
-
-      cmp ?= new MashCompiler(code, fp)
+      cmp ?= new MashCompiler(ParamList[1], ParamList[2])
       cmp -> Compile()
-      tm2 ?= TickCnt()
 
-      println("Success!", LnBreak,
-              "Time elapsed: ", tm2 - tm1, " ms.")
+      println("Success!")
     catch E:
       println("[Error]: ", E -> Message)
       halt()
@@ -24,6 +16,6 @@ proc main():
     println("Mash compiler v1.0", LnBreak,
             "Author: RoPi0n", LnBreak,
             "GitHub: github.com/RoPi0n/mash-lang", LnBreak, LnBreak,
-            "Using: svm mashc.vmc <source file path> [args]")
+            "Using: svm mashc.vmc <source> <dest> [args]")
   end
 end

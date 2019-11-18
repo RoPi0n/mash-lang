@@ -1,20 +1,116 @@
-uses <classes\streams>
+uses <classes\stringlist>
 
 class GeneratorSVM:
-  private:
-    var AST,
-        Out
+  protected:
+    var Sem,
+        Out,
+        GCN  // Generated constant number
 
   public:
-    proc Create,
-         Build
+    proc Create
+    func Gen
+
+  private:
+    proc ProcessNext,
+         ProcessExpr
 end
 
-proc GeneratorSVM::Create(AST, Out):
-  $AST ?= AST
-  $Out ?= Out
+proc GeneratorSVM::Create():
+  $GCN ?= 0
+  $Out ?= new StringList()
 end
 
-proc GeneratorSVM::Build():
-  // ...
+func GeneratorSVM::Gen(Sem):
+  $Sem ?= Sem
+
+  for imp in Sem -> Impl -> items:
+    $Out -> Add("import " + imp -> method_name + " " +
+                DQuote + imp -> lib + DQuote + " " +
+                DQuote + imp -> name + DQuote)
+  end
+
+  for g in Sem -> Global -> items:
+    $ProcessNext(g)
+  end
+
+  for m in Sem -> Methods -> items:
+    $ProcessNext(g)
+  end
+
+  return $Out
+end
+
+proc GeneratorSVM::ProcessNext(node):
+  switch node -> type:
+    case MashExpressionAST:
+      safe $ProcessExpr(node -> treeNode)
+    end
+  end
+end
+
+proc GeneratorSVM::ProcessExpr(node):
+  switch node -> type:
+    case MashASTE_Operation:
+    end
+
+    case MashASTE_OperationLR:
+    end
+
+    case MashASTP_SimpleObject:
+      switch node -> Obj -> info:
+        case ttDigit:
+          if "." in node -> Obj -> value:
+            $Out -> add("real generator.gcn." + $gcn + " " + DQuote +
+                        node -> Obj -> value + DQuote)
+            $Out -> add("pushc generator.gcn." + $gcn)
+            $gcn++
+          else:
+            $Out -> add("word generator.gcn." + $gcn + " " + DQuote +
+                        node -> Obj -> value + DQuote)
+            $Out -> add("pushc generator.gcn." + $gcn)
+            $gcn++
+          end
+        end
+
+        case ttString:
+          $Out -> add("str generator.gcn." + $gcn + " " + DQuote +
+                      node -> Obj -> value + DQuote)
+          $Out -> add("pushc generator.gcn." + $gcn)
+          $gcn++
+        end
+
+        case ttWord:
+          // TODO: Checking for var/not var
+          $Out -> add("pushc " + node -> Obj -> value)
+        end
+      end
+    end
+
+    case MashASTP_ObjectByRef:
+    end
+
+    case MashASTP_IndexedObject:
+    end
+
+    case MashASTP_Call:
+      isInvoke ?= false
+      if node -> Obj -> type == MastASTP_SimpleObject:
+        isInvoke ?= $Sem -> imp_names -> IndexOf(node -> Obj -> Obj -> value) <> null
+      end
+
+      for arg back node -> Args -> items:
+        safe $ProcessExpr(arg)
+      end
+
+      safe $ProcessExpr(node -> Obj)
+      $Out -> Add(if(isInvoke, "invoke", "jc"))
+    end
+
+    case MashASTP_Enum:
+    end
+
+    case MashExpressionAST:
+      safe $ProcessExpr(node -> treeNode)
+    end
+  end
 end

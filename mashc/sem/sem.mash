@@ -1,0 +1,59 @@
+/*
+ *  This class should analyse code
+ */
+
+class MashSEM:
+  protected:
+    var astl,            // list with ast
+        impl, imp_names, // for imports checking
+        methods,         // list with methods
+        methods_names,   // list with method names
+        cmethod_names,   // also for class methods
+        global
+
+  public:
+    proc Create,
+         Process
+end
+
+proc MashSEM::Create(imp_lst, ast_lst):
+  $impl ?= imp_lst
+  $astl ?= ast_lst
+
+  $imp_names ?= new list()
+  $methods ?= new list()
+  $methods_names ?= new list()
+  $cmethod_names ?= new list()
+  $global ?= new list()
+end
+
+proc MashSEM::Process():
+  for ib in $impl -> items:
+    $imp_names -> add(ib -> method_name)
+  end
+
+  for ast in $astl - items:
+    while ast -> nodes -> count() > 0:
+      n ?= ast -> nodes -> get(n)
+      if n -> type == MashASTB_Method:
+        $methods -> add(n)
+
+        if n -> is_class_method:
+          $cmethod_names -> add(n -> method_name)
+        else:
+          $methods_names -> add(n -> method_name)
+        end
+
+        for impn in $imp_names -> items:
+          if impn == n -> method_name:
+            raise new Exception("Import and method can't have equal names '" + impn +
+                                "', at line " + (n -> line + 1) " at file '" +
+                                n -> fp + "'.")
+          end
+        end
+      else:
+        $global -> add(n)
+      end
+    end
+  end
+end

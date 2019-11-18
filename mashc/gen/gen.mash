@@ -9,8 +9,8 @@ class Generator:
         GenInstance
 
   public:
-    proc Create,
-         Build
+    proc Create
+    func Gen
 end
 
 proc Generator::Create(Arch):
@@ -26,6 +26,6 @@ proc Generator::Create(Arch):
   end
 end
 
-proc Generator::Build(ast, out):
-  $GenInstance -> Build(ast, out)
+func Generator::Gen(Sem):
+  return $GenInstance -> Gen(Sem)
 end

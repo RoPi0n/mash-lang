@@ -35,12 +35,15 @@ end
 class MashASTB_Method:
   var is_function, method_name, is_class_method, class_name,
       params,
-      nodes
+      nodes,
+
+      line, fp
 
   proc create
 end
 
-proc MashASTB_Method::Create(is_function, method_name, is_class_method, class_name):
+proc MashASTB_Method::Create(is_function, method_name, is_class_method,
+                             class_name, line, fp):
   $is_function ?= is_function
   $method_name ?= method_name
   $is_class_method ?= is_class_method
@@ -48,6 +51,9 @@ proc MashASTB_Method::Create(is_function, method_name, is_class_method, class_na
 
   $params ?= new list()
   $nodes ?= new list()
+
+  $line ?= line
+  $fp ?= fp
 end
 
 
@@ -99,6 +105,19 @@ proc MashASTB_ForEach::Create(forVar, isBack, Expr):
   $Expr ?= Expr
 
   $Nodes ?= new list()
+end
+
+
+
+// While
+class MashASTB_While:
+  var Expr, Nodes
+  proc Create
+end
+
+proc MashASTB_While::Create(Expr):
+  $Expr ?= Expr
+  $nodes ?= new list()
 end
 
 

@@ -43,7 +43,7 @@ end
 func MashBaseAST::TkNotNull(tk):
   if tk == null:
     raise new Exception("Invalid construction at line " +
-                        ($lastTk -> line + 1) + " at file '" + $fp + "'")
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
   end
 
   return tk
@@ -52,7 +52,7 @@ end
 func MashBaseAST::TkValue(tk):
   if tk == null:
     raise new Exception("Invalid construction at line " +
-                        ($lastTk -> line + 1) + " at file '" + $fp + "'")
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
   end
 
   return tk -> value
@@ -77,7 +77,7 @@ end
 func MashBaseAST::TkTokenValue(tk):
   if tk == null:
     raise new Exception("Invalid construction at line " +
-                        ($lastTk -> line + 1) + " at file '" + $fp + "'")
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
   end
 
   if tk -> info == ttToken:
@@ -85,14 +85,14 @@ func MashBaseAST::TkTokenValue(tk):
   else:
     raise new Exception("Here should be reserved word or operator (token: '" +
                         tk -> value + "') at line " + (tk -> line + 1) +
-                        " at file '" + $fp + "'")
+                        " at file '" + $fp + "'.")
   end
 end
 
 func MashBaseAST::TkWordValue(tk):
   if tk == null:
     raise new Exception("Invalid construction at line " +
-                        ($lastTk -> line + 1) + " at file '" + $fp + "'")
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
   end
 
   if tk -> info == ttWord:
@@ -100,14 +100,14 @@ func MashBaseAST::TkWordValue(tk):
   else:
     raise new Exception("Here should be name of something (token: '" +
                         tk -> value + "') at line " + (tk -> line + 1) +
-                        " at file '" + $fp + "'")
+                        " at file '" + $fp + "'.")
   end
 end
 
 func MashBaseAST::TkStrValue(tk):
   if tk == null:
     raise new Exception("Invalid construction at line " +
-                        ($lastTk -> line + 1) + " at file '" + $fp + "'")
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
   end
 
   if tk -> info == ttString:
@@ -115,6 +115,6 @@ func MashBaseAST::TkStrValue(tk):
   else:
     raise new Exception("Here should be string (token: '" +
                         tk -> value + "') at line " + (tk -> line + 1) +
-                        " at file '" + $fp + "'")
+                        " at file '" + $fp + "'.")
   end
 end

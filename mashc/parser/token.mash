@@ -16,7 +16,7 @@ var MashTokens = [
       "&=", "|=", "^=", "<<=", ">>=", "<>",
 
       "?=", "=", "@=", "?", "@",
-      "::", ":", ",",
+      "::", ":", ",", ".",
 
       "+", "-", "*", "/", "\", "%", "^", "&", "|", "^", "~",
 
@@ -28,7 +28,7 @@ var MashTokens = [
       "try", "catch", "finally",
       "launch", "async", "wait",
       "gc",
-      "int", "word", "real", "str", "const",
+      "int", "word", "real", "str", "const", "enum",
       "import", "regapi", "uses",
       "inline",
       "end"],
@@ -42,7 +42,7 @@ var MashTokens = [
       "&=", "|=", "^=", "<<=", ">>=", "<>",
 
       "(", ")", "[", "]", "<", ">",
-      "->", "$", "this", "in", ",", "new"],
+      "->", "$", "this", "in", ",", ".", "new"],
 
     MashParamsTokens = ["[", "]"],
 

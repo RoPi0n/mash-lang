@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="11"/>
+    <BuildModes Active="Default"/>
+    <Units Count="7">
+      <Unit0>
+        <Filename Value="svmasm.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <TopLine Value="23"/>
+        <CursorPos X="15" Y="32"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="u_consts.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="4"/>
+        <TopLine Value="239"/>
+        <CursorPos X="32" Y="254"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="u_common.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="16"/>
+        <CursorPos X="26" Y="14"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="u_imports.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="112"/>
+        <CursorPos X="41" Y="125"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="u_variables.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="2" Y="9"/>
+        <UsageCount Value="20"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="u_writers.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="5"/>
+        <CursorPos X="5" Y="53"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="u_asm.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="164"/>
+        <CursorPos X="19" Y="178"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit6>
+    </Units>
+    <JumpHistory Count="11" HistoryIndex="10">
+      <Position1>
+        <Filename Value="svmasm.lpr"/>
+        <Caret Line="9" Column="14"/>
+      </Position1>
+      <Position2>
+        <Filename Value="svmasm.lpr"/>
+        <Caret Line="12" Column="3"/>
+      </Position2>
+      <Position3>
+        <Filename Value="svmasm.lpr"/>
+        <Caret Line="77" Column="18" TopLine="33"/>
+      </Position3>
+      <Position4>
+        <Filename Value="u_common.pas"/>
+        <Caret Line="17" Column="7"/>
+      </Position4>
+      <Position5>
+        <Filename Value="svmasm.lpr"/>
+        <Caret Line="77" Column="18" TopLine="33"/>
+      </Position5>
+      <Position6>
+        <Filename Value="svmasm.lpr"/>
+        <Caret Line="83" Column="16" TopLine="70"/>
+      </Position6>
+      <Position7>
+        <Filename Value="svmasm.lpr"/>
+        <Caret Line="12" Column="3"/>
+      </Position7>
+      <Position8>
+        <Filename Value="u_consts.pas"/>
+        <Caret Line="8" Column="22" TopLine="193"/>
+      </Position8>
+      <Position9>
+        <Filename Value="u_asm.pas"/>
+        <Caret Line="178" Column="33" TopLine="378"/>
+      </Position9>
+      <Position10>
+        <Filename Value="u_asm.pas"/>
+        <Caret Line="17" Column="59" TopLine="16"/>
+      </Position10>
+      <Position11>
+        <Filename Value="svmasm.lpr"/>
+        <Caret Line="104" Column="35" TopLine="86"/>
+      </Position11>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes Count="0" ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
