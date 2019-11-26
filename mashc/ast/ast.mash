@@ -10,7 +10,7 @@ class MashAST(MashBaseAST):
     var BlockVect,
         BlockObjectsVect,
 
-        imports_lst, uses_lst
+        imports_lst, uses_lst, const_lst
 
   public:
     proc create,
@@ -26,7 +26,7 @@ end
 
 
 
-proc MashAST::Create(tokens, fp, imports_lst, uses_lst):
+proc MashAST::Create(tokens, fp, imports_lst, uses_lst, const_lst):
   MashBaseAST::Create$(tokens, fp)
 
   $blockObjectsVect ?= new vector()
@@ -35,6 +35,7 @@ proc MashAST::Create(tokens, fp, imports_lst, uses_lst):
 
   $imports_lst ?= imports_lst
   $uses_lst ?= uses_lst
+  $const_lst ?= const_lst
 end
 
 
@@ -118,6 +119,30 @@ func MashAST::NextNode(token_id):
             token_id++
             ExprTokens ?= $NextExprTokens(token_id)
             $uses_lst -> add(new MashASTB_Uses(ExprTokens))
+            return null
+          end
+
+          // Const
+          case "const":
+            if $TkCheck($token(token_id + 2)) == "stream":
+              blk ?= new MashASTB_Const($TkWordValue($token(token_id + 1)),
+                                        $TkNotNull($token(token_id + 3)))
+              blk -> isStream = true
+
+              token_id += 4
+            else:
+              if $TkCheck($token(token_id + 2)) == "-":
+                tk ?= $TkNotNull($token(token_id + 3))
+                new_tk ?= new MashToken("-" + tk -> value, tk -> info, tk -> line)
+                blk ?= new MashASTB_Const($TkWordValue($token(token_id + 1)), new_tk)
+                token_id += 4
+              else:
+                blk ?= new MashASTB_Const($TkWordValue($token(token_id + 1)),
+                                          $TkNotNull($token(token_id + 2)))
+                token_id += 3
+              end
+            end
+
             return null
           end
 

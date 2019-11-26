@@ -9,14 +9,25 @@ class MashSEM:
         methods,         // list with methods
         methods_names,   // list with method names
         cmethod_names,   // also for class methods
-        global
+        global,
+
+        const_lst,
+        const_names,
+
+        global_vars
 
   public:
     proc Create,
          Process
+
+  private:
+    var LazyChk, LazySwap
+
+    proc CheckNext,
+         NextNode
 end
 
-proc MashSEM::Create(imp_lst, ast_lst):
+proc MashSEM::Create(imp_lst, ast_lst, const_lst):
   $impl ?= imp_lst
   $astl ?= ast_lst
 
@@ -25,6 +36,14 @@ proc MashSEM::Create(imp_lst, ast_lst):
   $methods_names ?= new list()
   $cmethod_names ?= new list()
   $global ?= new list()
+
+  $global_vars ?= new list()
+
+  $const_lst ?= const_lst
+  $const_names ?= new list()
+
+  $LazyChk ?= new list()
+  $LazySwap ?= new list()
 end
 
 proc MashSEM::Process():
@@ -32,9 +51,15 @@ proc MashSEM::Process():
     $imp_names -> add(ib -> method_name)
   end
 
-  for ast in $astl - items:
+  for cn in $const_lst -> items:
+    $const_names -> add(cn -> Name)
+  end
+
+  for ast in $astl -> items:
     while ast -> nodes -> count() > 0:
-      n ?= ast -> nodes -> get(n)
+      n ?= ast -> nodes -> get(0)
+      ast -> nodes -> delete(0)
+
       if n -> type == MashASTB_Method:
         $methods -> add(n)
 
@@ -53,6 +78,110 @@ proc MashSEM::Process():
         end
       else:
         $global -> add(n)
+      end
+    end
+  end
+
+  for g in $global -> items:
+    $CheckNext(g)
+  end
+end
+
+proc MashSEM::CheckNext(node):
+  $NextNode(node)
+
+  whilst ($LazyChk -> Count() > 0) | ($LazySwap -> Count() > 0):
+    if $LazyChk -> Count() > 0:
+      n ?= $LazyChk -> get(0)
+      $LazyChk -> delete(0)
+
+      for i back $LazyChk -> Items:
+        $LazySwap -> Insert(i, 0)
+      end
+      $LazyChk -> Clear()
+
+      $NextNode(n)
+    else:
+      if $LazySwap -> Count() > 0:
+        n ?= $LazySwap -> get(0)
+        $LazySwap -> delete(0)
+        $NextNode(n)
+      end
+    end
+
+    gc()
+  end
+end
+
+proc MashSEM::NextNode(node):
+  switch node -> type:
+    case MashASTE_Operation:
+
+    end
+
+    case MashASTE_OperationLR:
+      $LazyChk -> Add(node -> R)
+      $LazyChk -> Add(node -> L)
+    end
+
+    case MashASTP_SimpleObject:
+      switch node -> Obj -> info:
+        case ttDigit:
+
+        end
+
+        case ttString:
+
+        end
+
+        case ttWord:
+          // TODO: Checking for var/not var
+          if $const_names -> IndexOf(node -> Obj -> value) == null:
+            if $global_vars -> IndexOf(node -> Obj -> value) == null:
+              $global_vars -> add(node -> Obj -> value)
+            end
+          end
+        end
+      end
+    end
+
+    case MashASTP_ObjectByRef:
+    end
+
+    case MashASTP_IndexedObject:
+    end
+
+    case MashASTP_Call:
+      for arg in node -> args -> objects -> items:
+        $LazyChk -> Add(arg)
+      end
+    end
+
+    case MashASTP_Enum:
+    end
+
+    case MashExpressionAST:
+      $LazyChk -> Add(node -> treeNode)
+    end
+
+    /*
+     *  Constructions
+     */
+    case MashASTB_If:
+      $LazyChk -> Add(node -> Expr)
+      for n in node -> Nodes -> items:
+        $LazyChk -> Add(n)
+      end
+
+      for n in node -> NodesElse -> items:
+        $LazyChk -> Add(n)
+      end
+    end
+
+    case MashASTB_While:
+      $LazyChk -> Add(node -> Expr)
+      for n in node -> Nodes -> items:
+        $LazyChk -> Add(n)
       end
     end
   end

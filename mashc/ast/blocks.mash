@@ -31,13 +31,30 @@ end
 
 
 
+// Const
+class MashASTB_Const:
+  var Name, Value, isStream
+  proc create
+end
+
+proc MashASTB_Const::Create(Name, Value):
+  $Name ?= Name
+  $Value ?= Value
+  $isStream ?= false
+end
+
+
+
 // Method
 class MashASTB_Method:
   var is_function, method_name, is_class_method, class_name,
       params,
       nodes,
 
-      line, fp
+      line, fp,
+
+      // For sem & gen
+      varlist
 
   proc create
 end
@@ -54,6 +71,8 @@ proc MashASTB_Method::Create(is_function, method_name, is_class_method,
 
   $line ?= line
   $fp ?= fp
+
+  $varlist ?= new list()
 end
 
 

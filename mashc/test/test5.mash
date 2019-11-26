@@ -1,0 +1,7 @@
+import PrintLn "crt.lib" "PRINTLN"
+
+a ?= 0
+while a < 10:
+  println(a)
+  a += 1
+end

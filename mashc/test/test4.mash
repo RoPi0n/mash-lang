@@ -1,0 +1,22 @@
+import PrintLn "crt.lib" "PRINTLN"
+
+if (2*2 == 2+1) & (2 > 1):
+  println("true")
+else:
+  println("false")
+end
+
+println("(2 + 2) * 2 / 3 =")
+println((2 + 2) * 2 / 3)
+
+a ?= 10
+println(a)
+
+b ?= 1 + (a + 1)
+println(a)
+println(b)
+
+b ?= a
+a += 10
+println(a)
+println(b)

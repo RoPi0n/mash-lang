@@ -84,6 +84,7 @@ func MashExpressionAST::PrepareNodes(nodes):
         end
 
         if (nodes -> count() - 1 > i) & founded:
+          println("AST: OP!")
           op ?= n
           n ?= nodes -> items[i + 1]
           nodes -> delete(i)
@@ -112,6 +113,7 @@ func MashExpressionAST::PrepareNodes(nodes):
         end
 
         if (i > 0) & founded:
+          println("AST: OP!")
           op ?= n
           n ?= nodes -> items[i - 1]
           nodes -> delete(i)

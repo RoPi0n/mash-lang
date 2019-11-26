@@ -41,13 +41,14 @@ proc MashCompiler::Compile():
 
   imports_lst ?= new list()
   uses_lst ?= new list()
+  const_lst ?= new list()
   ast_lst ?= new list()
 
-  ast ?= new MashAST(parser -> tokens, $fp, imports_lst, uses_lst)
+  ast ?= new MashAST(parser -> tokens, $fp, imports_lst, uses_lst, const_lst)
   ast_lst -> add(ast)
   ast -> process()
 
-  /*i ?= 0
+  i ?= 0
   while i < uses_lst -> count():
     u ?= uses_lst -> get(i)
     path ?= ""
@@ -82,15 +83,15 @@ proc MashCompiler::Compile():
     parser ?= new MashParser(code, path)
     parser -> Parse()
 
-    ast ?= new MashAST(parser -> tokens, path, imports_lst, uses_lst)
+    ast ?= new MashAST(parser -> tokens, path, imports_lst, uses_lst, const_lst)
     ast_lst -> add(ast)
     ast -> process()
 
     i++
-  end */
+  end
 
   // Semantic analyse of code
-  Sem ?= new MashSem(imports_lst, ast_lst)
+  Sem ?= new MashSem(imports_lst, ast_lst, const_lst)
   Sem -> Process()
 
   Gen ?= new Generator(saSVM)

@@ -7,7 +7,7 @@ proc main():
       cmp ?= new MashCompiler(ParamList[1], ParamList[2])
       cmp -> Compile()
 
-      println("Success!")
+      println("Success.")
     catch E:
       println("[Error]: ", E -> Message)
       halt()

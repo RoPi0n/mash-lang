@@ -1,10 +1,48 @@
 uses <classes\stringlist>
 
+/*
+ *  Lazy generation
+ */
+
+class ExprFalse:
+end
+
+class ExprNew:
+end
+
+class ExprEnd:
+end
+
+class PreGenerated:
+  var code
+  proc Create
+end
+
+proc PreGenerated::Create(code):
+  $code ?= code
+end
+
+class PreGeneratedSet(list):
+  proc Next
+end
+
+proc PreGeneratedSet::Next(s):
+  $Add( new PreGenerated(s) )
+end
+
+/*
+ *  Code generation for SVM
+ */
+
 class GeneratorSVM:
   protected:
-    var Sem,
-        Out,
-        GCN  // Generated constant number
+    var Sem, Out,
+        GCN,  // Generated construction number
+
+        LazyGen,
+        LazyGenSwap,
+
+        ExprBeginnings
 
   public:
     proc Create
@@ -12,12 +50,23 @@ class GeneratorSVM:
 
   private:
     proc ProcessNext,
-         ProcessExpr
+         NextNode,
+         LazyGenCode
+
+    proc GenHeader
+    func GenOperation
+
+    func LastExprFlag
+    proc LastExprFlagChange
 end
 
 proc GeneratorSVM::Create():
   $GCN ?= 0
   $Out ?= new StringList()
+  $LazyGen ?= new list()
+  $LazyGenSwap ?= new list()
+
+  $ExprBeginnings ?= new vector() // flags stack for correctly var pushing/peeking
 end
 
 func GeneratorSVM::Gen(Sem):
@@ -27,61 +76,212 @@ func GeneratorSVM::Gen(Sem):
     $Out -> Add("import " + imp -> method_name + " " +
                 DQuote + imp -> lib + DQuote + " " +
                 DQuote + imp -> name + DQuote)
+    gc()
   end
+
+  $GenHeader()
 
   for g in Sem -> Global -> items:
     $ProcessNext(g)
+    gc()
   end
 
   for m in Sem -> Methods -> items:
-    $ProcessNext(g)
+    $ProcessNext(m)
+    gc()
   end
 
   return $Out
 end
 
-proc GeneratorSVM::ProcessNext(node):
-  switch node -> type:
-    case MashExpressionAST:
-      safe $ProcessExpr(node -> treeNode)
+
+/*
+ *  Generating headers or something like this
+ */
+proc GeneratorSVM::GenHeader():
+  for ct in $Sem -> const_lst -> items:
+    if ct -> isStream:
+      $Out -> Add("stream " + ct -> Name + " " + DQuote + ct -> Value + DQuote)
+    else:
+      if ct -> info == ttString:
+        $Out -> Add("str " + ct -> Name + " " + DQuote + ct -> Value + DQuote)
+      else:
+        if "." in ct -> value:
+          $Out -> Add("real " + ct -> Name + " " + ct -> Value)
+        else:
+          if "-" in ct -> value:
+            $Out -> Add("int " + ct -> Name + " " + ct -> Value)
+          else:
+            $Out -> Add("word " + ct -> Name + " " + ct -> Value)
+          end
+        end
+      end
     end
+  end
+
+  $Out -> Add("@global.arg_counter")
+  $Out -> Add("@global.temp")
+
+  for gv in $Sem -> global_vars -> items:
+    $Out -> Add("@" + gv)
   end
 end
 
-proc GeneratorSVM::ProcessExpr(node):
+proc GeneratorSVM::LazyGenCode(code):
+  $LazyGen -> Add( new PreGenerated(code) )
+end
+
+/*
+ *  Generating code (main loop's)
+ */
+proc GeneratorSVM::ProcessNext(node):
+  $NextNode(node)
+
+  whilst ($LazyGen -> Count() > 0) | ($LazyGenSwap -> Count() > 0):
+    if $LazyGen -> Count() > 0:
+      n ?= $LazyGen -> get(0)
+      $LazyGen -> delete(0)
+
+      for i back $LazyGen -> Items:
+        $LazyGenSwap -> Insert(i, 0)
+      end
+      $LazyGen -> Clear()
+
+      $NextNode(n)
+    else:
+      if $LazyGenSwap -> Count() > 0:
+        n ?= $LazyGenSwap -> get(0)
+        $LazyGenSwap -> delete(0)
+        $NextNode(n)
+      end
+    end
+
+    gc()
+  end
+end
+
+
+
+/*
+ *  Generating code for constructions & expressions
+ */
+func GeneratorSVM::LastExprFlag():
+  if $ExprBeginnings -> Size() > 0:
+    return $ExprBeginnings -> peek_back()
+  else:
+    return false
+  end
+end
+
+proc GeneratorSVM::LastExprFlagChange():
+  if $ExprBeginnings -> Size() > 0:
+    $ExprBeginnings -> pop_back()
+    $ExprBeginnings -> push_back(false)
+  end
+end
+
+proc GeneratorSVM::NextNode(node):
   switch node -> type:
+    case ExprFalse:
+      $LastExprFlagChange()
+    end
+
+    case ExprNew:
+      $ExprBeginnings -> push_back(true)
+    end
+
+    case ExprEnd:
+      if $ExprBeginnings -> Size() > 0:
+        $ExprBeginnings -> pop_back()
+      end
+    end
+
+    case PreGenerated:
+      $Out -> Add(node -> code)
+    end
+
+    case PreGeneratedSet:
+      for pg in node -> items:
+        $Out -> Add(pg -> code)
+      end
+    end
+
     case MashASTE_Operation:
+      println("Operation...")
+      //$LazyGen -> Add(node -> A)
+      //$LazyGen -> Add($GenOperation(node -> Op -> Op -> value, false))
     end
 
     case MashASTE_OperationLR:
+      if node -> Op -> Op -> value == "?=":
+        if node -> L -> type == MashASTP_SimpleObject:
+          if (node -> L -> Obj -> info == ttWord) &
+             ($Sem -> global_vars -> IndexOf(node -> L -> Obj -> value) <> null):
+
+            if node -> R -> type == MashASTE_OperationLR:
+              $LazyGen -> Add(new ExprNew)
+              $LazyGen -> Add(node -> R)
+              $LazyGen -> Add(new ExprEnd)
+            else:
+              $LazyGen -> Add(new ExprFalse)
+              $LazyGen -> Add(node -> R)
+            end
+
+            $LazyGen -> Add(new PreGenerated("peek " + node -> L -> Obj -> value))
+            $LazyGen -> Add(new PreGenerated("pop"))
+          else:
+            raise new Exception("Invalid assigment for " + node -> L -> Obj -> value)
+          end
+        else:
+          //TODO
+          //$LazyGen -> Add(node -> R)
+        end
+      else:
+        if ~(node -> Op -> Op -> value in ["+", "-", "/", "*",
+                                           "\", "%", "&", "|",
+                                           "^", "<<", ">>"]):
+          $LazyGen -> Add(new ExprFalse)
+        end
+
+        $LazyGen -> Add(node -> R)
+        $LazyGen -> Add(node -> L)
+        $LazyGen -> Add($GenOperation(node -> Op -> Op -> value, true))
+      end
     end
 
     case MashASTP_SimpleObject:
       switch node -> Obj -> info:
         case ttDigit:
           if "." in node -> Obj -> value:
-            $Out -> add("real generator.gcn." + $gcn + " " + DQuote +
-                        node -> Obj -> value + DQuote)
-            $Out -> add("pushc generator.gcn." + $gcn)
+            $Out -> add("real generator.const.gcn." + $gcn + " " +  node -> Obj -> value)
+            $Out -> add("pushc generator.const.gcn." + $gcn)
             $gcn++
           else:
-            $Out -> add("word generator.gcn." + $gcn + " " + DQuote +
-                        node -> Obj -> value + DQuote)
-            $Out -> add("pushc generator.gcn." + $gcn)
+            $Out -> add("word generator.const.gcn." + $gcn + " " + node -> Obj -> value)
+            $Out -> add("pushc generator.const.gcn." + $gcn)
             $gcn++
           end
         end
 
         case ttString:
-          $Out -> add("str generator.gcn." + $gcn + " " + DQuote +
+          $Out -> add("str generator.const.gcn." + $gcn + " " + DQuote +
                       node -> Obj -> value + DQuote)
-          $Out -> add("pushc generator.gcn." + $gcn)
+          $Out -> add("pushc generator.const.gcn." + $gcn)
           $gcn++
         end
 
         case ttWord:
-          // TODO: Checking for var/not var
-          $Out -> add("pushc " + node -> Obj -> value)
+          if $Sem -> global_vars -> IndexOf(node -> Obj -> value) <> null:
+            $Out -> add("push " + node -> Obj -> value)
+            if $LastExprFlag():
+              $Out -> add("copy")
+              $Out -> add("swp")
+              $Out -> add("pop")
+              $LastExprFlagChange()
+            end
+          else:
+            $Out -> add("pushc " + node -> Obj -> value)
+          end
         end
       end
     end
@@ -94,23 +294,323 @@ proc GeneratorSVM::ProcessExpr(node):
 
     case MashASTP_Call:
       isInvoke ?= false
-      if node -> Obj -> type == MastASTP_SimpleObject:
-        isInvoke ?= $Sem -> imp_names -> IndexOf(node -> Obj -> Obj -> value) <> null
+      for inv in $Sem -> imp_names -> items:
+        if node -> Obj -> Obj -> value == inv:
+          isInvoke = true
+          break
+        end
       end
 
-      for arg back node -> Args -> items:
-        safe $ProcessExpr(arg)
+      for arg back node -> args -> objects -> items:
+        $LazyGen -> Add(arg)
       end
 
-      safe $ProcessExpr(node -> Obj)
-      $Out -> Add(if(isInvoke, "invoke", "jc"))
+      $LazyGen -> Add(node -> Obj)
+      $LazyGenCode( if(isInvoke, "invoke", "jc") )
     end
 
     case MashASTP_Enum:
     end
 
     case MashExpressionAST:
-      safe $ProcessExpr(node -> treeNode)
+      if node -> treeNode -> type <> MashASTE_OperationLR:
+        $LazyGen -> Add(node -> treeNode)
+      else:
+        $LazyGen -> Add(new ExprNew)
+        $LazyGen -> Add(node -> treeNode)
+        $LazyGen -> Add(new ExprEnd)
+      end
+    end
+
+    /*
+     *  Constructions
+     */
+    case MashASTB_If:
+      $LazyGenCode("pushcp generator.if.gcn." + $gcn + ".else")
+      $LazyGen -> Add(node -> Expr)
+      $LazyGenCode("jz")
+
+      for n in node -> nodes -> items:
+        $LazyGen -> Add(n)
+      end
+
+      if node -> hasElse:
+        $LazyGenCode("pushcp generator.if.gcn." + $gcn + ".end")
+        $LazyGenCode("jp")
+        $LazyGenCode("generator.if.gcn." + $gcn + ".else:")
+        for n in node -> nodesElse -> items:
+          $LazyGen -> Add(n)
+        end
+        $LazyGenCode("generator.if.gcn." + $gcn + ".end:")
+      else:
+        $LazyGenCode("generator.if.gcn." + $gcn + ".else:")
+      end
+      $gcn++
+    end
+
+    case MashASTB_While:
+      $LazyGenCode("generator.while.gcn." + $gcn + ".start:")
+      $LazyGenCode("pushcp generator.while.gcn." + $gcn + ".end")
+      $LazyGen -> Add(node -> Expr)
+      $LazyGenCode("jz")
+
+      for n in node -> nodes -> items:
+        $LazyGen -> Add(n)
+      end
+
+      $LazyGenCode("pushcp generator.while.gcn." + $gcn + ".start")
+      $LazyGenCode("jp")
+      $LazyGenCode("generator.while.gcn." + $gcn + ".end:")
+      $gcn++
+    end
+  end
+end
+
+/*
+ *  Generating operations for expressions
+ */
+
+func GeneratorSVM::GenOperation(op, isLR):
+  switch op:
+    case "+":
+      r ?= new PreGeneratedSet()
+      r -> Next("add")
+      return r
+    end
+
+    case "-":
+      r ?= new PreGeneratedSet()
+
+      if isLR:
+        r -> Next("sub")
+      else:
+        r -> Next("neg")
+      end
+
+      return r
+    end
+
+    case "*":
+      r ?= new PreGeneratedSet()
+      r -> Next("mul")
+      return r
+    end
+
+    case "/":
+      r ?= new PreGeneratedSet()
+      r -> Next("div")
+      return r
+    end
+
+    case "\":
+      r ?= new PreGeneratedSet()
+      r -> Next("idiv")
+      return r
+    end
+
+    case "%":
+      r ?= new PreGeneratedSet()
+      r -> Next("mod")
+      return r
+    end
+
+    case "&":
+      r ?= new PreGeneratedSet()
+      r -> Next("and")
+      return r
+    end
+
+    case "|":
+      r ?= new PreGeneratedSet()
+      r -> Next("or")
+      return r
+    end
+
+    case "^":
+      r ?= new PreGeneratedSet()
+      r -> Next("xor")
+      return r
+    end
+
+    case "<<":
+      r ?= new PreGeneratedSet()
+      r -> Next("shl")
+      return r
+    end
+
+    case ">>":
+      r ?= new PreGeneratedSet()
+      r -> Next("shr")
+      return r
+    end
+
+    case ">":
+      r ?= new PreGeneratedSet()
+      r -> Next("bg")
+      return r
+    end
+
+    case ">=":
+      r ?= new PreGeneratedSet()
+      r -> Next("be")
+      return r
+    end
+
+    case "==":
+      r ?= new PreGeneratedSet()
+      r -> Next("eq")
+      return r
+    end
+
+    case "<":
+      r ?= new PreGeneratedSet()
+      r -> Next("swp")
+      r -> Next("bg")
+      return r
+    end
+
+    case "<=":
+      r ?= new PreGeneratedSet()
+      r -> Next("swp")
+      r -> Next("bg")
+      return r
+    end
+
+    case "in":
+      r ?= new PreGeneratedSet()
+      r -> Next("pushcp system_op_in")
+      r -> Next("jc")
+      return r
+    end
+
+    case "..":
+      r ?= new PreGeneratedSet()
+      r -> Next("pushcp system_op_range")
+      r -> Next("jc")
+      return r
+    end
+
+    case "+=":
+      r ?= new PreGeneratedSet()
+      r -> Next("add")
+      r -> Next("pop")
+      return r
+    end
+
+    case "-=":
+      r ?= new PreGeneratedSet()
+      r -> Next("sub")
+      r -> Next("pop")
+      return r
+    end
+
+    case "*=":
+      r ?= new PreGeneratedSet()
+      r -> Next("mul")
+      r -> Next("pop")
+      return r
+    end
+
+    case "/=":
+      r ?= new PreGeneratedSet()
+      r -> Next("div")
+      r -> Next("pop")
+      return r
+    end
+
+    case "\=":
+      r ?= new PreGeneratedSet()
+      r -> Next("idiv")
+      r -> Next("pop")
+      return r
+    end
+
+    case "%=":
+      r ?= new PreGeneratedSet()
+      r -> Next("mod")
+      r -> Next("pop")
+      return r
+    end
+
+    case "&=":
+      r ?= new PreGeneratedSet()
+      r -> Next("and")
+      r -> Next("pop")
+      return r
+    end
+
+    case "|=":
+      r ?= new PreGeneratedSet()
+      r -> Next("or")
+      r -> Next("pop")
+      return r
+    end
+
+    case "^=":
+      r ?= new PreGeneratedSet()
+      r -> Next("xor")
+      r -> Next("pop")
+      return r
+    end
+
+    case "<<=":
+      r ?= new PreGeneratedSet()
+      r -> Next("shl")
+      r -> Next("pop")
+      return r
+    end
+
+    case ">>=":
+      r ?= new PreGeneratedSet()
+      r -> Next("shr")
+      r -> Next("pop")
+      return r
+    end
+
+    case "=":
+      r ?= new PreGeneratedSet()
+      r -> Next("mov")
+      return r
+    end
+
+    case "@=":
+      r ?= new PreGeneratedSet()
+      r -> Next("mvbp")
+      return r
+    end
+
+    case "~":
+      r ?= new PreGeneratedSet()
+      r -> Next("not")
+      return r
+    end
+
+    case "++":
+      r ?= new PreGeneratedSet()
+      r -> Next("inc")
+      return r
+    end
+
+    case "--":
+      r ?= new PreGeneratedSet()
+      r -> Next("dec")
+      return r
+    end
+
+    case "@":
+      r ?= new PreGeneratedSet()
+      r -> Next("new")
+      r -> Next("peek global.temp")
+      r -> Next("swp")
+      r -> Next("movp")
+      r -> Next("push global.temp")
+      return r
+    end
+
+    case "?":
+      r ?= new PreGeneratedSet()
+      r -> Next("gvbp")
+      return r
     end
   end
 end
