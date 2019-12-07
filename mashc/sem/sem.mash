@@ -83,12 +83,16 @@ proc MashSEM::Process():
   end
 
   for g in $global -> items:
-    $CheckNext(g)
+    $CheckNext(g, $global_vars)
+  end
+
+  for m in $methods -> items:
+    $CheckNext(m, m -> varlist)
   end
 end
 
-proc MashSEM::CheckNext(node):
-  $NextNode(node)
+proc MashSEM::CheckNext(node, vars):
+  $NextNode(node, vars)
 
   whilst ($LazyChk -> Count() > 0) | ($LazySwap -> Count() > 0):
     if $LazyChk -> Count() > 0:
@@ -100,12 +104,12 @@ proc MashSEM::CheckNext(node):
       end
       $LazyChk -> Clear()
 
-      $NextNode(n)
+      $NextNode(n, vars)
     else:
       if $LazySwap -> Count() > 0:
         n ?= $LazySwap -> get(0)
         $LazySwap -> delete(0)
-        $NextNode(n)
+        $NextNode(n, vars)
       end
     end
 
@@ -113,7 +117,7 @@ proc MashSEM::CheckNext(node):
   end
 end
 
-proc MashSEM::NextNode(node):
+proc MashSEM::NextNode(node, vars):
   switch node -> type:
     case MashASTE_Operation:
 
@@ -135,12 +139,26 @@ proc MashSEM::NextNode(node):
         end
 
         case ttWord:
-          // TODO: Checking for var/not var
-          if $const_names -> IndexOf(node -> Obj -> value) == null:
-            if $global_vars -> IndexOf(node -> Obj -> value) == null:
-              $global_vars -> add(node -> Obj -> value)
+          // Checking for var/not var
+          if ($const_names -> IndexOf(node -> Obj -> value) == null) &
+             ($methods_names -> IndexOf(node -> Obj -> value) == null) &
+             ($cmethod_names -> IndexOf(node -> Obj -> value) == null) &
+             ($imp_names -> IndexOf(node -> Obj -> value) == null):
+            if vars -> IndexOf(node -> Obj -> value) == null:
+              vars -> add(node -> Obj -> value)
             end
           end
+        end
+      end
+    end
+
+    case MashASTP_SpecRectObject:
+      if ($const_names -> IndexOf(node -> Obj -> value) == null) &
+         ($methods_names -> IndexOf(node -> Obj -> value) == null) &
+         ($cmethod_names -> IndexOf(node -> Obj -> value) == null) &
+         ($imp_names -> IndexOf(node -> Obj -> value) == null):
+        if vars -> IndexOf(node -> Obj -> value) == null:
+          vars -> add(node -> Obj -> value)
         end
       end
     end
@@ -158,6 +176,9 @@ proc MashSEM::NextNode(node):
     end
 
     case MashASTP_Enum:
+      for n in node -> Objects -> items:
+        $LazyChk -> Add(n)
+      end
     end
 
     case MashExpressionAST:
@@ -167,6 +188,16 @@ proc MashSEM::NextNode(node):
     /*
      *  Constructions
      */
+    case MashASTB_Method:
+      for p in node -> params -> items:
+        $LazyChk -> Add(p)
+      end
+
+      for n in node -> nodes -> items:
+        $LazyChk -> Add(n)
+      end
+    end
+
     case MashASTB_If:
       $LazyChk -> Add(node -> Expr)
       for n in node -> Nodes -> items:

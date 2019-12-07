@@ -84,10 +84,9 @@ func MashExpressionAST::PrepareNodes(nodes):
         end
 
         if (nodes -> count() - 1 > i) & founded:
-          println("AST: OP!")
           op ?= n
           n ?= nodes -> items[i + 1]
-          nodes -> delete(i)
+          nodes -> delete(i + 1)
           nodes -> items[i] ?= new MashASTE_Operation(n, op)
         end
       end
@@ -113,7 +112,6 @@ func MashExpressionAST::PrepareNodes(nodes):
         end
 
         if (i > 0) & founded:
-          println("AST: OP!")
           op ?= n
           n ?= nodes -> items[i - 1]
           nodes -> delete(i)
@@ -189,7 +187,7 @@ func MashExpressionAST::NextPrimitive(token_id):
   token ?= $token(token_id)
   $lastTk ?= token
 
-  if token -> info in [ttDigit, ttString, ttWord]:
+  if (token -> info in [ttDigit, ttString, ttWord]) | (token -> value == "new"):
     Obj ?= null
 
     MashExpressionAST_NextPrimitive_Lp:
@@ -218,7 +216,15 @@ func MashExpressionAST::NextPrimitive(token_id):
     end
 
     if Obj == null:
-      Obj ?= new MashASTP_SimpleObject(token)
+      if token -> value == "new":
+        if $TkCheck($token(token_id + 1)) == "[":
+          Obj ?= new MashASTP_SimpleObject(token)
+        else:
+          Obj ?= new MashASTP_Operator(token)
+        end
+      else:
+        Obj ?= new MashASTP_SimpleObject(token)
+      end
     end
 
     if $TkCheck($token(token_id + 1)) == "(":

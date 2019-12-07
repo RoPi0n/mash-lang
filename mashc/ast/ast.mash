@@ -122,6 +122,13 @@ func MashAST::NextNode(token_id):
             return null
           end
 
+          // Inline
+          case "inline":
+            block ?= new MashASTB_Inline($TkStrValue($token(token_id + 1)))
+            token_id += 2
+            return block
+          end
+
           // Const
           case "const":
             if $TkCheck($token(token_id + 2)) == "stream":
@@ -170,8 +177,27 @@ func MashAST::NextNode(token_id):
               while $TkValue($token(token_id)) <> ")":
                 arg ?= $NextParam(token_id)
 
-                if arg -> tokens -> count() > 0:
-                  method_block -> params -> add(arg)
+                if arg -> count() in [1, 3]:
+                  if arg -> count() == 1:
+                    p ?= arg -> get(0)
+                    if p -> info <> ttWord:
+                      raise new Exception("Invalid paramethers declaration at line " +
+                                          (token -> line + 1) + " at file '" +
+                                          $fp + "'.")
+                    end
+                    method_block -> params -> add( new MashASTP_SimpleObject(p) )
+                  else: // [x]
+                    L ?= arg -> get(0)
+                    p ?= arg -> get(1)
+                    R ?= arg -> get(2)
+                    if (L -> value == "[") & (R -> value == "]") & (p -> info == ttWord):
+                      method_block -> params -> add( new MashASTP_SpecRectObject(p) )
+                    else:
+                      raise new Exception("Invalid paramethers declaration at line " +
+                                          (token -> line + 1) + " at file '" +
+                                          $fp + "'.")
+                    end
+                  end
                 else:
                   raise new Exception("Invalid paramethers declaration at line " +
                                       (token -> line + 1) + " at file '" +
@@ -232,8 +258,27 @@ func MashAST::NextNode(token_id):
               while $TkValue($token(token_id)) <> ")":
                 arg ?= $NextParam(token_id)
 
-                if arg -> tokens -> count() > 0:
-                  method_block -> params -> add(arg)
+                if arg -> count() in [1, 3]:
+                  if arg -> count() == 1:
+                    p ?= arg -> get(0)
+                    if p -> info <> ttWord:
+                      raise new Exception("Invalid paramethers declaration at line " +
+                                          (token -> line + 1) + " at file '" +
+                                          $fp + "'.")
+                    end
+                    method_block -> params -> add( new MashASTP_SimpleObject(p) )
+                  else: // [x]
+                    L ?= arg -> get(0)
+                    p ?= arg -> get(1)
+                    R ?= arg -> get(2)
+                    if (L -> value == "[") & (R -> value == "]") & (p -> info == ttWord):
+                      method_block -> params -> add( new MashASTP_SpecRectObject(p) )
+                    else:
+                      raise new Exception("Invalid paramethers declaration at line " +
+                                          (token -> line + 1) + " at file '" +
+                                          $fp + "'.")
+                    end
+                  end
                 else:
                   raise new Exception("Invalid paramethers declaration at line " +
                                       (token -> line + 1) + " at file '" +
@@ -503,7 +548,7 @@ end
 
 
 func MashAST::NextParam(token_id):
-  Expr ?= new MashASTB_Expression()
+  p ?= new list()
   tk ?= null
 
   whilst tk <> null:
@@ -513,7 +558,7 @@ func MashAST::NextParam(token_id):
       if (tk -> value in MashParamsTokens) &
          (tk -> info == ttToken) |
          (tk -> info == ttWord):
-        Expr -> tokens -> add(tk)
+        p -> add(tk)
         token_id++
       else:
         tk ?= null
@@ -521,5 +566,5 @@ func MashAST::NextParam(token_id):
     end
   end
 
-  return Expr
+  return p
 end

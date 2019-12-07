@@ -55,6 +55,10 @@ proc MashASTP_SimpleObject::Create(Obj):
   $obj ?= obj
 end
 
+// SpecRect Object: [x]
+class MashASTP_SpecRectObject(MashASTP_SimpleObject):
+end
+
 // Object by ref: xx -> yy
 class MashASTP_ObjectByRef:
   var ObjPath

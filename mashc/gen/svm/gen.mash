@@ -1,34 +1,5 @@
 uses <classes\stringlist>
-
-/*
- *  Lazy generation
- */
-
-class ExprFalse:
-end
-
-class ExprNew:
-end
-
-class ExprEnd:
-end
-
-class PreGenerated:
-  var code
-  proc Create
-end
-
-proc PreGenerated::Create(code):
-  $code ?= code
-end
-
-class PreGeneratedSet(list):
-  proc Next
-end
-
-proc PreGeneratedSet::Next(s):
-  $Add( new PreGenerated(s) )
-end
+uses "gen\svm\gen_types.mash"
 
 /*
  *  Code generation for SVM
@@ -58,6 +29,11 @@ class GeneratorSVM:
 
     func LastExprFlag
     proc LastExprFlagChange
+
+    func GenMethodHeader
+    proc GenMethodEnd,
+         GenArrayOp,
+         GenArrayAlloc
 end
 
 proc GeneratorSVM::Create():
@@ -82,18 +58,23 @@ func GeneratorSVM::Gen(Sem):
   $GenHeader()
 
   for g in Sem -> Global -> items:
-    $ProcessNext(g)
+    $ProcessNext(g, null, "")
     gc()
   end
 
   for m in Sem -> Methods -> items:
-    $ProcessNext(m)
+    mname ?= $GenMethodHeader(m)
+    $ProcessNext(m, m -> varlist, mname)
+    $GenMethodEnd(m, mname)
     gc()
   end
 
   return $Out
 end
 
+proc GeneratorSVM::LazyGenCode(code):
+  $LazyGen -> Add( new PreGenerated(code) )
+end
 
 /*
  *  Generating headers or something like this
@@ -122,20 +103,76 @@ proc GeneratorSVM::GenHeader():
   $Out -> Add("@global.arg_counter")
   $Out -> Add("@global.temp")
 
+  $Out -> Add("word generator.const.gcn." + $gcn + " 0")
+  $Out -> Add("pushc generator.const.gcn." + $gcn)
+  $Out -> Add("peek global.arg_counter")
+  $Out -> Add("pop")
+  $gcn++
+
   for gv in $Sem -> global_vars -> items:
     $Out -> Add("@" + gv)
   end
 end
 
-proc GeneratorSVM::LazyGenCode(code):
-  $LazyGen -> Add( new PreGenerated(code) )
+func GeneratorSVM::GenMethodHeader(m):
+  mname ?= ""
+  if m -> is_class_method:
+    mname += m -> class_name + "__"
+  end
+
+  mname += m -> method_name
+
+  $Out -> Add("pushcp " + mname + "__end")
+  $Out -> Add("jp")
+  $Out -> Add(mname + ":")
+
+  for v in m -> varlist -> items:
+    $Out -> Add("@" + mname + "." + v)
+  end
+
+  pcnt ?= 0
+  err ?= false
+  for p in m -> params -> items:
+    if err:
+      raise new Exception("Invalid method '" + mname + "' declaration at line " +
+                          (m -> line + 1) + " at file '" + m -> fp + "'.")
+    end
+
+    switch p -> type:
+      case MashASTP_SimpleObject:
+        $Out -> Add("peek " + mname + "." + p -> Obj -> Value)
+        $Out -> Add("pop")
+        pcnt++
+      end
+
+      case MashASTP_SpecRectObject:
+        $Out -> Add("word generator.const.gcn." + $gcn + " " + pcnt)
+        $Out -> Add("pushcp generator.const.gcn." + $gcn)
+        $Out -> Add("push global.arg_counter")
+        $Out -> Add("sub")
+        $Out -> Add("pushcp system_op_argsarr")
+        $Out -> Add("jc")
+        $Out -> Add("peek " + mname + "." + p -> Obj -> Value)
+        $Out -> Add("pop")
+        err = true
+        $gcn++
+      end
+    end
+  end
+
+  return mname
+end
+
+proc GeneratorSVM::GenMethodEnd(m, mname):
+  $Out -> Add("jr")
+  $Out -> Add(mname + "__end:")
 end
 
 /*
  *  Generating code (main loop's)
  */
-proc GeneratorSVM::ProcessNext(node):
-  $NextNode(node)
+proc GeneratorSVM::ProcessNext(node, vars, mname):
+  $NextNode(node, vars, mname)
 
   whilst ($LazyGen -> Count() > 0) | ($LazyGenSwap -> Count() > 0):
     if $LazyGen -> Count() > 0:
@@ -147,12 +184,12 @@ proc GeneratorSVM::ProcessNext(node):
       end
       $LazyGen -> Clear()
 
-      $NextNode(n)
+      $NextNode(n, vars, mname)
     else:
       if $LazyGenSwap -> Count() > 0:
         n ?= $LazyGenSwap -> get(0)
         $LazyGenSwap -> delete(0)
-        $NextNode(n)
+        $NextNode(n, vars, mname)
       end
     end
 
@@ -180,7 +217,7 @@ proc GeneratorSVM::LastExprFlagChange():
   end
 end
 
-proc GeneratorSVM::NextNode(node):
+proc GeneratorSVM::NextNode(node, vars, mname):
   switch node -> type:
     case ExprFalse:
       $LastExprFlagChange()
@@ -206,35 +243,47 @@ proc GeneratorSVM::NextNode(node):
       end
     end
 
+    case MashASTB_Inline:
+      $Out -> Add(node -> val)
+    end
+
     case MashASTE_Operation:
-      println("Operation...")
-      //$LazyGen -> Add(node -> A)
-      //$LazyGen -> Add($GenOperation(node -> Op -> Op -> value, false))
+      if node -> Op -> Op -> value == "new":
+        println("New...")
+      else:
+        $LazyGen -> Add(node -> A)
+        $LazyGen -> Add($GenOperation(node -> Op -> Op -> value, false))
+      end
     end
 
     case MashASTE_OperationLR:
       if node -> Op -> Op -> value == "?=":
-        if node -> L -> type == MashASTP_SimpleObject:
-          if (node -> L -> Obj -> info == ttWord) &
-             ($Sem -> global_vars -> IndexOf(node -> L -> Obj -> value) <> null):
+        switch node -> L -> type:
+          case MashASTP_SimpleObject:
+            if (node -> L -> Obj -> info == ttWord) &
+               ($Sem -> global_vars -> IndexOf(node -> L -> Obj -> value) <> null):
 
-            if node -> R -> type == MashASTE_OperationLR:
-              $LazyGen -> Add(new ExprNew)
-              $LazyGen -> Add(node -> R)
-              $LazyGen -> Add(new ExprEnd)
+              if node -> R -> type == MashASTE_OperationLR:
+                $LazyGen -> Add(new ExprNew)
+                $LazyGen -> Add(node -> R)
+                $LazyGen -> Add(new ExprEnd)
+              else:
+                $LazyGen -> Add(new ExprFalse)
+                $LazyGen -> Add(node -> R)
+              end
+
+              $LazyGen -> Add(new PreGenerated("peek " + node -> L -> Obj -> value))
+              $LazyGen -> Add(new PreGenerated("pop"))
             else:
-              $LazyGen -> Add(new ExprFalse)
-              $LazyGen -> Add(node -> R)
+              raise new Exception("Invalid assigment for " + node -> L -> Obj -> value)
             end
-
-            $LazyGen -> Add(new PreGenerated("peek " + node -> L -> Obj -> value))
-            $LazyGen -> Add(new PreGenerated("pop"))
-          else:
-            raise new Exception("Invalid assigment for " + node -> L -> Obj -> value)
           end
-        else:
-          //TODO
-          //$LazyGen -> Add(node -> R)
+
+          case MashASTP_IndexedObject:
+            $LazyGen -> Add(node -> R)
+            $LazyGen -> Add(new ExprFalse)
+            $GenArrayOp(node -> L -> Obj, node -> L -> Indexes -> Objects, "peekai")
+          end
         end
       else:
         if ~(node -> Op -> Op -> value in ["+", "-", "/", "*",
@@ -271,16 +320,27 @@ proc GeneratorSVM::NextNode(node):
         end
 
         case ttWord:
-          if $Sem -> global_vars -> IndexOf(node -> Obj -> value) <> null:
-            $Out -> add("push " + node -> Obj -> value)
+          if ($Sem -> const_names -> IndexOf(node -> Obj -> value) <> null) |
+             ($Sem -> methods_names -> IndexOf(node -> Obj -> value) <> null) |
+             ($Sem -> imp_names -> IndexOf(node -> Obj -> value) <> null):
+            $Out -> add("pushc " + node -> Obj -> value)
+          else:
+            vname ?= node -> Obj -> value
+
+            if vars <> null:
+              if vars -> IndexOf(vname) <> null:
+                vname = mname + "." + vname
+              end
+            end
+
+            $Out -> add("push " + vname)
+
             if $LastExprFlag():
               $Out -> add("copy")
               $Out -> add("swp")
               $Out -> add("pop")
               $LastExprFlagChange()
             end
-          else:
-            $Out -> add("pushc " + node -> Obj -> value)
           end
         end
       end
@@ -290,6 +350,18 @@ proc GeneratorSVM::NextNode(node):
     end
 
     case MashASTP_IndexedObject:
+      if node -> Obj -> Obj -> value == "new":
+        $GenArrayAlloc(node -> Indexes -> Objects)
+      else:
+        $GenArrayOp(node -> Obj, node -> Indexes -> Objects, "pushai")
+
+        if $LastExprFlag():
+          $LazyGenCode("copy")
+          $LazyGenCode("swp")
+          $LazyGenCode("pop")
+          $LazyGen -> Add(new ExprFalse)
+        end
+      end
     end
 
     case MashASTP_Call:
@@ -306,10 +378,45 @@ proc GeneratorSVM::NextNode(node):
       end
 
       $LazyGen -> Add(node -> Obj)
-      $LazyGenCode( if(isInvoke, "invoke", "jc") )
+      if isInvoke:
+        $LazyGenCode("invoke")
+      else:
+        $LazyGenCode("word generator.const.gcn." + $gcn + " " +
+                     node -> args -> objects -> count())
+        $LazyGenCode("pushcp generator.const.gcn." + $gcn)
+        $LazyGenCode("push global.arg_counter")
+        $LazyGenCode("mov")
+        $gcn++
+        $LazyGenCode("jc")
+      end
     end
 
     case MashASTP_Enum:
+      l ?= node -> Objects -> Count()
+      $LazyGenCode("word generator.const.gcn." + $gcn + " " + l)
+      $LazyGenCode("pushcp generator.const.gcn." + $gcn)
+      $gcn++
+
+      $LazyGenCode("word generator.const.gcn." + $gcn + " 1")
+      $LazyGenCode("pushcp generator.const.gcn." + $gcn)
+      $gcn++
+      $LazyGenCode("newa")
+
+      ind ?= 0
+      for n in node -> Objects -> items:
+        $LazyGenCode("pcopy")
+        $LazyGen -> Add(n)
+        $LazyGenCode("swp")
+
+        $LazyGenCode("word generator.const.gcn." + $gcn + " " + ind)
+        $LazyGenCode("pushcp generator.const.gcn." + $gcn)
+        $gcn++
+
+        $LazyGenCode("swp")
+        $LazyGenCode("peekai")
+
+        ind++
+      end
     end
 
     case MashExpressionAST:
@@ -329,6 +436,7 @@ proc GeneratorSVM::NextNode(node):
       $LazyGenCode("pushcp generator.if.gcn." + $gcn + ".else")
       $LazyGen -> Add(node -> Expr)
       $LazyGenCode("jz")
+      $LazyGenCode("pop")
 
       for n in node -> nodes -> items:
         $LazyGen -> Add(n)
@@ -353,6 +461,7 @@ proc GeneratorSVM::NextNode(node):
       $LazyGenCode("pushcp generator.while.gcn." + $gcn + ".end")
       $LazyGen -> Add(node -> Expr)
       $LazyGenCode("jz")
+      $LazyGenCode("pop")
 
       for n in node -> nodes -> items:
         $LazyGen -> Add(n)
@@ -361,9 +470,50 @@ proc GeneratorSVM::NextNode(node):
       $LazyGenCode("pushcp generator.while.gcn." + $gcn + ".start")
       $LazyGenCode("jp")
       $LazyGenCode("generator.while.gcn." + $gcn + ".end:")
+
       $gcn++
     end
+
+    case MashASTB_Method:
+      for n in node -> nodes -> items:
+        $LazyGen -> Add(n)
+      end
+    end
   end
+end
+
+/*
+ *  Some methods
+ */
+
+proc GeneratorSVM::GenArrayOp(obj, indexes, targetOp):
+  $LazyGen -> Add(obj)
+
+  cnt ?= indexes -> count()
+  i ?= 0
+  while i < cnt:
+    $LazyGen -> Add(indexes -> get(i))
+    $LazyGenCode("swp")
+    i++
+
+    if i < cnt:
+      $LazyGenCode("pushai")
+    else:
+      $LazyGenCode(targetOp)
+    end
+  end
+end
+
+proc GeneratorSVM::GenArrayAlloc(indexes):
+  for x back indexes -> items:
+    $LazyGen -> Add(x)
+  end
+
+  $LazyGenCode("word generator.const.gcn." + $gcn + " " + indexes -> count())
+  $LazyGenCode("pushcp generator.const.gcn." + $gcn)
+  $gcn++
+
+  $LazyGenCode("newa")
 end
 
 /*
@@ -588,12 +738,14 @@ func GeneratorSVM::GenOperation(op, isLR):
     case "++":
       r ?= new PreGeneratedSet()
       r -> Next("inc")
+      r -> Next("pop")
       return r
     end
 
     case "--":
       r ?= new PreGeneratedSet()
       r -> Next("dec")
+      r -> Next("pop")
       return r
     end
 
@@ -601,7 +753,6 @@ func GeneratorSVM::GenOperation(op, isLR):
       r ?= new PreGeneratedSet()
       r -> Next("new")
       r -> Next("peek global.temp")
-      r -> Next("swp")
       r -> Next("movp")
       r -> Next("push global.temp")
       return r

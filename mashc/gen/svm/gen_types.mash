@@ -1,0 +1,29 @@
+/*
+ *  Some types
+ */
+
+class ExprFalse:
+end
+
+class ExprNew:
+end
+
+class ExprEnd:
+end
+
+class PreGenerated:
+  var code
+  proc Create
+end
+
+proc PreGenerated::Create(code):
+  $code ?= code
+end
+
+class PreGeneratedSet(list):
+  proc Next
+end
+
+proc PreGeneratedSet::Next(s):
+  $Add( new PreGenerated(s) )
+end

@@ -31,6 +31,18 @@ end
 
 
 
+// Inline
+class MashASTB_Inline:
+  var val
+  proc create
+end
+
+proc MashASTB_Inline::Create(val):
+  $val ?= val
+end
+
+
+
 // Const
 class MashASTB_Const:
   var Name, Value, isStream

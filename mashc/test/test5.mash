@@ -1,7 +1,41 @@
 import PrintLn "crt.lib" "PRINTLN"
 
-a ?= 0
-while a < 10:
-  println(a)
-  a += 1
+func Out(a):
+  "Next number is a " + (a + 1)
 end
+
+a ?= 0
+while ~(a >= 10):
+  PrintLn(Out(a))
+  a++
+end
+
+
+
+func len(a):
+  inline "push len.a"
+  inline "alen"
+end
+
+s ?= "Hello world!"
+i ?= 0
+while i < len(s):
+  println(s[i])
+  i++
+end
+
+b ?= new[3]
+println(len(b))
+
+x ?= 0
+b[0] ?= x + 1
+b[1] ?= x + 2
+b[2] ?= x + 3
+
+i ?= 0
+while i < 3:
+  println(b[i])
+  i++
+end
+
+println(x)
