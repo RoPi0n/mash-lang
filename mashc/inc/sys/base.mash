@@ -1,0 +1,51 @@
+/*
+ *  Implementation of base routines of language
+ */
+
+const true -1
+const false 0
+
+func len(a):
+  inline "push len.a"
+  inline "alen"
+end
+
+func copy(obj):
+  inline "push copy.obj"
+  inline "copy"
+end
+
+func system_op_range(from, to):
+  isBack ?= from > to
+
+  if isBack:
+    l ?= from - to + 1
+  else:
+    l ?= to - from + 1
+  end
+
+  res ?= new[l]
+  i ?= 0
+
+  j ?= copy(from)
+
+  while i < l:
+    res[i] ?= j
+    i++
+
+    if isBack:
+      j = j - 1
+    else:
+      j = j + 1
+    end
+  end
+
+  return res
+end
+
+func system_op_in(left, right):
+  for x in right:
+    if x == left: return true end
+  end
+  return false
+end

@@ -135,9 +135,9 @@ func MashExpressionAST::MakeTree(nodes):
   op_obj ?= null
   op_lvl ?= 0
 
-  while (op == null) & (op_lvl < 6):
-    i ?= 0
-    for n in nodes -> items:
+  while (op == null) & (op_lvl < 7):
+    i ?= nodes -> count() - 1
+    for n back nodes -> items:
       if n -> type == MashASTP_Operator:
         if n -> Op -> value in MashOperationsPriority[op_lvl]:
           op ?= i
@@ -146,7 +146,7 @@ func MashExpressionAST::MakeTree(nodes):
         end
       end
 
-      i++
+      i--
     end
     op_lvl++
   end
@@ -195,7 +195,7 @@ func MashExpressionAST::NextPrimitive(token_id):
     if ($TkCheck($token(token_id + 1)) == "->") & (token -> info == ttWord):
       if Obj == null:
         Obj ?= new MashASTP_ObjectByRef()
-        Obj -> ObjPath -> Add(token)
+        Obj -> ObjPath -> Add(new MashASTP_SimpleObject(token))
       else:
         NewObj ?= new MashASTP_ObjectByRef()
         NewObj -> ObjPath -> Add(Obj)
@@ -205,7 +205,9 @@ func MashExpressionAST::NextPrimitive(token_id):
       while ($TkCheck($token(token_id + 1)) == "->") &
             ($TkCheckType($token(token_id + 2)) == ttWord):
         token_id += 2
-        Obj -> ObjPath -> Add( new MashASTP_SimpleObject($token(token_id)) )
+        tk ?= $token(token_id)
+        tk -> value ?= "vtable__" + tk -> value
+        Obj -> ObjPath -> Add( new MashASTP_SimpleObject(tk) )
       end
 
       tk ?= $token(token_id + 1)
@@ -299,18 +301,20 @@ func MashExpressionAST::NextBraces(token_id):
                           " at file '" + $fp + "'.")
     end
 
-    switch tk -> value:
-      case "(":
-        brace_cnt++
+    if tk -> info <> ttEndOfLine:
+      switch tk -> value:
+        case "(":
+          brace_cnt++
+        end
+
+        case ")":
+          brace_cnt--
+        end
       end
 
-      case ")":
-        brace_cnt--
+      if brace_cnt > 0:
+        SubExpr -> add(tk)
       end
-    end
-
-    if brace_cnt > 0:
-      SubExpr -> add(tk)
     end
   end
 
@@ -330,18 +334,20 @@ func MashExpressionAST::NextRectBraces(token_id):
                           " at file '" + $fp + "'.")
     end
 
-    switch tk -> value:
-      case "[":
-        brace_cnt++
+    if tk -> info <> ttEndOfLine:
+      switch tk -> value:
+        case "[":
+          brace_cnt++
+        end
+
+        case "]":
+          brace_cnt--
+        end
       end
 
-      case "]":
-        brace_cnt--
+      if brace_cnt > 0:
+        SubExpr -> add(tk)
       end
-    end
-
-    if brace_cnt > 0:
-      SubExpr -> add(tk)
     end
   end
 

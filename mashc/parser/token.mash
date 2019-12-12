@@ -21,17 +21,17 @@ var MashTokens = [
       "+", "-", "*", "/", "\", "%", "^", "&", "|", "^", "~",
 
       "if", "else",
-      "switch", "case",
-      "for", "in", "back",
+      "switch", "case", "default",
+      "for", "in", "back", "break",
       "while", "whilst",
-      "class", "$", "this", "->", "new",
-      "try", "catch", "finally",
+      "class", "var", "$", "->", "new", "init", "public", "protected", "private",
+      "try", "catch", "raise",
       "launch", "async", "wait",
       "gc",
-      "int", "word", "real", "str", "const", "enum",
+      "const", "enum",
       "import", "regapi", "uses",
       "inline",
-      "end"],
+      "end", "return"],
 
     MashExprTokens = [
       "+", "-", "*", "/", "\", "%", "^", "&", "|", "^", "~",
@@ -61,13 +61,14 @@ var MashTokens = [
     MashOperationsPriority = [
        ["?=", "=", "@=", "+=", "-=", "*=",
         "/=", "\=", "%=", "&=", "|=", "^=",
-        "<<=", ">>="],                      // 1 lvl: 6th
+        "<<=", ">>="],                      // 1 lvl: 7th
 
-       ["<", ">", "==", ">=", "<=", "<>"],  // 2 lvl: 5th
-       ["^", "&", "|", "^", "in", ".."],          // 3 lvl: 4th
-       ["+", "-"],                          // 4 lvl: 3rd
-       ["*", "/", "\", "%"],                // 5 lvl: 2nd
-       MashOperationToken],                 // 6 lvl: 1st
+       ["<", ">", "==", ">=", "<=", "<>"],  // 2 lvl: 6th
+       ["^", "&", "|", "^", "in"],          // 3 lvl: 5th
+       [".."],                              // 4 lvl  4th
+       ["+", "-"],                          // 5 lvl: 3rd
+       ["*", "/", "\", "%"],                // 6 lvl: 2nd
+       MashOperationToken],                 // 7 lvl: 1st
 
     MashOperationLeft = ["?", "@", "~", "-", "new"],
     MashOperationRight = ["++", "--"]

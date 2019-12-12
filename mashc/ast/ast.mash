@@ -7,7 +7,8 @@ uses "ast\expressions\ast.mash"
 
 class MashAST(MashBaseAST):
   protected:
-    var BlockVect,
+    var CornerNodes,
+        BlockVect,
         BlockObjectsVect,
 
         imports_lst, uses_lst, const_lst
@@ -28,6 +29,8 @@ end
 
 proc MashAST::Create(tokens, fp, imports_lst, uses_lst, const_lst):
   MashBaseAST::Create$(tokens, fp)
+
+  $CornerNodes ?= $nodes
 
   $blockObjectsVect ?= new vector()
   $blockvect ?= new vector()
@@ -59,20 +62,140 @@ proc MashAST::Process():
 
   BlockTypes ?= [ MashASTB_Method,
                   MashASTB_If,
-                  MashASTB_For,
                   MashASTB_ForEach,
-                  MashASTB_While ]
+                  MashASTB_While,
+                  MashASTB_Whilst,
+                  MashASTB_Switch,
+                  MashASTB_Case,
+                  MashASTB_Launch,
+                  MashASTB_Async,
+
+                  MashASTB_Class,
+                  MashASTB_ClassField,
+                  MashASTB_Public,
+                  MashASTB_Protected,
+                  MashASTB_Private,
+
+                  MashASTB_Try ]
 
   while token_id < $tokens -> count():
     node ?= $NextNode(token_id)
 
     if node <> null:
-      block ?= $CurrBlock()
-      block -> add(node)
-
       if node -> type in BlockTypes:
-        $blockObjectsVect -> push_back(node)
-        $blockvect -> push_back(node -> nodes)
+        pb ?= null
+        if $blockObjectsVect -> size() > 0:
+          pb ?= $blockObjectsVect -> peek_back()
+        end
+
+        ok ?= false
+
+        if pb <> null:
+          switch pb -> type:
+            case MashASTB_Switch:
+              if node -> type <> MashASTB_Case:
+                raise new Exception("Switch block can contain only case blocks." + LnBreak +
+                                    "Invalid switch-case construction at line " +
+                                    ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+              end
+
+              ok ?= true
+
+              if node -> isElse:
+                $blockObjectsVect -> push_back(node)
+                $blockvect -> push_back(node -> nodes)
+                pb -> AddElse(node)
+              else:
+                block ?= $CurrBlock()
+                block -> add(node)
+
+                $blockObjectsVect -> push_back(node)
+                $blockvect -> push_back(node -> nodes)
+              end
+            end
+
+            case MashASTB_Class:
+              ok ?= true
+              switch node -> type:
+                case MashASTB_ClassField:
+                  for n in node -> names -> items:
+                    pb -> vars -> add(n)
+                  end
+                end
+
+                case MashASTB_Method:
+                  if ~node -> is_class_method:
+                    node -> is_class_method ?= true
+                    node -> class_name ?= pb -> name
+
+                    $CornerNodes -> add(node)
+
+                    $blockObjectsVect -> push_back(node)
+                    $blockvect -> push_back(node -> nodes)
+                  else:
+                    raise new Exception("Invalid class method ('" +
+                                        node -> class_name + "::" +
+                                        node -> method_name +
+                                        "') declaration at line " +
+                                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+                  end
+                end
+
+                case MashASTB_Public:
+                end
+
+                case MashASTB_Protected:
+                end
+
+                case MashASTB_Private:
+                end
+
+                else:
+                  raise new Exception("Invalid class field statement at line " +
+                                      ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+              end
+            end
+          end
+        end
+
+        if ~ok:
+          if node -> type == MashASTB_Case:
+            raise new Exception("Case statement without switch." + LnBreak +
+                                "Invalid switch-case construction at line " +
+                                ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+          end
+
+          if (node -> type == MashASTB_Class) & (pb <> null):
+            raise new Exception("Class declaration can't be defined in other constructions." + LnBreak +
+                                "Invalid class declaration at line " +
+                                ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+          end
+
+          if node -> type in [MashASTB_ClassField, MashASTB_Public, MashASTB_Protected, MashASTB_Private]:
+            if pb -> type <> MashASTB_Class:
+              raise new Exception("Using class fields declaration without class declaration." + LnBreak +
+                                  "Invalid class field declaration at line " +
+                                  ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+            end
+          end
+
+          if node -> type == MashASTB_Class:
+            block ?= $CurrBlock()
+            block -> add(node)
+
+            $blockObjectsVect -> push_back(node)
+            $blockvect -> push_back(null)
+          else:
+            block ?= $CurrBlock()
+            block -> add(node)
+
+            $blockObjectsVect -> push_back(node)
+            $blockvect -> push_back(node -> nodes)
+          end
+        end
+      else:
+        block ?= $CurrBlock()
+        block -> add(node)
       end
     end
 
@@ -132,10 +255,10 @@ func MashAST::NextNode(token_id):
           // Const
           case "const":
             if $TkCheck($token(token_id + 2)) == "stream":
-              blk ?= new MashASTB_Const($TkWordValue($token(token_id + 1)),
+              tk ?= $TkNotNull($token(token_id + 1))
+              blk ?= new MashASTB_Const($TkWordValue(tk),
                                         $TkNotNull($token(token_id + 3)))
               blk -> isStream = true
-
               token_id += 4
             else:
               if $TkCheck($token(token_id + 2)) == "-":
@@ -146,8 +269,18 @@ func MashAST::NextNode(token_id):
               else:
                 blk ?= new MashASTB_Const($TkWordValue($token(token_id + 1)),
                                           $TkNotNull($token(token_id + 2)))
+
                 token_id += 3
               end
+
+              for c in $const_lst -> items:
+                if c -> name == blk -> name:
+                  raise new Exception("Duplicate constant name '" + c -> name + "' at line " +
+                                      (tk -> line + 1) + " at file '" + $fp + "'.")
+                end
+              end
+
+              $const_lst -> Add(blk)
             end
 
             return null
@@ -355,7 +488,7 @@ func MashAST::NextNode(token_id):
 
             if $blockObjectsVect -> size() > 0:
               obj ?= $blockObjectsVect -> peek_back()
-              if obj -> type in [MashASTB_If]:
+              if obj -> type == MashASTB_If:
                 if obj -> hasElse:
                   raise new Exception("Second 'else' declaration for one block of code at line " +
                                       (token -> line + 1) + " at file '" +
@@ -368,6 +501,10 @@ func MashAST::NextNode(token_id):
                 $blockvect -> push_back(obj -> nodesElse)
 
                 return null
+              else:
+                raise new Exception("Incorrect else using at line " +
+                                    (token -> line + 1) + " at file '" +
+                                    $fp + "'.")
               end
             end
           end
@@ -375,9 +512,9 @@ func MashAST::NextNode(token_id):
           case "for":
             token_id++
             // for (<expr>; <expr>; <expr>):
-            if $TkValue($token(token_id)) == "(":
+            /*if $TkValue($token(token_id)) == "(":
               token_id++
-              /*println("Stage 1...")
+              println("Stage 1...")
               ExprInit ?= $NextExpr(token_id)
               println("Stage 1")
               if $TkTokenValue($token(token_id)) == ";":
@@ -395,13 +532,13 @@ func MashAST::NextNode(token_id):
                     return new MashASTB_For(ExprInit, ExprCond, ExprActions)
                   end
                 end
-              end  */
+              end
 
               // If no return -> invalid construction
               raise new Exception("Invalid for loop declaration (for(...)?) " +
                                   "at line " + (token -> line + 1) + " at file '" +
                                   $fp + "'.")
-            else:
+            else: */
               // for <var> in/back <expr>:
               ForVar ?= $TkNotNull($token(token_id))
               token_id++
@@ -433,7 +570,7 @@ func MashAST::NextNode(token_id):
               raise new Exception("Invalid for loop declaration (for in/back?) " +
                                   "at line " + (token -> line + 1) + " at file '" +
                                   $fp + "'.")
-            end
+            //end
           end
 
           // while
@@ -457,6 +594,324 @@ func MashAST::NextNode(token_id):
                                   $fp + "'")
             end
           end
+
+
+          // whilst
+          case "whilst":
+            token_id++
+
+            tk ?= $TkNotNull($token(token_id))
+
+            if ($TkValue(tk) == ":") | (tk -> info == ttEndOfLine):
+              raise new Exception("Missed expression in whilst loop statement at line " +
+                                  (token -> line + 1) + " at file '" + $fp + "'.")
+            end
+
+            Expr ?= $NextExpr(token_id)
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Whilst(Expr)
+            else:
+              raise new Exception("Missed ':' in declaration of while statement at line " +
+                                  (token -> line + 1) + " at file '." +
+                                  $fp + "'")
+            end
+          end
+
+          case "return":
+            token_id++
+            Expr ?= $NextExpr(token_id)
+            return new MashASTB_Return(Expr)
+          end
+
+          case "break":
+            token_id++
+            return new MashASTB_Break
+          end
+
+          case "switch":
+            token_id++
+
+            if $TkCheck($token(token_id)) == ":":
+              raise new Exception("Missed expression in declaration of switch statement at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+
+            Expr ?= $NextExpr(token_id)
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Switch(Expr)
+            else:
+              raise new Exception("Missed ':' in declaration of switch statement at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "case":
+            token_id++
+
+            if $TkCheck($token(token_id)) == ":":
+              raise new Exception("Missed expression in declaration of case statement at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+
+            Expr ?= $NextExpr(token_id)
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Case(Expr, false)
+            else:
+              raise new Exception("Missed ':' in declaration of case statement at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "default":
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+
+              return new MashASTB_Case(null, true)
+            else:
+              raise new Exception("Missed ':' in declaration of default case statement at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "launch":
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+
+              return new MashASTB_Launch()
+            else:
+              raise new Exception("Missed ':' in declaration of launch block at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "async":
+            token_id++
+
+            if $TkCheck($token(token_id)) == ":":
+              raise new Exception("Missed expression in declaration of async block at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+
+            forVar ?= $TkWordValue($token(token_id))
+
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Async(forVar)
+            else:
+              raise new Exception("Missed ':' in declaration of async block at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "wait":
+            token_id++
+            Expr ?= $NextExpr(token_id)
+            return new MashASTB_Wait(Expr)
+          end
+
+          // Class block
+          case "class":
+            token_id++
+
+            if $TkCheck($token(token_id)) == ":":
+              raise new Exception("Missed expression in class declaration at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+
+            ClassName ?= $TkWordValue($token(token_id))
+            token_id++
+
+            blk ?= new MashASTB_Class(ClassName)
+
+            if $TkCheck($token(token_id)) == "(":
+              token_id++
+
+              while $TkValue($token(token_id)) <> ")":
+                arg ?= $NextParam(token_id)
+
+                if arg -> count() == 1:
+                  p ?= arg -> get(0)
+                  if p -> info <> ttWord:
+                    raise new Exception("Invalid class parents declaration at line " +
+                                        (token -> line + 1) + " at file '" +
+                                        $fp + "'.")
+                  end
+
+                  blk -> parents -> add(p -> value)
+                else:
+                  raise new Exception("Invalid class parents declaration at line " +
+                                      (token -> line + 1) + " at file '" +
+                                      $fp + "'.")
+                end
+
+                tk ?= $TkNotNull($token(token_id))
+                if (tk -> info == ttEndOfLine) | (tk -> value == ","):
+                  token_id++
+                else:
+                  if tk -> value <> ")":
+                    raise new Exception("Missed ')' at line " +
+                                        (token -> line + 1) + " at file '" +
+                                        $fp + "'.")
+                  end
+                end
+              end
+
+              token_id++
+            end
+
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return blk
+            else:
+              raise new Exception("Missed ':' in class declaration at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          // Class field
+          case "var":
+            token_id++
+
+            blk ?= new MashASTB_ClassField()
+
+            tk ?= $TkNotNull($token(token_id))
+            token_id++
+            while tk -> info == ttWord:
+              blk -> names -> add(tk -> value)
+
+              tk ?= $TkNotNull($token(token_id))
+              token_id++
+              if tk -> value == ",":
+                tk ?= $TkNotNull($token(token_id))
+                token_id++
+
+                if tk -> info <> ttWord:
+                  raise new Exception("Invalid class field declaration at line " +
+                                      (tk -> line + 1) + " at file '" + $fp + "'")
+                end
+              else:
+                if (tk -> info <> ttToken) & (tk -> info <> ttEndOfLine):
+                  raise new Exception("Invalid class field declaration at line " +
+                                      (tk -> line + 1) + " at file '" + $fp + "'")
+                end
+              end
+
+            end
+
+            return blk
+          end
+
+          case "public":
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Public
+            else:
+              raise new Exception("Missed ':' in class section declaration at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "protected":
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Protected
+            else:
+              raise new Exception("Missed ':' in class section declaration at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "private":
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Private
+            else:
+              raise new Exception("Missed ':' in class section declaration at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "try":
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+              return new MashASTB_Try()
+            else:
+              raise new Exception("Missed ':' in try block declaration at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "catch":
+            token_id++
+
+            forVar ?= $TkWordValue($TkNotNull($token(token_id)))
+
+            token_id++
+            if $TkTokenValue($token(token_id)) == ":":
+              token_id++
+
+              if $blockObjectsVect -> size() > 0:
+                obj ?= $blockObjectsVect -> peek_back()
+                if obj -> type == MashASTB_Try:
+                  if obj -> hasCatch:
+                    raise new Exception("Second 'catch' declaration for one try block at line " +
+                                        (token -> line + 1) + " at file '" +
+                                        $fp + "'.")
+                  end
+
+                  obj -> hasCatch = true
+                  obj -> forVar ?= forVar
+
+                  $blockvect -> rem_back()
+                  $blockvect -> push_back(obj -> NodesCatch)
+
+                  return null
+                else:
+                  raise new Exception("Incorrect catch using at line " +
+                                      (token -> line + 1) + " at file '" +
+                                      $fp + "'.")
+                end
+              end
+
+
+
+            else:
+              raise new Exception("Missed ':' in try block declaration at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+          end
+
+          case "raise":
+            token_id++
+            Expr ?= $NextExpr(token_id)
+            return new MashASTB_Raise(Expr)
+          end
+
           // Token shouldn't be first
           else:
             raise new Exception("Invalid construction (starts with '" + token -> value +

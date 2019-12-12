@@ -103,25 +103,6 @@ proc MashASTB_If::Create(Expr):
 end
 
 
-
-// For
-class MashASTB_For:
-  var ExprInit, ExprCond, ExprActions,
-      Nodes
-
-  proc Create
-end
-
-proc MashASTB_For::Create(ExprInit, ExprCond, ExprActions):
-  $ExprInit ?= ExprInit
-  $ExprCond ?= ExprCond
-  $ExprActions ?= ExprActions
-
-  $Nodes ?= new list()
-end
-
-
-
 // For each (in/back)
 class MashASTB_ForEach:
   var forVar, isBack, Expr,
@@ -151,6 +132,162 @@ proc MashASTB_While::Create(Expr):
   $nodes ?= new list()
 end
 
+class MashASTB_Whilst:
+  var Expr, Nodes
+  proc Create
+end
+
+proc MashASTB_Whilst::Create(Expr):
+  $Expr ?= Expr
+  $nodes ?= new list()
+end
+
+// Return
+class MashASTB_Return:
+  var Expr
+  proc Create
+end
+
+proc MashASTB_Return::Create(Expr):
+  $Expr ?= Expr
+end
+
+// Switch & case
+class MashASTB_Switch():
+  var Expr, Nodes, hasElse, caseElse
+  proc Create,
+       AddElse
+end
+
+proc MashASTB_Switch::Create(Expr):
+  $Expr ?= Expr
+  $Nodes ?= new list()
+  $hasElse ?= false
+  $caseElse ?= null
+end
+
+proc MashASTB_Switch::AddElse(c):
+  if $hasElse:
+    raise new Exception("Switch block can'h have more than one else case.")
+  else:
+    $caseElse ?= c
+    $hasElse = true
+  end
+end
+
+class MashASTB_Case:
+  var Expr, isElse, Nodes
+  proc Create
+end
+
+proc MashASTB_Case::Create(Expr, isElse):
+  $Expr ?= Expr
+  $isElse ?= isElse
+  $Nodes ?= new list()
+end
+
+// Launch
+class MashASTB_Launch:
+  var Nodes
+  proc Create
+end
+
+proc MashASTB_Launch::Create():
+  $Nodes ?= new list()
+end
+
+// Async
+class MashASTB_Async:
+  var Nodes, forVar
+  proc Create
+end
+
+proc MashASTB_Async::Create(forVar):
+  $Nodes ?= new list()
+  $forVar ?= forVar
+end
+
+// Wait
+class MashASTB_Wait:
+  var Expr
+  proc Create
+end
+
+proc MashASTB_Wait::Create(Expr):
+  $Expr ?= Expr
+end
+
+// Break
+class MashASTB_Break:
+end
+
+// Class
+
+class MashASTB_Class:
+  var name, vars, methods, parents
+  proc create
+end
+
+proc MashASTB_Class::Create(name):
+  $name ?= name
+  $vars ?= new list()
+  $methods ?= new list()
+  $parents ?= new list()
+end
+
+class MashClassMethodRef:
+  var name, reference
+  proc Create
+end
+
+proc MashClassMethodRef::Create(name, r):
+  $name ?= name
+  $reference ?= r
+end
+
+
+// Class fields
+class MashASTB_ClassField:
+  var names
+  proc Create
+end
+
+proc MashASTB_ClassField::Create():
+  $names ?= new list()
+end
+
+// Sections
+class MashASTB_Public:
+end
+
+class MashASTB_Private:
+end
+
+class MashASTB_Protected:
+end
+
+// Try..catch & raise
+class MashASTB_Try:
+  var Nodes, hasCatch, NodesCatch, forVar
+  proc Create
+end
+
+proc MashASTB_Try::Create():
+  $nodes ?= new list()
+  $hasCatch ?= false
+  $NodesCatch ?= new list()
+  $forVar ?= null
+end
+
+
+class MashASTB_Raise:
+  var Expr
+  proc Create
+end
+
+proc MashASTB_Raise::Create(Expr):
+  $Expr ?= Expr
+end
 
 /*
  *  Expressions & other

@@ -27,3 +27,15 @@ end
 proc PreGeneratedSet::Next(s):
   $Add( new PreGenerated(s) )
 end
+
+class BreakPoint:
+  var PointLabel
+  proc Create
+end
+
+proc BreakPoint::Create(lbl):
+  $PointLabel ?= lbl
+end
+
+class PopBreakPoint:
+end

@@ -48,6 +48,24 @@ proc MashCompiler::Compile():
   ast_lst -> add(ast)
   ast -> process()
 
+  // Including inc/sys.mash
+  path ?= "inc\sys.mash"
+  try:
+    code ?= new StringList()
+    code -> LoadFromFile(path)
+  catch E:
+    raise new Exception("Can't open file '" + path + "'.")
+  end
+
+  parser ?= new MashParser(code, path)
+  parser -> Parse()
+
+  ast ?= new MashAST(parser -> tokens, path, imports_lst, uses_lst, const_lst)
+  ast_lst -> add(ast)
+  ast -> process()
+
+
+  // Checking another uses
   i ?= 0
   while i < uses_lst -> count():
     u ?= uses_lst -> get(i)

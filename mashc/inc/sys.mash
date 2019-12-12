@@ -1,0 +1,9 @@
+/*
+ *  This file are important library of mash language.
+ *  Don't modify this if you don't know what's you doing.
+ */
+
+uses sys.imports
+uses sys.base
+uses sys.initialize
+uses sys.exceptions

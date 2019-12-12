@@ -1,0 +1,36 @@
+/*
+ *  Initializing
+ */
+
+proc __GetVM_Null__():
+  inline "pushn"
+end
+
+sysslash ?= GetSystemSlash()
+
+inline "pushcp __init__end__"
+inline "jp"
+inline "__init__:"
+
+null ?= __GetVM_Null__()
+Argc ?= 0
+Args ?= null
+__initproc__()
+
+proc __initproc__():
+  inline "peek argc"
+  inline "pop"
+  Args ?= new[Argc]
+
+  local_i ?= 0
+  local_a ?= null
+  while local_i < Argc:
+    inline "peek __initproc__.local_a"
+    inline "pop"
+    Args[local_i] ?= local_a
+    local_i++
+  end
+end
+
+inline "jr"
+inline "__init__end__:"

@@ -1,0 +1,34 @@
+import PrintLn "crt.lib" "PRINTLN"
+
+class MyClassParent:
+  public:
+    var a
+
+    init(a):
+      println("Hello from parent!")
+      $a ?= a
+    end
+end
+
+class MyClass(MyClassParent):
+  public:
+    var b
+
+    init(a, b):
+      super(a)
+      $b ?= b
+    end
+end
+
+func MyClass::Summ():
+  return $a + $b
+end
+
+x ?= new MyClass(2, 3)
+println(x -> summ())
+
+try:
+  1 / 0
+catch E:
+  println(E -> Message)
+end

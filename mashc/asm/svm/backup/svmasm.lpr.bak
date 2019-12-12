@@ -47,8 +47,6 @@ begin
   if ParamCount > 2 then
    begin
      {* Initialization *}
-     DecimalSeparator := '.';
-
      code := TStringList.Create;
      code.LoadFromFile(ParamStr(2));
 

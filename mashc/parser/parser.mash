@@ -1,6 +1,7 @@
 uses <classes\list>
 uses <classes\stringlist>
 uses "parser\token.mash"
+uses <math\base>
 
 /*
  *  This class should break mash code to tokens
@@ -16,7 +17,8 @@ class MashParser:
     proc Create, Parse
 
   private:
-    proc ParseLine
+    proc ParseLine,
+         Preprocess
 end
 
 proc MashParser::Create(code, fp):
@@ -35,7 +37,7 @@ proc MashParser::Parse():
     if len(s) > 0:
       $ParseLine(s)
       if $tokens -> count() > 0:
-        tk ?= $tokens -> get($tokens -> count() - 1)
+        tk ?= $tokens -> items[$tokens -> count() - 1]
         if tk -> info <> ttEndOfLine:
           $tokens -> add(new MashToken("", ttEndOfLine, $line))
         end
@@ -43,6 +45,28 @@ proc MashParser::Parse():
     end
 
     $line++
+    gc()
+  end
+
+  $Preprocess()
+end
+
+proc MashParser::Preprocess():
+  i ?= 1
+  while i < ($tokens -> count() - 1):
+    tk ?= $tokens -> items[i]
+
+    if tk -> info == ttEndOfLine:
+      tkL ?= $tokens -> items[i - 1]
+      tkR ?= $tokens -> items[i + 1]
+
+      if (tkR -> info == ttEndOfLine) | (tkR -> value in MashOperatorsTokens) | (tkL -> value in MashOperatorsTokens) |
+         (tkR -> value in [",", ")", "]", "->"]) | (tkL -> value in [",", "(", "[", "->"]):
+        $tokens -> delete(i)
+        i = 0
+      end
+    end
+    i++
     gc()
   end
 end
@@ -105,8 +129,13 @@ proc MashParser::ParseLine(s):
             end
           end
 
-          tt ?= if(wrd in MashTokens, ttToken, ttWord)
-          $tokens -> add(new MashToken(wrd, tt, $line))
+          if wrd == "init":
+            $tokens -> add(new MashToken("proc", ttToken, $line))
+            $tokens -> add(new MashToken("create", ttWord, $line))
+          else:
+            tt ?= if(wrd in MashTokens, ttToken, ttWord)
+            $tokens -> add(new MashToken(wrd, tt, $line))
+          end
         else:
           if s[0] in DigitChars: // Searching for digit|float|hex
             dig ?= ""
@@ -175,7 +204,12 @@ proc MashParser::ParseLine(s):
 
             s_del(s, 0, len(op) + spaces)
 
-            $tokens -> add(new MashToken(op, ttToken, $line))
+            if op == "$":
+              $tokens -> add(new MashToken("this", ttWord, $line))
+              $tokens -> add(new MashToken("->", ttToken, $line))
+            else:
+              $tokens -> add(new MashToken(op, ttToken, $line))
+            end
           end
         end // strlower(s[0]) in AlphaChars
       end // len(s) > 0
