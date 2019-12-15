@@ -100,9 +100,12 @@ type
     bcCHORD,
     bcORDCH,
 
-    bcTHREXT,//stop code execution
+    bcTHREXT,// stop code execution
 
-    bcDBP    //debug method call
+    bcDBP,   // debug method call
+
+    bcRST,   // Extra stack for recursion
+    bcRLD
 
     //bcCOPST  //set handler for class-object operation
   );

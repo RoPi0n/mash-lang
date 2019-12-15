@@ -26,7 +26,7 @@ type
     mainclasspath: string;
     mem: PMemory;
     grabber: TGrabber;
-    stack: TStack;
+    stack, rstack: TStack;
     cbstack: TCallBackStack;
     bytes: PByteArr;
     consts: PConstSection;
@@ -953,6 +953,18 @@ begin
             Inc(self.ip);
           end;
 
+          bcRST:
+          begin
+            rstack.push(stack.popv);
+            Inc(self.ip);
+          end;
+
+          bcRLD:
+          begin
+            stack.push(rstack.popv);
+            Inc(self.ip);
+          end;
+
           else
             VMError('Error: not supported operation, byte 0x' +
               IntToHex(self.bytes^[self.ip], 2) + ', at #' + IntToStr(self.ip));
@@ -973,6 +985,9 @@ begin
       end;
     end;
   until self.ip >= self.end_ip;
+
+  self.stack.drop;
+  self.rstack.drop;
 end;
 
 end.

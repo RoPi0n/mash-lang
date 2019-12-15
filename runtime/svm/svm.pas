@@ -73,6 +73,7 @@ begin
   vm.CustomArgsMode := false;
 
   vm.stack.init;
+  vm.rstack.init;
   vm.cbstack.init;
   vm.LoadByteCodeFromFile(ParamStr(1));
 

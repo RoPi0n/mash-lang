@@ -27,6 +27,7 @@ begin
 
   Result^.isMainThread := true;
   Result^.stack.init;
+  Result^.rstack.init;
   Result^.cbstack.init;
   Result^.CustomArgsMode := CustomArgs;
 end;

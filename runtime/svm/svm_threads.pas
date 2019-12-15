@@ -92,6 +92,7 @@ begin
   vm^.consts := consts;
   vm^.extern_methods := extern_methods;
   vm^.stack.init;
+  vm^.rstack.init;
   vm^.cbstack.init;
 
   //fill mem map
@@ -141,6 +142,7 @@ begin
   end;
 
   vm^.stack.drop;
+  vm^.rstack.drop;
 
   GrabbersStorage.Add(vm^.grabber);
 
