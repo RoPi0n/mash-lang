@@ -11,7 +11,7 @@ class MashAST(MashBaseAST):
         BlockVect,
         BlockObjectsVect,
 
-        imports_lst, uses_lst, const_lst
+        imports_lst, regapi_lst, uses_lst, const_lst
 
   public:
     proc create,
@@ -27,7 +27,7 @@ end
 
 
 
-proc MashAST::Create(tokens, fp, imports_lst, uses_lst, const_lst):
+proc MashAST::Create(tokens, fp, imports_lst, regapi_lst, uses_lst, const_lst):
   MashBaseAST::Create$(tokens, fp)
 
   $CornerNodes ?= $nodes
@@ -37,6 +37,7 @@ proc MashAST::Create(tokens, fp, imports_lst, uses_lst, const_lst):
   $blockvect -> push_back($nodes)
 
   $imports_lst ?= imports_lst
+  $regapi_lst ?= regapi_lst
   $uses_lst ?= uses_lst
   $const_lst ?= const_lst
 end
@@ -165,6 +166,12 @@ proc MashAST::Process():
                                 ($lastTk -> line + 1) + " at file '" + $fp + "'.")
           end
 
+          if (node -> type == MashASTB_Enum) & (pb <> null):
+            raise new Exception("Enum declaration can't be defined in other constructions." + LnBreak +
+                                "Invalid enum declaration at line " +
+                                ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+          end
+
           if (node -> type == MashASTB_Class) & (pb <> null):
             raise new Exception("Class declaration can't be defined in other constructions." + LnBreak +
                                 "Invalid class declaration at line " +
@@ -224,6 +231,44 @@ func MashAST::NextNode(token_id):
                                        $TkStrValue($token(token_id + 3)))
             token_id += 4
 
+            /*for imp in $imports_lst -> items:
+              if imp -> method_name == blk -> method_name:
+                raise new Exception("Second declaration of import '" +
+                                    imp -> method_name + "' " +
+                                    "at line " + (token -> line + 1) + " at file '" +
+                                    $fp + "'.")
+              end
+            end
+
+            for rg in $regapi_lst -> items:
+              if rg -> method_name == blk -> method_name:
+                raise new Exception("Second declaration of import '" +
+                                    rg -> method_name + "' " +
+                                    "at line " + (token -> line + 1) + " at file '" +
+                                    $fp + "'.")
+              end
+            end */
+
+            $imports_lst -> add(blk)
+
+            return null
+          end
+
+          // Import
+          case "api":
+            blk ?= new MashASTB_RegAPI( $TkWordValue($token(token_id + 1)),
+                                        $TkValue($TkNotNull($token(token_id + 2))) )
+
+            if $TkCheckType($token(token_id + 2)) == ttDigit:
+              if "." in blk -> number:
+                raise new Exception("regapi " + blk -> method_name + " <digit> - here must be round unsigned digit (number).")
+              end
+            else:
+              raise new Exception("regapi " + blk -> method_name + " <digit> - here must be round unsigned digit (number).")
+            end
+
+            token_id += 3
+
             for imp in $imports_lst -> items:
               if imp -> method_name == blk -> method_name:
                 raise new Exception("Second declaration of import '" +
@@ -232,7 +277,24 @@ func MashAST::NextNode(token_id):
                                     $fp + "'.")
               end
             end
-            $imports_lst -> add(blk)
+
+            for rg in $regapi_lst -> items:
+              if rg -> method_name == blk -> method_name:
+                raise new Exception("Second declaration of regapi '" +
+                                    rg -> method_name + "' " +
+                                    "at line " + (token -> line + 1) + " at file '" +
+                                    $fp + "'.")
+              end
+
+              if rg -> number == blk -> number:
+                raise new Exception("Two regapi methods defined for one number '" +
+                                    rg -> method_name + "', '" + blk -> method_name + "' " +
+                                    "at line " + (token -> line + 1) + " at file '" +
+                                    $fp + "'.")
+              end
+            end
+
+            $regapi_lst -> add(blk)
 
             return null
           end
@@ -629,6 +691,11 @@ func MashAST::NextNode(token_id):
             return new MashASTB_Break
           end
 
+          case "continue":
+            token_id++
+            return new MashASTB_Continue
+          end
+
           case "switch":
             token_id++
 
@@ -910,6 +977,99 @@ func MashAST::NextNode(token_id):
             token_id++
             Expr ?= $NextExpr(token_id)
             return new MashASTB_Raise(Expr)
+          end
+
+          case "safe":
+            token_id++
+            Expr ?= $NextExpr(token_id)
+            return new MashASTB_Safe(Expr)
+          end
+
+          case "enum":
+            token_id++
+            EnumName ?= $TkWordValue($TkNotNull($token(token_id)))
+            token_id++
+
+            blk ?= new MashASTB_Enum(EnumName)
+
+            if $TkCheck($token(token_id)) == "[":
+              token_id++
+
+              while $TkCheck($token(token_id)) <> "]":
+                EnumItemName ?= $TkWordValue($TkNotNull($token(token_id)))
+                token_id++
+
+                hasDefVal ?= false
+                if $TkCheck($token(token_id)) == "=":
+                  token_id++
+                  hasDefVal = true
+
+                  hasMinus ?= $TkCheck($token(token_id)) == "-"
+                  if hasMinus:
+                    token_id++
+                  end
+
+                  tk ?= $TkNotNull($token(token_id))
+                  token_id++
+                  EnumItemValue ?= tk
+                  if tk -> info == ttDigit:
+                    if hasMinus:
+                      EnumItemValue ?= new MashToken("-" + tk -> value, ttDigit, tk -> line)
+                    end
+                  else:
+                    if hasMinus:
+                      raise new Exception("'-' not waiting in enum construction (" + EnumName +
+                                          ") at line " +
+                                          (token -> line + 1) + " at file '" +
+                                          $fp + "'.")
+                    end
+
+                    if tk -> info <> ttString:
+                      raise new Exception("In enum construction (" + EnumName +
+                                          ") you can only use digits or strings as default enum item value at line " +
+                                          (token -> line + 1) + " at file '" +
+                                          $fp + "'.")
+                    end
+                  end
+                end
+
+                EItem ?= new MashASTB_EnumItem(EnumItemName)
+
+                if hasDefVal:
+                  EItem -> hasDefValue ?= true
+                  EItem -> DefValue ?= EnumItemValue
+                end
+
+                blk -> Objects -> add(EItem)
+
+                if $token(token_id) == null:
+                  raise new Exception("Unclosed enum construction (" + EnumName +
+                                      ") at line " +
+                                      (token -> line + 1) + " at file '" +
+                                      $fp + "'.")
+                end
+
+                if $TkCheck($token(token_id)) == ",":
+                  token_id++
+                else:
+                  tkval ?= $TkCheck($token(token_id))
+                  if tkval <> "]":
+                    raise new Exception("This token ('" + tkval +
+                                        "') should't going next in enum (" + EnumName +
+                                        ") items declaration at line " +
+                                        (token -> line + 1) + " at file '" +
+                                        $fp + "'.")
+                  end
+                end
+              end
+            else:
+              raise new Exception("After enum name (" + EnumName +
+                                  ") should going values in [...] at line " +
+                                  (token -> line + 1) + " at file '" +
+                                  $fp + "'.")
+            end
+
+            return blk
           end
 
           // Token shouldn't be first

@@ -14,7 +14,7 @@ class GeneratorSVM:
         LazyGenSwap,
 
         ExprBeginnings,
-        BPStack
+        BPStack, CPStack
 
   public:
     proc Create
@@ -48,6 +48,7 @@ proc GeneratorSVM::Create():
 
   $ExprBeginnings ?= new vector() // flags stack for correctly var pushing/peeking
   $BPStack ?= new vector() // stack for labels for operator break
+  $CPStack ?= new vector() // stack for labels for operator continue
 end
 
 func GeneratorSVM::Gen(Sem):
@@ -57,7 +58,12 @@ func GeneratorSVM::Gen(Sem):
     $Out -> Add("import " + imp -> method_name + " " +
                 DQuote + imp -> lib + DQuote + " " +
                 DQuote + imp -> name + DQuote)
+
     gc()
+  end
+
+  for imp in Sem -> regapi_lst -> items:
+    $Out -> Add("api " + imp -> method_name + " " + imp -> number)
   end
 
   $GenHeader()
@@ -113,12 +119,6 @@ proc GeneratorSVM::GenHeader():
     i++
   end
 
-  i = 0
-  for cn in $Sem -> cnames -> items:
-    $Out -> Add("word " + cn + " " + i)
-    i++
-  end
-
   $Out -> Add("@global.arg_counter")
   $Out -> Add("@global.temp")
   $Out -> Add("@global.this")
@@ -127,18 +127,74 @@ proc GeneratorSVM::GenHeader():
   $Out -> Add("word global.one 1")
   $Out -> Add("str global.raised " + DQuote + "ERaisedException" + DQuote)
 
-  $Out -> Add("word generator.const.gcn." + $gcn + " 0")
-  $Out -> Add("pushc generator.const.gcn." + $gcn)
+  $Out -> Add("pushc global.zero")
   $Out -> Add("peek global.arg_counter")
   $Out -> Add("pop")
-  $gcn++
 
   for gv in $Sem -> global_vars -> items:
     $Out -> Add("@" + gv)
   end
 
+  i = 0
+  for cn in $Sem -> cnames -> items:
+    $Out -> Add("word " + cn + " " + i)
+    $Out -> Add("@structure_instance_" + cn)
+    $Out -> Add("pushcp __allocator__" + cn)
+    $Out -> Add("jc")
+    $Out -> Add("peek structure_instance_" + cn)
+    $Out -> Add("pop")
+    i++
+  end
+
   $Out -> Add("pushcp __init__")
   $Out -> Add("jc")
+
+  // Enums
+  for e in $Sem -> enums -> items:
+    $Out -> Add("@" + e -> name)
+
+    $Out -> Add("word generator.const.gcn." + $gcn + " " + e -> Objects -> count())
+    $Out -> Add("pushcp generator.const.gcn." + $gcn)
+    $Out -> Add("pushcp global.one")
+    $Out -> Add("newa")
+    $Out -> Add("peek " + e -> name)
+    $gcn++
+
+    i = 0
+    for ei in e -> Objects -> Items:
+      if ei -> hasDefValue:
+        if ei -> DefValue -> info == ttDigit:
+          if "." in ei -> DefValue -> value:
+            $Out -> Add("real " + ei -> name + " " + ei -> DefValue -> value)
+          else:
+            if "-" in ei -> DefValue -> value:
+              $Out -> Add("int " + ei -> name + " " + ei -> DefValue -> value)
+            else:
+              $Out -> Add("word " + ei -> name + " " + ei -> DefValue -> value)
+            end
+          end
+        else:
+          $Out -> Add("str " + ei -> name + " " + DQuote +
+                      ei -> DefValue -> value + DQuote)
+        end
+      else:
+        $Out -> Add("word " + ei -> name + " " + i)
+      end
+
+      $Out -> Add("pcopy")
+      $Out -> Add("pushc " + ei -> name)
+      $Out -> Add("swp")
+      $Out -> Add("word generator.const.gcn." + $gcn + " " + i)
+      $Out -> Add("pushcp generator.const.gcn." + $gcn)
+      $gcn++
+      $Out -> Add("swp")
+      $Out -> Add("peekai")
+
+      i++
+    end
+
+    $Out -> Add("pop")
+  end
 end
 
 proc GeneratorSVM::GenFinallyCode():
@@ -158,6 +214,7 @@ proc GeneratorSVM::GenFinallyCode():
     $Out -> Add("pushcp __vtable__size__")
     $Out -> Add("pushcp global.one")
     $Out -> Add("newa")
+    $Out -> Add("typemarkclass")
 
     $Out -> Add("pcopy")
     $Out -> Add("pushc " + cl -> name)
@@ -322,6 +379,14 @@ proc GeneratorSVM::NextNode(node, vars, mname):
 
     case PopBreakPoint:
       $BPStack -> pop_back()
+    end
+
+    case ContinuePoint:
+      $CPStack -> push_back(node -> PointLabel)
+    end
+
+    case PopContinuePoint:
+      $CPStack -> pop_back()
     end
 
     case LocalVarVisor:
@@ -496,13 +561,6 @@ proc GeneratorSVM::NextNode(node, vars, mname):
             end
 
             $Out -> add("push " + vname)
-
-            if $LastExprFlag():
-              $Out -> add("copy")
-              $Out -> add("swp")
-              $Out -> add("pop")
-              //$LastExprFlagChange()
-            end
           end
         end
       end
@@ -513,17 +571,16 @@ proc GeneratorSVM::NextNode(node, vars, mname):
     end
 
     case MashASTP_IndexedObject:
-      if node -> Obj -> Obj -> value == "new":
-        $GenArrayAlloc(node -> Indexes -> Objects)
-      else:
-        $GenArrayOp(node -> Obj, node -> Indexes -> Objects, "pushai")
-
-        if $LastExprFlag():
-          $LazyGenCode("copy")
-          $LazyGenCode("swp")
-          $LazyGenCode("pop")
-          $LazyGen -> Add(new ExprFalse)
+      ok ?= false
+      if node -> Obj -> type == MashASTP_SimpleObject:
+        if node -> Obj -> Obj -> value == "new":
+          ok = true
+          $GenArrayAlloc(node -> Indexes -> Objects)
         end
+      end
+
+      if ~ok:
+        $GenArrayOp(node -> Obj, node -> Indexes -> Objects, "pushai")
       end
     end
 
@@ -686,6 +743,7 @@ proc GeneratorSVM::NextNode(node, vars, mname):
 
     case MashASTB_While:
       $LazyGen -> Add(new BreakPoint("generator.while.gcn." + $gcn + ".end"))
+      $LazyGen -> Add(new ContinuePoint("generator.while.gcn." + $gcn + ".start"))
       $LazyGenCode("generator.while.gcn." + $gcn + ".start:")
       $LazyGenCode("pushcp generator.while.gcn." + $gcn + ".end")
       $LazyGen -> Add(node -> Expr)
@@ -701,10 +759,12 @@ proc GeneratorSVM::NextNode(node, vars, mname):
       $LazyGenCode("generator.while.gcn." + $gcn + ".end:")
 
       $gcn++
+      $LazyGen -> Add(new PopContinuePoint)
       $LazyGen -> Add(new PopBreakPoint)
     end
 
     case MashASTB_Whilst:
+      $LazyGen -> Add(new ContinuePoint("generator.whilst.gcn." + $gcn + ".check"))
       $LazyGen -> Add(new BreakPoint("generator.whilst.gcn." + $gcn + ".end"))
       $LazyGenCode("generator.whilst.gcn." + $gcn + ".start:")
 
@@ -712,6 +772,7 @@ proc GeneratorSVM::NextNode(node, vars, mname):
         $LazyGen -> Add(n)
       end
 
+      $LazyGenCode("generator.whilst.gcn." + $gcn + ".check:")
       $LazyGenCode("pushcp generator.whilst.gcn." + $gcn + ".start")
       $LazyGen -> Add(node -> Expr)
       $LazyGenCode("jn")
@@ -719,11 +780,13 @@ proc GeneratorSVM::NextNode(node, vars, mname):
       $LazyGenCode("generator.whilst.gcn." + $gcn + ".end:")
 
       $gcn++
+      $LazyGen -> Add(new PopContinuePoint)
       $LazyGen -> Add(new PopBreakPoint)
     end
 
     case MashASTB_ForEach:
       $LazyGen -> Add(new BreakPoint("generator.for_each.gcn." + $gcn + ".end"))
+      $LazyGen -> Add(new ContinuePoint("generator.for_each.gcn." + $gcn + ".continue"))
 
       $LazyGenCode("@generator.for_each.gcn." + $gcn + ".array")
       $LazyGenCode("@generator.for_each.gcn." + $gcn + ".i")
@@ -780,6 +843,7 @@ proc GeneratorSVM::NextNode(node, vars, mname):
         $LazyGen -> Add(n)
       end
 
+      $LazyGenCode("generator.for_each.gcn." + $gcn + ".continue:")
       $LazyGenCode("push generator.for_each.gcn." + $gcn + ".i")
       if node -> isBack:
         $LazyGenCode("dec")
@@ -799,6 +863,7 @@ proc GeneratorSVM::NextNode(node, vars, mname):
       end
 
       $gcn++
+      $LazyGen -> Add(new PopContinuePoint)
       $LazyGen -> Add(new PopBreakPoint)
     end
 
@@ -813,7 +878,16 @@ proc GeneratorSVM::NextNode(node, vars, mname):
         $LazyGenCode("pushcp " + $BPStack -> peek_back())
         $LazyGenCode("jp")
       else:
-        raise new Exception("Bad break position. Can't jump out of code here.")
+        raise new Exception("Bad 'break' position. Can't jump out of code here.")
+      end
+    end
+
+    case MashASTB_Continue:
+      if $CPStack -> Size() > 0:
+        $LazyGenCode("pushcp " + $CPStack -> peek_back())
+        $LazyGenCode("jp")
+      else:
+        raise new Exception("Bad 'continue' position. Can't jump from here.")
       end
     end
 
@@ -1016,6 +1090,50 @@ proc GeneratorSVM::NextNode(node, vars, mname):
       $LazyGenCode("trr")
     end
 
+    case MashASTB_Safe:
+      if mname <> "":
+        for v in vars -> items:
+          $LazyGenCode("push " + mname + "." + v)
+          $LazyGenCode("rst")
+        end
+
+        needVision ?= false
+        if node -> Expr -> type == MashExpressionAST:
+          if node -> Expr -> treeNode -> type == MashASTE_OperationLR:
+            obj ?= node -> Expr -> treeNode -> L
+            if obj -> type == MashASTP_SimpleObject:
+              if obj -> obj -> info == ttWord:
+                needVision = true
+                $LazyGenCode("@" + mname + "." + obj -> obj -> value)
+              end
+            end
+          end
+        end
+
+        if needVision:
+          $LazyGen -> Add(new LocalVarVisor(vars, obj -> obj -> value, false))
+        end
+
+        $LazyGen -> Add(node -> Expr)
+
+        if needVision:
+          $LazyGen -> Add(new LocalVarVisor(vars, obj -> obj -> value, true))
+        end
+
+        for v back vars -> items:
+          $LazyGenCode("rld")
+          $LazyGenCode("peek " + mname + "." + v)
+          $LazyGenCode("pop")
+        end
+
+        if needVision:
+          $LazyGen -> Add(new LocalVarVisor(vars, obj -> obj -> value, false))
+        end
+      else:
+        $LazyGen -> Add(node -> Expr)
+      end
+    end
+
     case MashASTB_Method:
       for n in node -> nodes -> items:
         $LazyGen -> Add(n)
@@ -1047,7 +1165,29 @@ proc GeneratorSVM::GenArrayOp(obj, indexes, targetOp):
 end
 
 proc GeneratorSVM::GenRefOp(ObjPath, targetOp):
-  $LazyGen -> Add(ObjPath -> get(0))
+  first ?= ObjPath -> get(0)
+
+  if first -> type == MashASTP_SimpleObject:
+    if first -> Obj -> info == ttWord:
+      isPackage ?= false
+      for cl in $Sem -> classes -> items:
+        if cl -> name == first -> Obj -> value:
+          isPackage = true
+          break
+        end
+      end
+
+      if isPackage:
+        $LazyGenCode("push structure_instance_" + first -> Obj -> value)
+      else:
+        $LazyGen -> Add(first)
+      end
+    else:
+      $LazyGen -> Add(first)
+    end
+  else:
+    $LazyGen -> Add(first)
+  end
 
   cnt ?= ObjPath -> count()
   i ?= 1
@@ -1088,6 +1228,9 @@ func GeneratorSVM::GenOperation(op, isLR):
   switch op:
     case "+":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("add")
       return r
     end
@@ -1096,8 +1239,14 @@ func GeneratorSVM::GenOperation(op, isLR):
       r ?= new PreGeneratedSet()
 
       if isLR:
+        r -> Next("copy")
+        r -> Next("swp")
+        r -> Next("pop")
         r -> Next("sub")
       else:
+        r -> Next("copy")
+        r -> Next("swp")
+        r -> Next("pop")
         r -> Next("neg")
       end
 
@@ -1106,54 +1255,81 @@ func GeneratorSVM::GenOperation(op, isLR):
 
     case "*":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("mul")
       return r
     end
 
     case "/":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("div")
       return r
     end
 
     case "\":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("idiv")
       return r
     end
 
     case "%":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("mod")
       return r
     end
 
     case "&":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("and")
       return r
     end
 
     case "|":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("or")
       return r
     end
 
     case "^":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("xor")
       return r
     end
 
     case "<<":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("shl")
       return r
     end
 
     case ">>":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("shr")
       return r
     end
@@ -1173,6 +1349,13 @@ func GeneratorSVM::GenOperation(op, isLR):
     case "==":
       r ?= new PreGeneratedSet()
       r -> Next("eq")
+      return r
+    end
+
+    case "<>":
+      r ?= new PreGeneratedSet()
+      r -> Next("eq")
+      r -> Next("not")
       return r
     end
 
@@ -1295,6 +1478,9 @@ func GeneratorSVM::GenOperation(op, isLR):
 
     case "~":
       r ?= new PreGeneratedSet()
+      r -> Next("copy")
+      r -> Next("swp")
+      r -> Next("pop")
       r -> Next("not")
       return r
     end

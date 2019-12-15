@@ -20,6 +20,7 @@ proc MashCompiler::Create(fp, destp):
 end
 
 proc MashCompiler::Compile():
+  println("Starting compilation, target: ", $fp)
   mainpath ?= copy($fp)
   while ~(mainpath[len(mainpath) - 1] in ["\", "/"]):
     s_del(mainpath, len(mainpath) - 1, 1)
@@ -40,11 +41,12 @@ proc MashCompiler::Compile():
   parser -> Parse()
 
   imports_lst ?= new list()
+  regapi_lst ?= new list()
   uses_lst ?= new list()
   const_lst ?= new list()
   ast_lst ?= new list()
 
-  ast ?= new MashAST(parser -> tokens, $fp, imports_lst, uses_lst, const_lst)
+  ast ?= new MashAST(parser -> tokens, $fp, imports_lst, regapi_lst, uses_lst, const_lst)
   ast_lst -> add(ast)
   ast -> process()
 
@@ -60,7 +62,7 @@ proc MashCompiler::Compile():
   parser ?= new MashParser(code, path)
   parser -> Parse()
 
-  ast ?= new MashAST(parser -> tokens, path, imports_lst, uses_lst, const_lst)
+  ast ?= new MashAST(parser -> tokens, path, imports_lst, regapi_lst, uses_lst, const_lst)
   ast_lst -> add(ast)
   ast -> process()
 
@@ -101,7 +103,7 @@ proc MashCompiler::Compile():
     parser ?= new MashParser(code, path)
     parser -> Parse()
 
-    ast ?= new MashAST(parser -> tokens, path, imports_lst, uses_lst, const_lst)
+    ast ?= new MashAST(parser -> tokens, path, imports_lst, regapi_lst, uses_lst, const_lst)
     ast_lst -> add(ast)
     ast -> process()
 
@@ -109,9 +111,11 @@ proc MashCompiler::Compile():
   end
 
   // Semantic analyse of code
-  Sem ?= new MashSem(imports_lst, ast_lst, const_lst)
+  println("Semantic analyse...")
+  Sem ?= new MashSem(imports_lst, regapi_lst, ast_lst, const_lst)
   Sem -> Process()
 
+  println("Generating output...")
   Gen ?= new Generator(saSVM)
   Outp ?= Gen -> Gen(Sem)
 

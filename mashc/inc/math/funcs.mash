@@ -1,0 +1,30 @@
+// Gamma function
+
+func stGamma(a):  sqrt(2 * m_pi / a) * Power(a / m_e, a)  end
+
+func spGamma(a):
+  b ?= 12
+  c ?= new[12]
+
+  k1_factrl ?= 1
+  c[0] ?= sqrt(2 * m_pi)
+
+  k ?= 1
+  while k < b:
+    c[k] ?= exp(b - k) * Power(b - k, k - 0.5) / k1_factrl
+    k1_factrl *= -k
+    k++
+  end
+
+  accm ?= c[0]
+
+  k ?= 1
+  while k < b:
+    accm += c[k] / ( a + k )
+    k++
+  end
+
+  accm *= exp(-(a + b)) * Power(a + b, a + 0.5)
+
+  return accm / a
+end

@@ -10,7 +10,7 @@
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
         <TopLine Value="40"/>
-        <CursorPos X="23" Y="50"/>
+        <CursorPos X="14" Y="55"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit0>
@@ -42,7 +42,11 @@
       <Unit6>
         <Filename Value="u_asm.pas"/>
         <IsPartOfProject Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="109"/>
+        <CursorPos X="32" Y="407"/>
         <UsageCount Value="20"/>
+        <Loaded Value="True"/>
       </Unit6>
       <Unit7>
         <Filename Value="C:\lazarus\fpc\3.0.4\source\rtl\objpas\sysutils\sysstrh.inc"/>
@@ -64,7 +68,7 @@
       </Position1>
       <Position2>
         <Filename Value="svmasm.lpr"/>
-        <Caret Line="50" Column="17" TopLine="40"/>
+        <Caret Line="50" Column="23"/>
       </Position2>
     </JumpHistory>
     <RunParams>

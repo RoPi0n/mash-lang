@@ -39,6 +39,7 @@ end
 
 proc MashExpressionAST::Process():
   token_id ?= 0
+
   while token_id < $tokens -> count():
     prim ?= $NextPrimitive(token_id)
     token_id++

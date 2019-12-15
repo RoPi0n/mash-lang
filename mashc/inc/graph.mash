@@ -1,0 +1,293 @@
+/*
+ *  Graph for Mash v1.0
+ */
+
+import Graph_Arc                 "graph.lib" "ARC"
+import Graph_Bar                 "graph.lib" "BAR"
+import Graph_Bar3D               "graph.lib" "BAR3D"
+import Graph_Ellipse             "graph.lib" "ELLIPSE"
+import Graph_FillEllipse         "graph.lib" "FILLELLIPSE"
+import Graph_DetectGraph         "graph.lib" "DETECTGRAPH"
+import Graph_LineTo              "graph.lib" "LINETO"
+import Graph_MoveTo              "graph.lib" "MOVETO"
+import Graph_GetFillPattern      "graph.lib" "GETFILLPATTERN"
+import Graph_GetFillSettings     "graph.lib" "GETFILLSETTINGS"
+import Graph_GetLineSettings     "graph.lib" "GETLINESETTINGS"
+import Graph_FloodFill           "graph.lib" "FLOODFILL"
+import Graph_GetArcCoords        "graph.lib" "GETARCCOORDS"
+import Graph_GetAspectRatio      "graph.lib" "GETASPECTRATIO"
+import Graph_GetModeRange        "graph.lib" "GETMODERANGE"
+import Graph_GetTextSettings     "graph.lib" "GETTEXTSETTINGS"
+import Graph_GetViewSettings     "graph.lib" "GETVIEWSETTINGS"
+import Graph_GraphDefaults       "graph.lib" "GRAPHDEFAULTS"
+import Graph_GraphErrorMsg       "graph.lib" "GRAPHERRORMSG"
+import Graph_GraphResult         "graph.lib" "GRAPHRESULT"
+import Graph_InstallUserDriver   "graph.lib" "INSTALLUSERDRIVER"
+import Graph_InstallUserFont     "graph.lib" "INSTALLUSERFONT"
+import Graph_LineRel             "graph.lib" "LINEREL"
+import Graph_MoveRel             "graph.lib" "MOVEREL"
+import Graph_PieSlice            "graph.lib" "PIESLICE"
+import Graph_Rectangle           "graph.lib" "RECTANGLE"
+import Graph_RestoreCrtMode      "graph.lib" "RESTORECRTMODE"
+import Graph_Sector              "graph.lib" "SECTOR"
+import Graph_SetAspectRatio      "graph.lib" "SETASPECTRATIO"
+import Graph_SetDirectVideo      "graph.lib" "SETDIRECTVIDEO"
+import Graph_SetFillPattern      "graph.lib" "SETFILLPATTERN"
+import Graph_SetGraphMode        "graph.lib" "SETGRAPHMODE"
+import Graph_SetLineStyle        "graph.lib" "SETLINESTYLE"
+import Graph_SetPalette          "graph.lib" "SETPALETTE"
+import Graph_SetTextJustify      "graph.lib" "SETTEXTJUSTIFY"
+import Graph_SetTextStyle        "graph.lib" "SETTEXTSTYLE"
+import Graph_SetUserCharSize     "graph.lib" "SETUSERCHARSIZE"
+import Graph_SetViewPort         "graph.lib" "SETVIEWPORT"
+
+
+
+import Graph_SetFillStyle        "graph.lib" "SETFILLSTYLE"
+import Graph_FillPoly            "graph.lib" "FILLPOLY"
+import Graph_ClearDevice         "graph.lib" "CLEARDEVICE"
+import Graph_Closegraph          "graph.lib" "CLOSEGRAPH"
+import Graph_DrawPoly            "graph.lib" "DRAWPOLY"
+import Graph_SetColor            "graph.lib" "SETCOLOR"
+import Graph_GetColor            "graph.lib" "GETCOLOR"
+import Graph_GetDirectVideo      "graph.lib" "GETDIRECTVIDEO"
+import Graph_GetDriverName       "graph.lib" "GETDRIVERNAME"
+import Graph_GetMaxColor         "graph.lib" "GETMAXCOLOR"
+import Graph_GetMaxMode          "graph.lib" "GETMAXMODE"
+import Graph_GetMaxX             "graph.lib" "GETMAXX"
+import Graph_GetMaxY             "graph.lib" "GETMAXY"
+import Graph_GetModeName         "graph.lib" "GETMODENAME"
+import Graph_GetGraphMode        "graph.lib" "GETGRAPHMODE"
+import Graph_GetPaletteSize      "graph.lib" "GETPALETTESIZE"
+import Graph_TextHeight          "graph.lib" "TEXTHEIGHT"
+import Graph_TextWidth           "graph.lib" "TEXTWIDTH"
+import Graph_SetWriteMode        "graph.lib" "SETWRITEMODE"
+import Graph_InitGraph           "graph.lib" "INITGRAPH"
+import Graph_GetX                "graph.lib" "GETX"
+import Graph_GetY                "graph.lib" "GETY"
+import Graph_OutText             "graph.lib" "OUTTEXT"
+/*
+ *  Constants
+ */
+
+// Colors
+
+const Graph_black         0
+const Graph_blue          1
+const Graph_green         2
+const Graph_cyan          3
+const Graph_red           4
+const Graph_magenta       5
+const Graph_brown         6
+const Graph_lightgray     7
+const Graph_darkgray      8
+const Graph_lightblue     9
+const Graph_lightgreen    10
+const Graph_lightcyan     11
+const Graph_lightred      12
+const Graph_lightmagenta  13
+const Graph_yellow        14
+const Graph_white         15
+
+// Line styles for GetLineStyle/SetLineStyle
+
+const Graph_SolidLn    0
+const Graph_DottedLn   1
+const Graph_CenterLn   2
+const Graph_DashedLn   3
+const Graph_UserBitLn  4
+
+const Graph_NormWidth  1
+const Graph_ThickWidth 3
+
+// Set/GetTextStyle constants
+
+const Graph_DefaultFont   0
+const Graph_TriplexFont   1
+const Graph_SmallFont     2
+const Graph_SansSerifFont 3
+const Graph_GothicFont    4
+const Graph_ScriptFont    5
+const Graph_SimpleFont    6
+const Graph_TSCRFont      7
+const Graph_LCOMFont      8
+const Graph_EuroFont      9
+const Graph_BoldFont      10
+
+const Graph_HorizDir      0
+const Graph_VertDir       1
+
+const Graph_UserCharSize  0
+
+// Fill pattern for Get/SetFillStyle:
+
+const Graph_EmptyFill       0
+const Graph_SolidFill       1
+const Graph_LineFill        2
+const Graph_LtSlashFill     3
+const Graph_SlashFill       4
+const Graph_BkSlashFill     5
+const Graph_LtBkSlashFill   6
+const Graph_HatchFill       7
+const Graph_XHatchFill      8
+const Graph_InterleaveFill  9
+const Graph_WideDotFill     10
+const Graph_CloseDotFill    11
+const Graph_UserFill        12
+
+// SetTextJustify constants
+
+const Graph_LeftText   0
+const Graph_CenterText 1
+const Graph_RightText  2
+
+const Graph_BottomText 0
+const Graph_TopText    2
+
+/*
+ *  Features:
+ */
+
+class ArcCoordsType:
+  var x, y,
+      xstart, ystart,
+      xend, yend
+end
+
+class FillSettingsType:
+  var pattern,
+      color
+end
+
+class LineSettingsType:
+  var linestyle,
+      pattern,
+      thickness
+end
+
+class Graph:
+  proc Arc(X, Y, StAngle, EndAngle, Radius):
+    Graph_Arc(Radius, EndAngle, StAngle, Y, X)
+  end
+
+  proc Bar(x1, y1, x2, y2):
+    Graph_Bar(y2, x2, y1, x1)
+  end
+
+  proc Bar3d(x1, y1, x2, y2, depth, top):
+    Graph_Bar3d(top, depth, y2, x2, y1, x1)
+  end
+
+  proc Ellipse(X, Y, StAngle, EndAngle, XRadius, YRadius):
+    Graph_Ellipse(YRadius, XRadius, EndAngle, StAngle, Y, X)
+  end
+
+  proc FillEllipse(X, Y, XRadius, YRadius):
+    Graph_FillEllipse(YRadius, XRadius, Y, X)
+  end
+
+  proc FloodFill(X, Y, Border):
+    Graph_FloodFill(Border, Y, X)
+  end
+
+  func GetArcCoords():
+    coords ?= new ArcCoordsType
+    Graph_GetArcCoords()
+
+    coords->x ?= stack -> pop()
+    coords->y ?= stack -> pop()
+    coords->xstart ?= stack -> pop()
+    coords->ystart ?= stack -> pop()
+    coords->xend ?= stack -> pop()
+    coords->yend ?= stack -> pop()
+    return coords
+  end
+
+  func GetAspectRatio():
+    Graph_GetAspectRatio()
+    Xasp ?= stack -> pop()
+    Yasp ?= stack -> pop()
+    return [Xasp, Yasp]
+  end
+
+
+  func GetFillPattern():
+    Graph_GetFillPattern()
+    r ?= new[8]
+
+    for i in 0..7:
+      r[i] ?= stack -> pop()
+    end
+
+    return r
+  end
+
+  func GetFillSettings():
+    fs ?= new FillSettingsType
+    Graph_GetFillSettings()
+    fs -> pattern ?= stack -> pop()
+    fs -> color ?= stack -> pop()
+    return fs
+  end
+
+  func GetLineSettings():
+    ls ?= new LineSettingsType
+    Graph_GetLineSettings()
+    ls -> linestyle ?= stack -> pop()
+    ls -> pattern ?= stack -> pop()
+    ls -> thickness ?= stack -> pop()
+    return ls
+  end
+
+  func GetModeRange(mode):
+    Graph_GetModeRange(mode)
+    a ?= stack -> pop()
+    b ?= stack -> pop()
+    return [a, b]
+  end
+
+  func Detect():
+    Graph_DetectGraph()
+    driver ?= stack -> pop()
+    mode ?= stack -> pop()
+    return [driver, mode]
+  end
+
+  proc Clear():
+    Graph_SetFillStyle(Graph_White, Graph_SolidFill)
+    Graph -> Bar(0, 0, Graph_GetMaxX(), Graph_GetMaxY())
+    Graph_SetColor(Graph_Black)
+    Graph_SetFillStyle(Graph_Black, Graph_SolidFill)
+  end
+
+  proc Initialize():
+    Graph_InitGraph(0, 0, "")
+    Graph -> Clear()
+  end
+
+  proc LineTo(x, y):  Graph_LineTo(y, x)  end
+  proc MoveTo(x, y):  Graph_MoveTo(y, x)  end
+
+  proc SetFillStyle(): Graph_SetFillStyle()  end
+  proc FillPoly(): Graph_FillPoly()  end
+  proc ClearDevice(): Graph_ClearDevice()  end
+  proc Close(): Graph_CloseGraph()  end
+  proc DrawPoly(): Graph_DrawPoly()  end
+  proc SetColor(): Graph_SetColor()  end
+  func GetColor(): Graph_GetColor()  end
+  func GetDirectVideo(): Graph_GetDirectVideo()  end
+  func GetDriverName(): Graph_GetDriverName()  end
+  func GetMaxColor(): Graph_GetMaxColor()  end
+  func GetMaxMode(): Graph_GetMaxMode()  end
+  func GetMaxX(): Graph_GetMaxX()  end
+  func GetMaxY(): Graph_GetMaxY()  end
+  func GetModeName(): Graph_GetModeName()  end
+  func GetGraphMode(): Graph_GetGraphMode()  end
+  func GetPaletteSize(): Graph_GetPaletteSize()  end
+  func TextHeight(): Graph_TextHeight()  end
+  func TextWidth(): Graph_TextWidth()  end
+  proc SetWriteMode(): Graph_SetWriteMode()  end
+  func GetX(): Graph_GetX()  end
+  func GetY(): Graph_GetY()  end
+  proc OutText(): Graph_OutText()  end
+end

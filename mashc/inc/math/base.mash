@@ -1,0 +1,82 @@
+/*
+ *  Base math methods.
+ */
+
+func trunc(a): a \ 1 end
+
+func frac(a): a - a \ 1 end
+
+func round(a): trunc(a + 0.5) end
+
+func ceil(a): trunc(a + 0.999999) end
+
+func abs(a): if a > 0: a else: -a end end
+
+func sgn(a):
+  if a == 0:  return 0  end
+  if a < 0:  return -1  else:  return 1  end
+end
+
+func Log(a):  LogN(m_e, a)  end
+
+func Power(a, n):
+  if n == 0:
+    return 1
+  else:
+    if a == 0:
+      return 0
+    else:
+      return Exp(Log(a) * n)
+    end
+  end
+end
+
+func IntPower(a, n):  Round( Power(a, n) )  end
+
+func Sqrt(a):
+  if a >= 0:
+    return Power(a, 0.5)
+  else:
+    return null
+  end
+end
+
+func Factorial(a):
+  r ?= 1
+
+  i ?= 0
+  while i < a:
+    r *= i + 1
+    i++
+  end
+
+  return r
+end
+
+func hypot(w, h):  sqrt(w*w + h*h)  end
+
+func radians(a):  a * (180 / m_pi)  end
+
+func degrees(a):  a * (m_pi / 180)  end
+
+// Hyperbolic functions
+
+func sinh(a):  (Power(m_e, a) - Power(m_e, -a)) / 2  end
+
+func cosh(a):  (Power(m_e, a) + Power(m_e, -a)) / 2  end
+
+func cosech(a):  1 / sinh(a)  end
+
+func sech(a):  1 / cosh(a)  end
+
+func tgh(a):  sinh(a) / cosh(a)  end
+
+func ctgh(a):  1 / tgh(a)  end
+
+func arcsinh(a):  Log(a + sqrt(a*a + 1))  end
+
+func arccosh(a):  Log(a + sqrt(a*a - 1))  end
+
+func arctgh(a):  Log( (1 + a) / (1 - a) ) / 2  end
+
+func arcctgh(a):  Log( (a + 1) / (a - 1) ) / 2  end

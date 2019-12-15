@@ -22,16 +22,16 @@ var MashTokens = [
 
       "if", "else",
       "switch", "case", "default",
-      "for", "in", "back", "break",
+      "for", "in", "back", "break", "continue",
       "while", "whilst",
       "class", "var", "$", "->", "new", "init", "public", "protected", "private",
       "try", "catch", "raise",
       "launch", "async", "wait",
-      "gc",
       "const", "enum",
-      "import", "regapi", "uses",
+      "import", "api", "uses",
       "inline",
-      "end", "return"],
+      "end", "return",
+      "safe"],
 
     MashExprTokens = [
       "+", "-", "*", "/", "\", "%", "^", "&", "|", "^", "~",

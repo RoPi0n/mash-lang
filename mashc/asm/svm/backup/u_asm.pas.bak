@@ -401,10 +401,10 @@ begin
       Outp.WriteByte(byte(bcDBP))
     else
     if bf = 'rst' then
-      Outp.WriteByte(byte(bcRST))
+      Outp.WriteByte(byte(bcDBP))
     else
     if bf = 'rld' then
-      Outp.WriteByte(byte(bcRLD))
+      Outp.WriteByte(byte(bcDBP))
     else
     if Length(s) > 0 then
       AsmErr('Invalid token in line: "' + s + '"');

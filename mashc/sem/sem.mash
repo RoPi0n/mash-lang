@@ -17,7 +17,7 @@ end
 class MashSEM:
   protected:
     var astl,            // list with ast
-        impl, imp_names, // for imports checking
+        impl, regapi_lst, imp_names, // for imports checking
         methods,         // list with methods
         methods_names,   // list with method names
         cmethod_names,   // also for class methods
@@ -32,7 +32,9 @@ class MashSEM:
         cnames,
         vtable,
 
-        max_class_parents
+        max_class_parents,
+
+        enums, enums_names
 
   public:
     proc Create,
@@ -45,8 +47,9 @@ class MashSEM:
          NextNode
 end
 
-proc MashSEM::Create(imp_lst, ast_lst, const_lst):
+proc MashSEM::Create(imp_lst, regapi_lst, ast_lst, const_lst):
   $impl ?= imp_lst
+  $regapi_lst ?= regapi_lst
   $astl ?= ast_lst
 
   $imp_names ?= new list()
@@ -68,10 +71,17 @@ proc MashSEM::Create(imp_lst, ast_lst, const_lst):
   $vtable ?= new list()
 
   $max_class_parents ?= 0
+
+  $enums ?= new list()
+  $enums_names ?= new list()
 end
 
 proc MashSEM::Process():
   for ib in $impl -> items:
+    $imp_names -> add(ib -> method_name)
+  end
+
+  for ib in $regapi_lst -> items:
     $imp_names -> add(ib -> method_name)
   end
 
@@ -85,26 +95,42 @@ proc MashSEM::Process():
       ast -> nodes -> delete(0)
 
       switch n -> type:
+        case MashASTB_Enum:
+          $global_vars -> add(n -> Name)
+          if $enums_names -> IndexOf(n -> Name) <> null:
+            raise new Exception("Duplicate enum names '" + n -> name + "'.")
+          end
+          $enums_names -> add(n -> Name)
+          $enums -> add(n)
+        end
+
         case MashASTB_Class:
           $classes -> add(n)
           $cnames -> add(n -> name)
-          $const_names -> add(n -> name)
+          $const_names -> add(n -> Name)
+          //$global_vars -> add(n -> name)
         end
 
         case MashASTB_Method:
           $methods -> add(n)
 
           if n -> is_class_method:
-            $cmethod_names -> add(n -> method_name)
+            if $cmethod_names -> IndexOf(n -> method_name) == null:
+              $cmethod_names -> add(n -> method_name)
+            end
           else:
-            $methods_names -> add(n -> method_name)
-          end
+            if $methods_names -> IndexOf(n -> method_name) == null:
+              $methods_names -> add(n -> method_name)
+            else:
+              raise new Exception("Founded second declaration of method '" + n -> method_name + "'.")
+            end
 
-          for impn in $imp_names -> items:
-            if impn == n -> method_name:
-              raise new Exception("Import and method can't have equal names '" + impn +
-                                  "', at line " + (n -> line + 1) " at file '" +
-                                  n -> fp + "'.")
+            for impn in $imp_names -> items:
+              if impn == n -> method_name:
+                raise new Exception("Import and method can't have equal names '" + impn +
+                                    "', at line " + (n -> line + 1) " at file '" +
+                                    n -> fp + "'.")
+              end
             end
           end
         end
@@ -213,6 +239,18 @@ proc MashSEM::Process():
     $const_names -> add("vtable__" + v)
   end
 
+  // Checking enums
+  for e in $enums -> items:
+    for ei in e -> Objects -> items:
+      if $const_names -> IndexOf(ei -> Name) <> null:
+        raise new Exception("Enum item '" + ei -> name + "' of enum '" + e -> name +
+                            "' and one constant/method/class/another enum item - have equally names.")
+      end
+
+      $const_names -> add(ei -> Name)
+    end
+  end
+
   // Checking global code and methods for variables
   for g in $global -> items:
     $CheckNext(g, $global_vars, true)
@@ -284,7 +322,6 @@ proc MashSEM::NextNode(node, vars, isGlobal):
           // Checking for var/not var
           if ($const_names -> IndexOf(node -> Obj -> value) == null) &
              ($methods_names -> IndexOf(node -> Obj -> value) == null) &
-             ($cmethod_names -> IndexOf(node -> Obj -> value) == null) &
              ($imp_names -> IndexOf(node -> Obj -> value) == null) &
              ($global_vars -> IndexOf(node -> Obj -> value) == null):
             if vars -> IndexOf(node -> Obj -> value) == null:
@@ -298,8 +335,8 @@ proc MashSEM::NextNode(node, vars, isGlobal):
     case MashASTP_SpecRectObject:
       if ($const_names -> IndexOf(node -> Obj -> value) == null) &
          ($methods_names -> IndexOf(node -> Obj -> value) == null) &
-         ($cmethod_names -> IndexOf(node -> Obj -> value) == null) &
-         ($imp_names -> IndexOf(node -> Obj -> value) == null):
+         ($imp_names -> IndexOf(node -> Obj -> value) == null) &
+         ($global_vars -> IndexOf(node -> Obj -> value) == null):
         if vars -> IndexOf(node -> Obj -> value) == null:
           vars -> add(node -> Obj -> value)
         end
@@ -362,7 +399,6 @@ proc MashSEM::NextNode(node, vars, isGlobal):
     case MashASTB_ForEach:
       if ($const_names -> IndexOf(node -> forVar -> value) == null) &
          ($methods_names -> IndexOf(node -> forVar -> value) == null) &
-         ($cmethod_names -> IndexOf(node -> forVar -> value) == null) &
          ($imp_names -> IndexOf(node -> forVar -> value) == null):
         if vars -> IndexOf(node -> forVar -> value) == null:
           $LazyChk -> Add(new LocalVarVisor(vars, node -> forVar -> value, false))
@@ -405,7 +441,6 @@ proc MashSEM::NextNode(node, vars, isGlobal):
     case MashASTB_Async:
       if ($const_names -> IndexOf(node -> forVar) <> null) |
          ($methods_names -> IndexOf(node -> forVar) <> null) |
-         ($cmethod_names -> IndexOf(node -> forVar) <> null) |
          ($imp_names -> IndexOf(node -> forVar) <> null) |
          (vars -> IndexOf(node -> forVar) <> null):
         raise new Exception("Invalid expression '" + node -> forVar + "'")
@@ -420,16 +455,23 @@ proc MashSEM::NextNode(node, vars, isGlobal):
     end
 
     case MashASTB_Try:
+      for n in node -> Nodes -> items:
+        $LazyChk -> Add(n)
+      end
+
       if node -> hasCatch:
         if ($const_names -> IndexOf(node -> forVar -> value) == null) &
            ($methods_names -> IndexOf(node -> forVar -> value) == null) &
-           ($cmethod_names -> IndexOf(node -> forVar -> value) == null) &
            ($imp_names -> IndexOf(node -> forVar -> value) == null):
           if vars -> IndexOf(node -> forVar -> value) == null:
             $LazyChk -> Add(new LocalVarVisor(vars, node -> forVar, false))
           end
         else:
           raise new Exception("Invalid expression '" + node -> forVar -> value + "'")
+        end
+
+        for n in node -> NodesCatch -> items:
+          $LazyChk -> Add(n)
         end
       end
     end

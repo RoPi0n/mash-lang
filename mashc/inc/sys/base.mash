@@ -5,15 +5,9 @@
 const true -1
 const false 0
 
-func len(a):
-  inline "push len.a"
-  inline "alen"
-end
-
-func copy(obj):
-  inline "push copy.obj"
-  inline "copy"
-end
+/*
+ *  Methods for .., in, & receiving [args]
+ */
 
 func system_op_range(from, to):
   isBack ?= from > to
@@ -30,7 +24,7 @@ func system_op_range(from, to):
   j ?= copy(from)
 
   while i < l:
-    res[i] ?= j
+    res[i] ?= copy(j)
     i++
 
     if isBack:
@@ -48,4 +42,231 @@ func system_op_in(left, right):
     if x == left: return true end
   end
   return false
+end
+
+func system_op_argsarr(argcount):
+  tmp ?= null
+  t ?= 0
+  argset ?= new[argcount]
+  while t < argcount:
+    inline "peek system_op_argsarr.tmp"
+    inline "pop"
+    argset[t] ?= tmp
+    t++
+  end
+
+  return argset
+end
+
+/*
+ *  Methods for simple objects
+ */
+
+func len(array):
+  inline "push len.array"
+  inline "alen"
+end
+
+proc SetLen(array, new_length):
+  inline "push setlen.array"
+  inline "push setlen.new_length"
+  inline "salen"
+  inline "pop"
+end
+
+enum Types [
+  TypeNull,
+  TypeWord,
+  TypeInt,
+  TypeReal,
+  TypeStr,
+  TypeArray,
+  TypeClass,
+  TypeRef,
+  TypePtr = 255
+]
+
+func TypeOf(object):
+  inline "push typeof.object"
+  inline "typeof"
+end
+
+func system_copy_object(object):
+  inline "push copy.object"
+  inline "copy"
+  inline "swp"
+  inline "pop"
+end
+
+func system_copy_array(array):
+  l ?= len(array)
+  r ?= new[l]
+
+  i ?= 0
+  while i < l:
+    inline "push system_copy_array.i"
+    inline "push system_copy_array.l"
+    inline "push system_copy_array.r"
+    inline "push system_copy_array.array"
+
+    r[i] ?= copy(array[i])
+
+    inline "peek system_copy_array.array"
+    inline "pop"
+    inline "peek system_copy_array.r"
+    inline "pop"
+    inline "peek system_copy_array.l"
+    inline "pop"
+    inline "peek system_copy_array.i"
+    inline "pop"
+
+    i++
+  end
+
+  return r
+end
+
+func copy(object):
+  if typeof(object) == TypeArray:
+    return system_copy_array(object)
+  else:
+    return system_copy_object(object)
+  end
+end
+
+proc gc():
+  inline "gc"
+end
+
+proc fullgc():
+  inline "stkdrop"
+  inline "gc"
+end
+
+func max([args]):
+  if len(args) > 0:
+    r ?= args[0]
+    for x in args:
+      if x > r: r = x end
+    end
+    return r
+  else: return null end
+end
+
+func min([args]):
+  if len(args) > 0:
+    r ?= args[0]
+    for x in args:
+      if x < r: r = x end
+    end
+    return r
+  else: return null end
+end
+
+proc Ord(char):
+  inline "push ord.char"
+  inline "chord"
+end
+
+proc _Chr(wrd):
+  inline "push _chr.wrd"
+  inline "ordch"
+end
+
+func Chr([chars]):
+  r ?= ""
+  for ch in chars: r += _chr(ch) end
+  return r
+end
+
+class stack:
+  proc push(value):
+    inline "push stack__push.value"
+  end
+
+  func peek(): end  // result already in stack...
+
+  func pop():
+    res ?= null
+    inline "peek stack__pop.res"
+    inline "pop"
+    return res
+  end
+end
+
+
+func str(value):
+  switch typeof(value):
+    case TypeWord:
+      return i2s(value)
+    end
+
+    case TypeInt:
+      return i2s(value)
+    end
+
+    case TypeReal:
+      return f2s(value)
+    end
+
+    case TypeStr:
+      return value
+    end
+
+    default:
+      raise new Exception("Invalid type cast via str().")
+    end
+  end
+end
+
+func int(value):
+  switch typeof(value):
+    case TypeWord:
+      return value
+    end
+
+    case TypeInt:
+      return value
+    end
+
+    case TypeReal:
+      return value \ 1
+    end
+
+    case TypeStr:
+      return s2i(value)
+    end
+
+    default:
+      raise new Exception("Invalid type cast via int().")
+    end
+  end
+end
+
+func real(value):
+  switch typeof(value):
+    case TypeWord:
+      return value
+    end
+
+    case TypeInt:
+      return value
+    end
+
+    case TypeReal:
+      return value
+    end
+
+    case TypeStr:
+      return s2f(value)
+    end
+
+    default:
+      raise new Exception("Invalid type cast via int().")
+    end
+  end
+end
+
+func check(cond, rtrue, rfalse):
+  if cond: return rtrue else: return rfalse end
 end

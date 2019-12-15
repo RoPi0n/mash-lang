@@ -39,3 +39,9 @@ end
 
 class PopBreakPoint:
 end
+
+class ContinuePoint(BreakPoint):
+end
+
+class PopContinuePoint:
+end

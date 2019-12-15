@@ -1,0 +1,230 @@
+/*
+ * Mash math for complex numbers unit
+ */
+
+class Complex:
+  public:
+    var Re, Im
+
+    init(Re, Im):
+      $Re ?= Re
+      $Im ?= Im
+    end
+
+    proc Set(Re, Im):
+      $Re = Re
+      $Im = Im
+    end
+
+    func ToString():
+      return check(
+               $Re <> 0,
+               "" + $Re,
+               ""
+             ) +
+
+             check(
+               $Im <> 0,
+
+               check(
+                 $Im > 0,
+                 check( $Re <> 0, "+", "" ),
+                 ""
+               ) +
+
+               check(
+                 Abs($Im) == 1,
+                 check( $Im > 0, "i", "-i" ),
+                 "" + $Im + "i"
+               ),
+
+               ""
+             ) +
+
+             check( ($Re == 0) & ($Im == 0), "0", "" )
+    end
+
+    func Clone():
+      return new Complex($Re, $Im)
+    end
+
+    func CompareTo(z):
+      return ($Re == z -> Re) & ($Im == z -> Im)
+    end
+
+    // Math features
+
+    func Module():
+      return Sqrt($Re * $Re + $Im * $Im)
+    end
+
+    func Angle():
+      if $Re == 0:
+        return check(
+                 $Im > 0,
+                 m_pi / 2,
+                -m_pi / 2
+               )
+      else:
+        FiVal ?= ArcTg($Im / $Re)
+        return check(
+                 $Re > 0,
+                 FiVal,
+                 check(
+                   $Im >= 0,
+                   FiVal + m_pi,
+                   FiVal - m_pi
+                 )
+               )
+      end
+    end
+
+    func Conjugate():
+      return new Complex($Re, -$Im)
+    end
+end
+
+
+
+class CMath:
+  // Base function's with complex numbers
+  func unite([args]):
+    switch len(args):
+      case 0:
+        return new Complex(0, 0)
+      end
+
+      case 1:
+        return new Complex(args[0], 0)
+      end
+
+      case 2:
+        return new Complex(args[0], args[1])
+      end
+
+      default:
+        raise new Exception("CMath.Unite: Invalid args.")
+      end
+    end
+  end
+
+  func uniteIm(Im):
+    return new Complex(0, Im)
+  end
+
+  func uniteViaExp(mod, angl):
+    return new Complex(mod * cos(angl), mod * sin(angl))
+  end
+
+
+  // Basic operations
+  func add(z1, z2):
+    return new Complex( z1 -> Re + z2 -> Re,
+                        z1 -> Im + z2 -> Im )
+  end
+
+  func sub(z1, z2):
+    return new Complex( z1 -> Re - z2 -> Re,
+                        z1 -> Im - z2 -> Im )
+  end
+
+  func mul(z1, z2):
+    return new Complex( z1 -> Re * z2 -> Re - z1 -> Im * z2 -> Im,
+                        z1 -> Re * z2 -> Im + z2 -> Re * z1 -> Im )
+  end
+
+  func div(z1, z2):
+    Top ?= cmath -> mul(z1, z2 -> Conjugate())
+    Bottom ?= cmath -> mul(z2, z2 -> Conjugate())
+    return new Complex( Top -> Re / Bottom -> Re,
+                        Top -> Im / Bottom -> Re )
+  end
+
+  func power(z, n):
+    pN ?= Power(z -> Module(), n)
+    fN ?= z -> Angle() * n
+    return new Complex( pN * Cos(fN),
+                        pN * Sin(fN) )
+  end
+
+
+  // Extended functions
+  func ln(z):
+    return new Complex( Log(z -> Module()), z -> Angle() )
+  end
+
+  func logN(z, n):
+    return new Complex( LogN(n, z -> Module()), z -> Angle() * LogN(n, m_e))
+  end
+
+
+  // Hyperbolic functions
+  func sin(z):
+    return new Complex( sin(z -> Re) * cosh(z -> Im),
+                        cos(z -> Re) * sinh(z -> Im) )
+  end
+
+  func cos(z):
+    return new Complex( cos(z -> Re) * cosh(z -> Im),
+                        sin(z -> Re) * sinh(z -> Im) )
+  end
+
+  func tg(z):
+   /*
+    *  https://proofwiki.org/wiki/Tangent_of_Complex_Number
+    *  Formulation #3 implementation
+    */
+
+    k ?= cos(2 * z -> Re) + cosh(2 * z -> Im)
+    return new Complex( sin(2 * z -> Re) / k,
+                        sinh(2 * z -> Im) / k )
+  end
+
+  func ctg(z):
+   /*
+    *  https://proofwiki.org/wiki/Cotangent_of_Complex_Number
+    *  Formulation #3 implementation
+    */
+
+    Re ?= -ctg(z -> Re) -
+           ctg(z -> Re) * Power(ctgh(z -> Im), 2)
+
+    Re /= Power(ctg(z -> Re), 2) +
+          Power(ctgh(z -> Im), 2)
+
+    Im ?= Power(ctg(z -> Re), 2) * ctgh(z -> Im) -
+          ctgh(z -> Im)
+
+    Im /= Power(ctg(z -> Re), 2) +
+          Power(ctgh(z -> Im), 2)
+
+    return new Complex(Re, Im)
+  end
+
+  func sec(z):
+   /*
+    *  https://proofwiki.org/wiki/Secant_of_Complex_Number
+    *  Finally formula implementation
+    */
+
+    k ?= Power(cos(z -> Re), 2) * Power(cosh(z -> Im), 2)
+    k += Power(sin(z -> Re), 2) * Power(sinh(z -> Im), 2)
+
+    return new Complex( cos(z -> Re) * cosh(z -> Im) / k,
+                        sin(z -> Re) * sinh(z -> Im) / k )
+  end
+
+  func cosec(z):
+   /*
+    *  https://proofwiki.org/wiki/Cosecant_of_Complex_Number
+    *  I'm just leave it here...
+    */
+
+    k ?= Power(sin(z -> Re), 2) * Power(cosh(z -> Im), 2)
+    k += Power(cos(z -> Re), 2) * Power(sinh(z -> Im), 2)
+
+    return new Complex( sin(z -> Re) * cosh(z -> Im) / k,
+                        -cos(z -> Re) * sinh(z -> Im) / k)
+  end
+
+end

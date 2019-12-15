@@ -47,6 +47,13 @@ begin
   if ParamCount > 2 then
    begin
      {* Initialization *}
+     DecimalSeparator := '.';
+
+     if not FileExists(ParamStr(2)) then
+      begin
+        writeln('File "' + ParamStr(2) + '" not found.');
+      end;
+
      code := TStringList.Create;
      code.LoadFromFile(ParamStr(2));
 

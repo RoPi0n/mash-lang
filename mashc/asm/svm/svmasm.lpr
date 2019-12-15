@@ -49,6 +49,12 @@ begin
      {* Initialization *}
      DecimalSeparator := '.';
 
+     if not FileExists(ParamStr(2)) then
+      begin
+        writeln('File "' + ParamStr(2) + '" not found.');
+        halt;
+      end;
+
      code := TStringList.Create;
      code.LoadFromFile(ParamStr(2));
 
