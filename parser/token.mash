@@ -1,0 +1,135 @@
+/*
+ *  Enumeration of language tokens
+ */
+
+var DQuote = chr(34)  // "
+
+enum MashTokenType [ttToken, ttDigit, ttString, ttWord, ttEndOfLine, ttNull]
+
+enum MashTokenShort [
+      tkProc, tkFunc,
+      tkOBr, tkCBr, tkORBr, tkCRBr, tkSm, tkBg,
+      tkEq, tkBEq, tkSEq, tkInc, tkDec,
+      tkAdd, tkSub, tkMul, tkDiv, tkIDiv, tkMod,
+      tkAnd, tkOr, tkXor, tkSHL, tkSHR, tkNEq,
+
+      tkAssign, tkMov, tkMovBP, tkGVBP, tkGP,
+      tkCMSep, tkBegin, tkComma, tkDot, tkRange, tkIs,
+
+      tkAddSym, tkSubSym, tkMulSym, tkDivSym, tkIDivSym, tkModSym,
+      tkAndSym, tkOrSym, tkXorSym, tkNotSym,
+
+      tkIf, tkElse, tkSwitch, tkCase, tkDefault,
+      tkFor, tkIn, tkBack, tkBreak, tkContinue,
+      tkWhile, tkWhilst,
+      tkClass, tkVar, tkThis, tkByPtr, tkNew, tkInit,
+      tkPublic, tkProtected, tkPrivate,
+      tkTry, tkCatch, tkRaise,
+      tkLaunch, tkAsync, tkWait,
+      tkConst, tkEnum,
+      tkInline,
+      tkImport, tkAPI, tkUses,
+      tkEnd, tkReturn,
+      tkSafe]
+
+var MashTokens = [
+      "proc", "func",
+
+      "(", ")", "[", "]", "<", ">",
+
+      "==", ">=", "<=", "++", "--",
+      "+=", "-=", "*=", "/=", "\=", "%=",
+      "&=", "|=", "^=", "<<=", ">>=", "<>",
+
+      "?=", "=", "@=", "?", "@",
+      "::", ":", ",", ".", "..", "is",
+
+      "+", "-", "*", "/", "\", "%", "&", "|", "^", "~",
+
+      "if", "else",
+      "switch", "case", "default",
+      "for", "in", "back", "break", "continue",
+      "while", "whilst",
+      "class", "var", "$", "->", "new", "init", "public", "protected", "private",
+      "try", "catch", "raise",
+      "launch", "async", "wait",
+      "const", "enum",
+      "import", "api", "uses",
+      "inline",
+      "end", "return",
+      "safe"],
+
+    MashExprTokens = [
+      "+", "-", "*", "/", "\", "%", "&", "|", "^", "~",
+      "?=", "=", "@=", "?", "@",
+
+      "==", ">=", "<=", "++", "--",
+      "+=", "-=", "*=", "/=", "\=", "%=",
+      "&=", "|=", "^=", "<<=", ">>=", "<>",
+
+      "(", ")", "[", "]", "<", ">",
+      "->", "$", "this", "in", "..", "is", ",", ".", "new"],
+
+    MashParamsTokens = ["[", "]"],
+
+    MashOperatorsTokens = [
+      "+", "-", "*", "/", "\", "%", "&", "|", "^",
+      "?=", "=", "@=",
+
+      "<", ">", "==", ">=", "<=",
+      "+=", "-=", "*=", "/=", "\=", "%=",
+      "&=", "|=", "^=", "<<=", ">>=", "<>",
+      "in", "..", "is"],
+
+    MashOperationToken = ["++", "--", "?", "@", "~", "-", "new"],
+
+    // For making correct expression AST
+    MashOperationsPriority = [
+       ["?=", "=", "@=", "+=", "-=", "*=",
+        "/=", "\=", "%=", "&=", "|=", "^=",
+        "<<=", ">>="],                      // 1 lvl: 7th
+
+       ["<", ">", "==", ">=", "<=", "<>"],  // 2 lvl: 6th
+       ["&", "|", "^", "in"],               // 3 lvl: 5th
+       ["..", "is"],                        // 4 lvl  4th
+       ["+", "-"],                          // 5 lvl: 3rd
+       ["*", "/", "\", "%"],                // 6 lvl: 2nd
+       MashOperationToken],                 // 7 lvl: 1st
+
+    MashOperationLeft = ["?", "@", "~", "-", "new"],
+    MashOperationRight = ["++", "--"]
+
+
+/*
+ *  Token+Info container
+ */
+class MashToken:
+  public:
+    var value,
+        info,
+        line,
+        short
+
+    proc Create
+end
+
+proc MashToken::Create(value, info, line):
+  $value ?= copy(value)
+  $info  ?= copy(info)
+  $line  ?= copy(line)
+  $short ?= null
+
+  if $info == ttToken:
+    i ?= 0
+    l ?= len(MashTokens)
+    while i < l:
+      if MashTokens[i] == $value:
+        $short ?= i
+        break
+      end
+      i++
+    end
+  end
+end
+
+

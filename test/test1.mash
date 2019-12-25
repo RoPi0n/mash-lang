@@ -1,0 +1,16 @@
+uses "test2.mash"
+import m "m" "m"
+
+proc main(a, b, [c]):
+  a ?= @zz -> gg[1][@r -> ff[new b(-x + -y) * @z -> x](-77 | -u)][-3](-1 ^ z)(-2 ^ z)(-3 ^ z) & -7++
+
+  if a == b:
+    a ?= [-1, [-2], [-3], [-4], -5]
+  else:
+    a ?= @-(@b++)
+
+    for x in a -> items:
+      x -> foo()
+    end
+  end
+end

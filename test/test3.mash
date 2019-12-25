@@ -1,0 +1,2 @@
+import PrintLn "crt.lib" "PRINTLN"
+println((2+2)*2)
