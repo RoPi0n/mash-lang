@@ -1,8 +1,0 @@
-/*
- *  Mash math libs
- */
-
-uses math.base
-uses math.complex
-uses math.funcs
-//uses math.bigint

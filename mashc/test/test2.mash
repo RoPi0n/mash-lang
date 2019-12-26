@@ -1,5 +1,0 @@
-proc foo(a, b, [c]):
-  while a < 0:
-    a += ++bar(x)
-  end
-end

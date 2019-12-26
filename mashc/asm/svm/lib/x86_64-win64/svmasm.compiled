@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CONFIG>
-  <Compiler Value="C:\lazarus\fpc\3.0.4\bin\x86_64-win64\fpc.exe" Date="1325662982"/>
-  <Params Value=" -MObjFPC -Scghi -O1 -g -gl -Xg -Xs -l -vewnhibq -FiC:\Users\Админ\Desktop\svm\src\r1_test\mashc\asm\svm\lib\x86_64-win64 -FuC:\Users\Админ\Desktop\svm\src\r1_test\mashc\asm\svm\ -FUC:\Users\Админ\Desktop\svm\src\r1_test\mashc\asm\svm\lib\x86_64-win64\ -FEC:\Users\Админ\Desktop\svm\src\r1_test\mashc\asm\svm\ -oC:\Users\Админ\Desktop\svm\src\r1_test\mashc\asm\svm\svmasm.exe svmasm.lpr"/>
-</CONFIG>
