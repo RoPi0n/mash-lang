@@ -1,0 +1,14 @@
+uses crt
+uses math.complex
+
+
+proc main():
+  a ?= new complex(3, 1)
+  b ?= new complex(5, -2)
+
+  println(a)
+  println("+")
+  println(b)
+  println("=")
+  println(cmath -> add(a, b))
+end

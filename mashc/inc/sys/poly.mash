@@ -1,0 +1,6 @@
+/*
+ *  Some features for easy polymorph methods/utils declaration
+ */
+
+class Polymorph:
+end

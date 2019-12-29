@@ -1,0 +1,54 @@
+uses crt
+
+class MyClass:
+  public:
+    var a, b
+
+    init(a, b):
+      $a ?= a
+      $b ?= b
+    end
+
+    func Summ():
+      return $a + $b
+    end
+
+    func Out(a):
+      println(a)
+    end
+end
+
+func MyClass::Middle():
+  return ($a + $b) / 2
+end
+
+class MyClass2(MyClass):
+  public:
+    var c
+
+    init(a, b, c):
+      super(a, b)
+      $c ?= c
+    end
+
+    func Summ():
+      return super() + $c
+    end
+end
+
+
+
+enum MyEnum [
+  Success = "Success", Normal, Fail
+]
+
+
+
+proc main():
+  m ?= new MyClass2(10, 20, 30)
+  MyClass -> Out(m -> summ())
+
+  MyClass -> Out(Success)
+
+  Foo(10)
+end

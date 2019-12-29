@@ -1,0 +1,26 @@
+uses crt
+
+class MyGreeter:
+  var name
+
+  init(name):
+    $name ?= name
+  end
+
+  proc Greet():
+    println("Hello, ", $name)
+  end
+end
+
+proc Polymorph::MyExtraGreet():
+  println("Extra hello, ", $name)
+end
+
+proc main():
+  g ?= new MyGreeter("John")
+  g -> Greet()
+
+  // Redefine method Greet() & call:
+  g -> Greet ?= Polymorph -> MyExtraGreet
+  g -> Greet()
+end

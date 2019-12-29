@@ -1,0 +1,46 @@
+uses classes.list
+uses crt
+
+
+class Creature:
+  var name
+
+  init(name):
+    $name ?= name
+  end
+
+  proc say(msg):
+    println($name, ": ", msg)
+  end
+
+  proc voice():
+    $say("hrhrhrhrhhr")
+  end
+end
+
+class Cow(Creature):
+  proc voice():
+    $say("Moooo...")
+  end
+end
+
+class Cat(Creature):
+  proc voice():
+    $say("mew :3")
+  end
+end
+
+proc main():
+  lst ?= new list()
+
+  lst -> add(new Cow("Bob"))
+  lst -> add(new Cow("Bill"))
+  lst -> add(new Cat("Joseph"))
+  lst -> add(new Cow("Kail"))
+  lst -> add(new Cat("Robert"))
+
+  for a in lst -> items:
+    if a is cat: println("Yeah, we found cat!") end
+    a -> voice()
+  end
+end

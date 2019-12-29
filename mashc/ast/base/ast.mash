@@ -1,0 +1,120 @@
+uses <classes\vector>
+uses <classes\list>
+
+class MashBaseAST:
+  protected:
+    var tokens, fp,
+        nodes
+
+  private:
+    var  lastTk
+
+  public:
+    proc Create
+
+    // Routines for tokens
+    proc Token,
+
+         TkNotNull,
+         TkValue,
+         TkCheck,
+         TkCheckType,
+
+         TkTokenValue,
+         TkWordValue,
+         TkStrValue
+end
+
+proc MashBaseAST::Create(tokens, fp):
+  $tokens ?= tokens
+  $fp ?= fp
+  $nodes ?= new list()
+  $lastTk ?= null
+end
+
+func MashBaseAST::Token(id):
+  if id < $tokens -> count():
+    return $tokens -> get(id)
+  else:
+    return null
+  end
+end
+
+func MashBaseAST::TkNotNull(tk):
+  if tk == null:
+    raise new Exception("Invalid construction at line " +
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+  end
+
+  return tk
+end
+
+func MashBaseAST::TkValue(tk):
+  if tk == null:
+    raise new Exception("Invalid construction at line " +
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+  end
+
+  return tk -> value
+end
+
+func MashBaseAST::TkCheck(tk):
+  if tk <> null:
+    return tk -> value
+  else:
+    return ""
+  end
+end
+
+func MashBaseAST::TkCheckType(tk):
+  if tk <> null:
+    return tk -> info
+  else:
+    return ttNull
+  end
+end
+
+func MashBaseAST::TkTokenValue(tk):
+  if tk == null:
+    raise new Exception("Invalid construction at line " +
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+  end
+
+  if tk -> info == ttToken:
+    return tk -> value
+  else:
+    raise new Exception("Here should be reserved word or operator (token: '" +
+                        tk -> value + "') at line " + (tk -> line + 1) +
+                        " at file '" + $fp + "'.")
+  end
+end
+
+func MashBaseAST::TkWordValue(tk):
+  if tk == null:
+    raise new Exception("Invalid construction at line " +
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+  end
+
+  if tk -> info == ttWord:
+    return tk -> value
+  else:
+    raise new Exception("Here should be name of something (token: '" +
+                        tk -> value + "') at line " + (tk -> line + 1) +
+                        " at file '" + $fp + "'.")
+  end
+end
+
+func MashBaseAST::TkStrValue(tk):
+  if tk == null:
+    raise new Exception("Invalid construction at line " +
+                        ($lastTk -> line + 1) + " at file '" + $fp + "'.")
+  end
+
+  if tk -> info == ttString:
+    return tk -> value
+  else:
+    raise new Exception("Here should be string (token: '" +
+                        tk -> value + "') at line " + (tk -> line + 1) +
+                        " at file '" + $fp + "'.")
+  end
+end

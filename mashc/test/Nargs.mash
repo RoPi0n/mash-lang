@@ -1,0 +1,14 @@
+uses crt
+
+func summ(a, b, [any]):
+  r ?= a + b
+  for i in any:
+    r += i
+  end
+
+  return r
+end
+
+proc main():
+  println(summ(1, 2, 3, 4, 5))
+end

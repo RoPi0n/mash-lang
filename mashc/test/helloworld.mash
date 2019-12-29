@@ -1,0 +1,3 @@
+uses crt
+
+println("Hello world!")

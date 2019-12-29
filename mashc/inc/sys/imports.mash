@@ -1,0 +1,18 @@
+/*
+ *  Import declarations for bf.lib
+ */
+
+import I2S              "bf.lib" "INTTOSTR"
+import F2S              "bf.lib" "FLOATTOSTR"
+import S2I              "bf.lib" "STRTOINT"
+import S2F              "bf.lib" "STRTOFLOAT"
+import Halt             "bf.lib" "HALT"
+import Sleep            "bf.lib" "SLEEP"
+import StrUpper         "bf.lib" "STRUPPER"
+import StrLower         "bf.lib" "STRLOWER"
+import Now              "bf.lib" "CURRENTDATETIME"
+import Randomize        "bf.lib" "RANDOMIZE"
+import Random           "bf.lib" "RANDOM"
+import RandomTo         "bf.lib" "RANDOMB"
+import TickCnt          "bf.lib" "TICKCNT"
+import GetSystemSlash   "bf.lib" "GETSYSTEMSLASH"

@@ -1,0 +1,12 @@
+uses crt
+
+proc main():
+  try:
+    a ?= 10
+    a /= 0
+  catch E:
+    println(E)
+    println("Error name: ", E -> ClassName)
+    println("Error message: ", E -> Message)
+  end
+end
