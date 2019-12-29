@@ -1,0 +1,60 @@
+/*
+ * Runnable method container class
+ */
+
+class Method:
+  public:
+    var Function
+
+    proc Create,
+         Call
+end
+
+proc Method::Create(func_pointer):
+  $Function ?= func_pointer
+end
+
+proc Method::Call([args]):
+  l ?= len(args) - 1
+  while l >= 0:
+    push args[l]
+    l--
+  end
+  call $Function
+end
+
+/*
+ *  Global method hooking (for SVM architecture)
+ *
+ *  Setting up hook:  h ?= new Hook(@MyOldMethod, MyNewMethod)
+ *  Unsetting hook:   h -> UnSet()
+ */
+
+class Hook:
+  var oldm,
+      oldref
+
+  proc Create,
+       Set,
+       UnSet
+
+  func GetHooked
+end
+
+proc Hook::Create(old_method, new_method):
+  $Set(old_method, new_method)
+end
+
+proc Hook::Set(old_method, new_method):
+  $oldref ?= old_method
+  $oldm ?= new(old_method)
+  old_method = new_method
+end
+
+proc Hook::UnSet():
+  $oldref = $oldm
+end
+
+func Hook::GetHooked():
+  return new Method($oldm)
+end

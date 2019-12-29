@@ -1,0 +1,145 @@
+import Crt.CursorBig       "crt.lib" "CURSORBIG"
+import Crt.CursorOff       "crt.lib" "CURSOROFF"
+import Crt.CursorOn        "crt.lib" "CURSORON"
+import Crt.DelLine         "crt.lib" "DELLINE"
+import Crt.GotoXY          "crt.lib" "GOTOXY32"
+import Crt.InsLine         "crt.lib" "INSLINE"
+import Crt.KeyPressed      "crt.lib" "KEYPRESSED"
+import Crt.ReadKey         "crt.lib" "READKEY"
+import Crt.Sound           "crt.lib" "SOUND"
+import Crt.WhereX32        "crt.lib" "WHEREX32"
+import Crt.WhereY32        "crt.lib" "WHEREY32"
+import Crt.Window32        "crt.lib" "WINDOW32"
+import Crt.ClrEOL          "crt.lib" "CLREOL"
+import Crt.ClrScr          "crt.lib" "CLRSCR"
+import Crt.GetDirectVideo  "crt.lib" "GETDIRECTVIDEO"
+import Crt.GetLastMode     "crt.lib" "GETLASTMODE"
+import Crt.SetTextAttr     "crt.lib" "SETTEXTATTR"
+import Crt.GetTextAttr     "crt.lib" "GETTEXTATTR"
+import Crt.GetWindMax      "crt.lib" "GETWINDMAX"
+import Crt.GetWindMaxX     "crt.lib" "GETWINDMAXX"
+import Crt.GetWindMaxY     "crt.lib" "GETWINDMAXY"
+import Crt.GetWindMin      "crt.lib" "GETWINDMIN"
+import Crt.GetWindMinX     "crt.lib" "GETWINDMINX"
+import Crt.GetWindMinY     "crt.lib" "GETWINDMINY"
+import Crt.GetCheckBreak   "crt.lib" "GETCHECKBREAK"
+import Crt.GetCheckEOF     "crt.lib" "GETCHECKEOF"
+import Crt.GetCheckSnow    "crt.lib" "GETCHECKSNOW"
+import Crt.TextColor       "crt.lib" "SETTEXTCOLOR"
+import Crt.TextBackground  "crt.lib" "SETTEXTBACKGROUND"
+
+
+{_ifdef_ argcounter}
+import _Print             "crt.lib" "PRINT"
+import _PrintLn           "crt.lib" "PRINTLN"
+{_end_}
+
+{_ifndef_ argcounter}
+import Print              "crt.lib" "PRINT"
+import PrintLn            "crt.lib" "PRINTLN"
+{_end_}
+
+import Input              "crt.lib" "INPUT"
+import InputLn            "crt.lib" "INPUTLN"
+
+// CRT modes
+word Crt.BW40           0            // 40x25 B/W on Color Adapter
+word Crt.CO40           1            // 40x25 Color on Color Adapter
+word Crt.BW80           2            // 80x25 B/W on Color Adapter
+word Crt.CO80           3            // 80x25 Color on Color Adapter
+word Crt.Mono           7            // 80x25 on Monochrome Adapter
+word Crt.Font8x8        256          // Add-in for ROM font
+
+// Foreground and background color constants
+word Crt.Black          0
+word Crt.Blue           1
+word Crt.Green          2
+word Crt.Cyan           3
+word Crt.Red            4
+word Crt.Magenta        5
+word Crt.Brown          6
+word Crt.LightGray      7
+
+// Foreground color constants
+word Crt.DarkGray       8
+word Crt.LightBlue      9
+word Crt.LightGreen     10
+word Crt.LightCyan      11
+word Crt.LightRed       12
+word Crt.LightMagenta   13
+word Crt.Yellow         14
+word Crt.White          15
+
+// Add-in for blinking
+word Crt.Blink          128
+
+//Some methods
+
+proc __printArray(arr):
+  _print("[")
+  l ?= len(arr)
+  for(i ?= 0; i < l; i++):
+    safe __print(arr[i])
+
+    if i + 1 < l:
+     _print(", ")
+    end
+  end
+  _print("]")
+end
+
+proc __print(obj):
+  switch typeof(obj):
+    case TypeNull:
+      _print("(null)")
+    end
+
+    case TypeClass:
+      if obj -> type == Exception:
+        _print("Exception <" + obj -> ClassName +
+                 "> with message: '" + obj -> Message + "'.")
+      else:
+        raise new Exception("I/O exception: invalid object type for output")
+      end
+    end
+
+    case TypeArray:
+      __printArray(obj)
+    end
+
+    else:
+      _print(obj)
+  end
+end
+
+proc print([args]):
+  for arg in args:
+    __print(arg)
+  end
+end
+
+proc println([args]):
+  for arg in args:
+    __print(arg)
+  end
+
+  _println("")
+end
+
+proc Crt.NormVideo():
+  Crt.TextColor(7)
+  Crt.TextBackGround(0)
+end
+
+func Crt.WhereX():
+  return Crt.WhereX32() % 256
+end
+
+func Crt.WhereY():
+  return Crt.WhereY32() % 256
+end
+
+proc Crt.Pause():
+  Crt.ReadKey()
+  pop
+end

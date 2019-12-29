@@ -1,0 +1,59 @@
+uses <strings>
+
+class String:
+  public:
+    var  Chars
+
+    proc Create,
+         Set,
+         Clear
+
+    func CompareTo,
+         Length
+
+    proc Concat
+end
+
+proc String::Create([args]):
+  switch len(args):
+    case 0:
+      $chars ?= ""
+    end
+
+    case 1:
+      $chars ?= ""
+      $Set(args[0])
+    end
+
+    else
+      raise new Exception("String::Create() -> Too much args!")
+  end
+end
+
+proc String::Set(value):
+  $chars = "" + value
+end
+
+proc String::Clear():
+  $chars = ""
+end
+
+func String::CompareTo(obj):
+  if typeof(obj) == typeClass:
+    if obj -> type == String:
+      return $chars == obj -> chars
+    else:
+      return false
+    end
+  else:
+    return $chars == obj
+  end
+end
+
+func String::Length():
+  return Len($chars)
+end
+
+func String::Concat(s):
+
+end

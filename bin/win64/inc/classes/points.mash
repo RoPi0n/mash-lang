@@ -1,0 +1,50 @@
+////////////////////////////////////////////////////////////////////////////////
+// Point's
+////////////////////////////////////////////////////////////////////////////////
+
+class point:
+  public:
+    var x, y
+
+    proc Create,
+         Set
+
+    func Compare
+end
+
+proc point::Create(x, y):
+  $x ?= new(x)
+  $y ?= new(y)
+end
+
+proc point::Set(x, y):
+  $x = x
+  $y = y
+end
+
+func point::Compare(p):
+  return ($x == p->x) & ($y == p->y)
+end
+
+class point3d:
+  public:
+    var x, y, z
+    proc Create, Set
+    func Compare
+end
+
+proc point3d::Create(x, y, z):
+  $x ?= new(x)
+  $y ?= new(y)
+  $z ?= new(z)
+end
+
+proc point3d::Set(x, y, z):
+  $x = x
+  $y = y
+  $z = z
+end
+
+func point3d::Compare(p):
+  return ($x == p->x) & ($y == p->y) & ($z == p->z)
+end
