@@ -1,0 +1,47 @@
+uses <bf>
+uses <crt>
+uses <coroutines>
+
+proc class::Proc1():
+  while true:
+    println("Hello world #1")
+    sleep(100)
+    gc()
+    $yield()
+  end
+end
+
+proc class::Proc2():
+  while true:
+    println("Hello world #2")
+    sleep(100)
+    gc()
+    $yield()
+  end
+end
+
+proc class::Proc3():
+  while true:
+    println("Hello world #3")
+    sleep(100)
+    gc()
+    $yield()
+  end
+end
+
+proc main():
+  cor3 ?= new TCoroutine(false, null)
+  cor3 -> Execute ?= class::Proc3
+
+  cor2 ?= new TCoroutine(false, cor3)
+  cor2 -> Execute ?= class::Proc2
+
+  cor1 ?= new TCoroutine(false, cor2)
+  cor1 -> Execute ?= class::Proc1
+
+  cor3 -> NextCoroutine ?= cor1
+
+  cor1 -> Resume()
+
+  InputLn()
+end

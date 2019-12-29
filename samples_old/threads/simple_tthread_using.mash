@@ -1,0 +1,24 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+class MyThreadClass(TThread):
+  var Param
+  proc Create, Execute
+end
+
+proc MyThreadClass::Create(Param):
+  $Param ?= Param
+  TThread::Create$(true)
+end
+
+proc MyThreadClass::Execute():
+  for(i ?= 0; i < 10; i++):
+    PrintLn(i, ": ", $Param)
+  end
+end
+
+proc main():
+  new MyThreadClass("Thread #2!")
+  InputLn()
+end

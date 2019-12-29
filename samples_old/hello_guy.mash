@@ -1,0 +1,8 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  PrintLn("Hello, what is your name?")
+  PrintLn("You're good guy, ", InputLn(), "!")
+  InputLn()
+end

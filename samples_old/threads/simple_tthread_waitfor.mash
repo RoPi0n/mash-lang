@@ -1,0 +1,19 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+class MyThread(TThread):
+  proc Execute
+end
+
+proc MyThread::Execute():
+  Sleep(1000)
+end
+
+proc main():
+  PrintLn("Started...")
+  Thr ?= new MyThread(true)
+  Thr -> WaitFor()
+  PrintLn("End!")
+  InputLn()
+end

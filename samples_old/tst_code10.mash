@@ -1,0 +1,16 @@
+uses <bf>
+uses <crt>
+uses <classes>
+
+proc main():
+  x ?= new List()
+  Randomize()
+
+  for(i ?= 0; i < 20; i++):
+    x -> NextIns(Random())
+  end
+
+  x -> ForEach(println)
+
+  inputln()
+end

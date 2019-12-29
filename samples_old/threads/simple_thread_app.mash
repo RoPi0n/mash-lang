@@ -1,0 +1,23 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+proc ThreadedProc(Arg):
+  for(i ?= 0; i < 10; i++):
+    PrintLn(i, ": ", Arg)
+  end
+end
+
+proc main():
+  //Async calling
+  Async(ThreadedProc, "Thread #1!")
+  Sleep(10)
+
+  //Sync calling
+  thr ?= Thread(ThreadedProc, "Thread #2!")
+  Sleep(10)
+  println("We created thread #2!")
+  thr -> Resume()
+
+  InputLn()
+end

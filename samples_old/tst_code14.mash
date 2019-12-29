@@ -1,0 +1,24 @@
+uses <bf>
+uses <crt>
+uses <algs>
+
+proc main():
+  x ?= new[3000000]
+  for (i ?= 0; i < 3000000; i++):
+    x[i] ?= copy(i)
+  end
+
+  t ?= TickCnt()
+  binary ?= BinSearch(x, -1)
+  t ?= TickCnt() - t
+  println("BinSearch: ", t, " ms.")
+
+  t ?= TickCnt()
+  interp ?= InterpolarSearch(x, -1)
+  t ?= TickCnt() - t
+  println("InterpolarSearch: ", t, " ms.")
+
+  println(binary)
+  println(interp)
+  inputln()
+end

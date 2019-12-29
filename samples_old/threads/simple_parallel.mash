@@ -1,0 +1,16 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+proc TestProc():
+  PrintLn("TestProc()")
+  Sleep(1000)
+end
+
+proc main():
+  PrintLn("Started...")
+  Thr ?= Async(TestProc)
+  Thr -> WaitFor()
+  PrintLn("End!")
+  InputLn()
+end

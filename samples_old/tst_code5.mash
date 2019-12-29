@@ -1,0 +1,26 @@
+uses <bf>
+uses <crt>
+
+proc main():
+  var a = 9
+
+  switch a:
+    case 9:
+      println("K1")
+      //break
+    end
+
+    case 10:
+      println("K2")
+    end
+
+    case 11:
+      println("K3")
+    end
+    else:
+      println("else!")
+  end
+
+  println(a)
+  inputln()
+end

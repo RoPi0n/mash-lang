@@ -1,0 +1,113 @@
+uses <crt>
+uses <algs>
+
+/*
+ *  Bubble sorting algorithm.
+ *  Written on Mash!
+ */
+
+proc BSort(array):
+  size ?= len(array)
+  for(i ?= 0; i < (size - 1); i++):
+    flag ?= true
+    for(j ?= 0; j < (size - 1); j++):
+      if array[j + 1] < array[j]:
+        tmp ?= array[j + 1]
+        array[j + 1] ?= array[j]
+        array[j] ?= tmp
+        flag ?= false
+      end
+    end
+
+    if flag:
+      break
+    end
+  end
+end
+
+/*
+ *  Print array into console.
+ *  Written on Mash!
+ */
+
+proc PrintArray(array):
+  for (i ?= 0; i < len(array); i++):
+    Print(array[i], " ")
+  end
+  PrintLn(" ")
+end
+
+
+proc main():
+  Randomize()
+  N ?= 100000
+
+  templatearr ?= new[N]
+  arr ?= new[N]
+
+  for (i ?= 0; i < N; i++):
+    templatearr[i] ?= N - i
+  end
+
+  // QuickSort
+  for (i ?= 0; i < N; i++):
+    arr[i] ?= templatearr[i]
+  end
+
+  t ?= TickCnt()
+  QuickSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("QuickSort: " + t + " ms.")
+
+  // ThreadedQuickSort
+  for (i ?= 0; i < N; i++):
+    arr[i] ?= templatearr[i]
+  end
+
+  t ?= TickCnt()
+  ThrQuickSort(arr, 2)
+  t ?= TickCnt() - t
+  PrintLn("ThreadedQuickSort: " + t + " ms.")
+
+  // RadixSort
+  /*for (i ?= 0; i < N; i++):
+    arr[i] ?= templatearr[i]
+  end
+
+
+  t ?= TickCnt()
+  RadixSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("RadixSort: " + t + " ms.") */
+
+  gc()
+
+  // HeapSort
+  /*arr ?= new[100000]
+
+  for (i ?= 0; i < 100000; i++):
+    arr[99999 - i] ?= copy(i)
+  end
+
+  t ?= TickCnt()
+  HeapSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("HeapSort: " + t + " ms.")
+  gc() */
+
+  // BubbleSort
+  /*arr ?= new[1000]
+
+  for (i ?= 0; i < 1000; i++):
+    arr[999 - i] ?= copy(i)
+  end
+
+  t ?= TickCnt()
+  BSort(arr)
+  t ?= TickCnt() - t
+  PrintLn("BubbleSort: " + t + " ms.")
+
+  gc() */
+
+  InputLn()
+end

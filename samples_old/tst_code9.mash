@@ -1,0 +1,23 @@
+uses <bf>
+uses <crt>
+
+class SampleClass:
+  var x, y
+  proc Create
+end
+
+proc SampleClass::Create(x, y):
+  $x ?= x
+  $y ?= y
+end
+
+proc main():
+  a ?= new SampleClass(10, 20)
+  b ?= a
+  c ?= new SampleClass(10, 20)
+
+  println(b2s( ptr(a) == ptr(b) ))
+  println(b2s( ptr(a) == ptr(c) ))
+
+  inputln()
+end

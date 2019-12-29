@@ -1,0 +1,26 @@
+import PrintLn "crt.lib" "PRINTLN"
+import InputLn "crt.lib" "INPUTLN"
+
+class c1:
+  var x, y
+  proc create
+  func f1
+end
+
+proc c1::create(x, y):
+  $x ?= x
+  $y ?= y
+end
+
+func c1::f1():
+  return $x + $y
+end
+
+proc main():
+  var x = new c1(10, 20)
+  println(x->f1())
+  InputLn()
+end
+
+__EntryPoint:
+  main()

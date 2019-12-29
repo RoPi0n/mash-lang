@@ -1,0 +1,19 @@
+uses <bf>
+uses <crt>
+uses <threads>
+
+proc MyThread(arg):
+  while true:
+    println(arg)
+    //sleep(1000)
+    gc()
+  end
+end
+
+proc main():
+  while true:
+    _println("Hello from main thread!")
+    //sleep(1000)
+    gc()
+  end
+end

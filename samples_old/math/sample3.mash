@@ -1,0 +1,83 @@
+uses <crt>
+uses <classes\points>
+uses <math\plots>
+uses <math\matrix>
+
+proc main():
+  plt ?= new math.plot(math.plot.Decart, 80)
+
+  cube ?= [ new point3d(-2, -2, 0),
+            new point3d(-2,  2, 0),
+            new point3d( 2,  2, 0),
+            new point3d( 2, -2, 0),
+
+            new point3d(-2, -2, 0),
+            new point3d( 2,  2, 0),
+
+            new point3d( 2, -2, 0),
+            new point3d(-2,  2, 0) ]
+
+  points ?= [ [-2, -2, 0],
+              [-2,  2, 0],
+              [ 2,  2, 0],
+              [ 2, -2, 0],
+
+              [-2, -2, 0],
+              [ 2,  2, 0],
+
+              [ 2, -2, 0],
+              [-2,  2, 0] ]
+
+  al   ?= 0
+  k    ?= 0.05
+
+  while true:
+    mrz ?= [ [cos(al), -sin(al), 0],
+             [sin(al),  cos(al), 0],
+             [      0,        0, 1] ]
+
+    mry ?= [ [cos(-al), 0, -sin(-al)],
+             [       0, 1,         0],
+             [sin(-al), 0,  cos(-al)] ]
+
+    mrx ?= [ [1,        0,       0],
+             [0,  cos(al), sin(al)],
+             [0, -sin(al), cos(al)] ]
+
+    rp ?= copy(points)
+
+    try:
+      rp ?= matrix.transp(matrix.multiply(mrx, matrix.transp(rp)))
+    catch E:
+      println(E)
+    end
+
+
+    for p in rp:
+      x0 ?= rp[0]
+      y0 ?= rp[1]
+      z0 ?= rp[2]
+
+      x ?= x0 / (z0 + 1)
+      y ?= y0 / (z0 + 1)
+
+      plt -> Next(x, y)
+      plt -> Dot(x, y)
+    end
+    plt -> Dot(0, 0)
+    plt -> Finish()
+
+    sleep(700 \ 24)
+    Graph.Clear()
+
+    if abs(k) >= 1:
+      k *= -1
+    end
+
+    al += k
+
+    gc()
+  end
+
+  inputln()
+end

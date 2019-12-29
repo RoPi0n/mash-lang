@@ -1,0 +1,6 @@
+uses <crt>
+
+proc main():
+  PrintLn("Hello world!")
+  InputLn()
+end

@@ -1,0 +1,18 @@
+uses <bf>
+uses <crt>
+
+proc recp(counter):
+  if counter < 1000000:
+    counter++
+    recp(counter)
+  end
+end
+
+proc main():
+  var t1 = TickCnt()
+  recp(0)
+  var t2 = TickCnt() - t1
+  println("Time: ", t2, " ms.")
+  gc()
+  inputln()
+end
