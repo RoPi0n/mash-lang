@@ -1,0 +1,33 @@
+uses crt
+
+class MyFuncs:
+  func mul(a, b):
+    return a * b
+  end
+
+  func middle(a, b):
+    return (a + b) / 2
+  end
+end
+
+func third([args]):
+  r ?= 0
+  for i in args:
+    r += i
+  end
+  return r
+end
+
+func doSomething(a, b, f):
+  return f(a, b)
+end
+
+proc main():
+  a ?= 10
+  b ?= 20
+  println(
+    doSomething(a, b, MyFuncs -> mul), ", ",
+    doSomething(a, b, MyFuncs -> middle), ", ",
+    doSomething(a, b, third)
+  )
+end
