@@ -8,22 +8,12 @@ uses graph
 
 enum MPlotType [ MPlot_Decart, MPlot_Polar ]
 const MPlot_DefScale -1
-
-MPlot -> Define()
+const MPLot_NULL "MPlot_NULL"
 
 class MPlot:
-  public:
-    var Decart, Polar, DefScale
-
   private:
     var MaxX, MaxY, StepsX,
         X0, Y0, DrawingInProcess
-
-    proc Define():
-      $Decart ?= MPlot_Decart
-      $Polar ?= MPlot_Polar
-      $DefScale ?= MPlot_DefScale
-    end
 
   public:
     var scType, scScale
@@ -48,18 +38,10 @@ class MPlot:
       $x0 ?= $MaxX \ 2
       $y0 ?= $MaxY \ 2
 
-      switch $scType:
-        case MPlot_Decart:
-          $DrawDecart()
-        end
-
-        case MPlot_Polar:
-          $DrawPolar()
-        end
-
-        default:
-          raise new Exception("Math.Plot::Create() -> Invalid plot type!")
-        end
+      if $scType == MPlot_Decart:
+        $DrawDecart()
+      else:
+        $DrawPolar()
       end
     end
 end
@@ -91,25 +73,6 @@ proc MPlot::DrawDecart():
 
     i++
   end
-
-  Graph -> SetColor(Graph_Blue)
-
-  Graph -> MoveTo($x0 + 10, $y0 - $scScale)
-  Graph -> OutText( str(1) )
-
-  Graph -> MoveTo($x0 + 10, $y0 + $scScale)
-  Graph -> OutText( str(-1) )
-
-  Graph -> MoveTo($x0 + $scScale, $y0 + 10)
-  Graph -> OutText( str(1) )
-
-  Graph -> MoveTo($x0 - $scScale, $y0 + 10)
-  Graph -> OutText( str(-1) )
-
-  Graph -> MoveTo($x0 + 10, $y0 + 10)
-  Graph -> OutText( str(0) )
-
-  Graph -> SetColor(Graph_Black)
 end
 
 proc MPlot::DrawPolar():
@@ -133,23 +96,6 @@ proc MPlot::DrawPolar():
 
   Graph -> MoveTo($x0 + 2000, $y0 + 2000)
   Graph -> LineTo($x0 - 2000, $y0 - 2000)
-
-  Graph -> SetColor(Graph_Blue)
-
-  Graph -> MoveTo($x0 + 10, $y0 - $scScale)
-  Graph -> OutText( str(1) )
-
-  Graph -> MoveTo($x0 + 10, $y0 + $scScale)
-  Graph -> OutText( str(-1) )
-
-  Graph -> MoveTo($x0 + $scScale, $y0 + 10)
-  Graph -> OutText( str(1) )
-
-  Graph -> MoveTo($x0 - $scScale, $y0 + 10)
-  Graph -> OutText( str(-1) )
-
-  Graph -> MoveTo($x0 + 10, $y0 + 10)
-  Graph -> OutText( str(0) )
 
   Graph -> SetColor(Graph_Black)
 end
@@ -199,35 +145,19 @@ proc MPlot::Finish():
 end
 
 proc MPlot::Next(i, res):
-  switch $scType:
-    case MPlot -> Decart:
-      $NextPoint(i, res)
-    end
-
-    case MPlot -> Polar:
-      $NextPolar(res, i)
-    end
-
-    default:
-      raise new Exception("MPlot::Next() -> Invalid plot type!")
-    end
+  if $scType == MPlot_Decart:
+    $NextPoint(i, res)
+  else:
+    $NextPolar(res, i)
   end
 end
 
 proc MPlot::Dot(i, res):
-  switch $scType:
-    case MPlot -> Decart:
-      Graph -> FillEllipse($OffsetX(i), $OffsetY(res), 2, 2)
-    end
-
-    case MPlot -> Polar:
-      cn ?= cmath -> uniteViaExp(i, res)
-      Graph -> FillEllipse($OffsetX(cn -> Re), $OffsetY(cn -> Im), 2, 2)
-    end
-
-    default:
-      raise new Exception("MPlot::Dot() -> Invalid plot type!")
-    end
+  if $scType == MPlot_Decart:
+    Graph -> FillEllipse($OffsetX(i), $OffsetY(res), 2, 2)
+  else:
+    cn ?= cmath -> uniteViaExp(i, res)
+    Graph -> FillEllipse($OffsetX(cn -> Re), $OffsetY(cn -> Im), 2, 2)
   end
 end
 
@@ -241,17 +171,9 @@ proc MPlot::Function(fun, from, to, step):
       if r == null:
         $BreakSpline()
       else:
-        if $DrawingInProcess | first:
-          first = false
-          $Next(i, r)
-        else:
-          if ~first:
-            $Next(i, r)
-            Graph -> Ellipse(Graph -> GetX(), Graph -> GetY(), 0, 360, 4, 4)
-          end
-        end
+        $Next(i, r)
       end
-    catch E: // Catching math exception
+    catch E:
       $BreakSpline()
     end
 
@@ -263,17 +185,9 @@ proc MPlot::Function(fun, from, to, step):
 end
 
 proc MPlot::Draw(fun):
-  switch $scType:
-    case MPlot -> Decart:
-      $Function(fun, -$stepsX, $stepsX, 0.01)
-    end
-
-    case MPlot -> Polar:
-      $Function(fun, 0, 90, 0.01)
-    end
-
-    default:
-      raise new Exception("MPlot::Draw() - Invalid plot type!")
-    end
+  if $scType == MPlot_Decart:
+    $Function(fun, -$stepsX, $stepsX, 0.01)
+  else:
+    $Function(fun, 0, 90, 0.01)
   end
 end

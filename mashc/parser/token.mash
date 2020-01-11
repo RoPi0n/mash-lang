@@ -74,14 +74,14 @@ var MashTokens = [
 
     MashOperatorsTokens = [
       "+", "-", "*", "/", "\", "%", "&", "|", "^",
-      "?=", "=", "@=",
+      "?=", "=", "@=", ".",
 
       "<", ">", "==", ">=", "<=",
       "+=", "-=", "*=", "/=", "\=", "%=",
       "&=", "|=", "^=", "<<=", ">>=", "<>",
       "in", "..", "is"],
 
-    MashOperationToken = ["++", "--", "?", "@", "~", "-", "new"],
+    MashOperationToken = ["++", "--", "?", "@", "~", "-", "new", "."],
 
     // For making correct expression AST
     MashOperationsPriority = [

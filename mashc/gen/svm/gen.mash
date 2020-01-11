@@ -485,9 +485,18 @@ proc GeneratorSVM::NextNode(node, vars, mname):
           end
         end
       else:
-        $LazyGen -> Add(node -> R)
-        $LazyGen -> Add(node -> L)
-        $LazyGen -> Add($GenOperation(node -> Op -> Op -> value, true))
+        if node -> Op -> Op -> value == ".":
+          if node -> R -> type == MashASTP_Call:
+            node -> R -> Args -> Objects -> Insert(node -> L, 0)
+            $LazyGen -> Add(node -> R)
+          else:
+            raise new Exception("Invalid operations with '.'!")
+          end
+        else:
+          $LazyGen -> Add(node -> R)
+          $LazyGen -> Add(node -> L)
+          $LazyGen -> Add($GenOperation(node -> Op -> Op -> value, true))
+        end
       end
     end
 

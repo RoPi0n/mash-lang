@@ -38,10 +38,7 @@ func system_op_range(from, to):
 end
 
 func system_op_in(left, right):
-  for x in right:
-    if x == left: return true end
-  end
-  return false
+  return right.indexof(left) <> null
 end
 
 func system_op_argsarr(argcount):
@@ -156,26 +153,6 @@ proc gc():
   inline "gc"
 end
 
-func max([args]):
-  if len(args) > 0:
-    r ?= args[0]
-    for x in args:
-      if x > r: r = x end
-    end
-    return r
-  else: return null end
-end
-
-func min([args]):
-  if len(args) > 0:
-    r ?= args[0]
-    for x in args:
-      if x < r: r = x end
-    end
-    return r
-  else: return null end
-end
-
 proc Ord(char):
   inline "push ord.char"
   inline "chord"
@@ -282,4 +259,14 @@ end
 
 func check(cond, rtrue, rfalse):
   if cond: return rtrue else: return rfalse end
+end
+
+func between(value, left, right):
+  if left > right:
+    _ ?= left
+    right ?= left
+    left ?= _
+  end
+
+  return ((value > left) & (value < right)) | (value in [left, right])
 end

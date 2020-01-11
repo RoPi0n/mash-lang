@@ -67,6 +67,7 @@ end
 
 proc QuickSort(arr):
   FromToQSort(arr, 0, len(arr) - 1)
+  return arr
 end
 
 

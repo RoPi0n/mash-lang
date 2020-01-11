@@ -6,10 +6,8 @@ inline "pushcp __init__end__"
 inline "jp"
 inline "__init__:"
 
-proc __GetVM_Null__(): inline "pushn" end
-
 sysslash ?= GetSystemSlash()
-null ?= __GetVM_Null__()
+null ?= "<null>"
 
 Params ?= null
 __initproc__()

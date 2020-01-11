@@ -1,0 +1,14 @@
+uses math.plots
+uses crt
+
+func Butterfly(fi):
+  return Exp( sin(fi) ) -
+         2 * cos(4 * fi) +
+         sin( (2 * fi - m_pi) / 24 )
+end
+
+proc main():
+  p ?= new MPlot(MPlot_Polar, MPlot_DefScale)
+  p -> Draw(Butterfly)
+  inputln()
+end

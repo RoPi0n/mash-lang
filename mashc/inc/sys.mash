@@ -5,6 +5,7 @@
 
 uses sys.imports
 uses sys.base
+uses sys.arrays
 uses sys.poly
 uses sys.initialize
 uses sys.exceptions

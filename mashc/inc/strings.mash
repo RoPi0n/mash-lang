@@ -2,45 +2,34 @@
  *  Functions for strings
  */
 
-proc s_Del(s, from, count):
-  inline "push s_del.from"
-  inline "push s_del.count"
-  inline "push s_del.s"
+proc Cut(s, from, count):
+  inline "push cut.from"
+  inline "push cut.count"
+  inline "push cut.s"
   inline "strd"
+  return s
 end
 
-func s_Copy(s, from, count):
-  r ?= copy(s)
-  s_del(r, from + count, len(r))
-  if from > 0:
-    s_del(r, 0, from)
-  end
+func SubStr(s, from, count):
+  l ?= s.len()
+  r ?= s.copy().cut(from + count, l)
+  if from > 0: r.cut(0, from) end
   return r
 end
 
-func s_LeftStr(s, count):
-  return s_copy(s, 0, count)
+func LeftStr(s, count):
+  return s.SubStr(0, count)
 end
 
-func s_RightStr(s, count):
-  return s_copy(s, len(s) - count, count)
-end
-
-// String reverse function
-
-func s_Reverse(s):
-  t ?= ""
-  for c back s:
-    t += c
-  end
-  return t
+func RightStr(s, count):
+  return s.SubStr(s.len() - count, count)
 end
 
 // Pos & PosEx
 
-func s_Pos(sb, s):
-  len_s ?= len(s)
-  len_sb ?= len(sb)
+func SubPos(s, sb):
+  len_s ?= s.len()
+  len_sb ?= sb.len()
 
   founded ?= false
 
@@ -48,7 +37,7 @@ func s_Pos(sb, s):
   while p < len_s:
     if s[p] == sb[0]:
       founded = true
-      t ?= copy(p)
+      t ?= p.copy()
 
       for c in sb:
         if s[t] <> c:
@@ -70,9 +59,9 @@ func s_Pos(sb, s):
 end
 
 
-func s_PosEx(sb, s, num):
-  len_s ?= len(s)
-  len_sb ?= len(sb)
+func SubPosEx(s, sb, num):
+  len_s ?= s.len()
+  len_sb ?= sb.len()
 
   founded ?= false
 
@@ -80,7 +69,7 @@ func s_PosEx(sb, s, num):
   while p < len_s:
     if s[p] == sb[0]:
       founded = true
-      t ?= copy(p)
+      t ?= p.copy()
 
       for c in sb:
         if s[t] <> c:
@@ -113,7 +102,7 @@ func s_TrimLeft(s):
 
   while len(r) > 0:
     if r[0] == " ":
-      s_del(r, 0, 1)
+      r.Cut(0, 1)
     else:
       break
     end
@@ -125,10 +114,11 @@ end
 
 func s_TrimRight(s):
   r ?= copy(s)
-
-  while len(r) > 0:
-    if r[len(r) - 1] == " ":
-      s_del(r, len(r) - 1, 1)
+  l ?= r.len()
+  while l > 0:
+    if r[l - 1] == " ":
+      r.Cut(l - 1, 1)
+      l--
     else:
       break
     end
@@ -138,8 +128,8 @@ func s_TrimRight(s):
 end
 
 
-func s_Trim(s):
-  r ?= copy(s)
+func Trim(s):
+  r ?= s.copy()
   r = s_trimright(r)
   r = s_trimleft(r)
   return r
@@ -149,24 +139,25 @@ end
 
 enum s_ReplaceFlags [srfReplaceAll, srfIgnoreCase]
 
-func s_Replace(s, from, to, flags):
+func Replace(s, from, to, flags):
   r ?= copy(s)
 
-  s_Replace.DoIt:
-
+  p ?= 0
+  while p <> null:
     if srfIgnoreCase in flags:
-      p ?= s_Pos(StrUpper(from), StrUpper(r))
+      p ?= StrUpper(r).SubPos(StrUpper(from))
     else:
-      p ?= s_Pos(from, r)
+      p ?= r.SubPos(from)
     end
 
-    if p >= 0:
-      r = s_Copy(r, 0, p) + to + s_Copy(r, p + len(from), len(r))
+    if p <> null:
+      r = r.SubStr(0, p) + to + r.SubStr(p + from.len(), r.len())
 
-      if srfReplaceAll in flags:
-        jump s_Replace.DoIt
+      if ~(srfReplaceAll in flags):
+        break
       end
     end
+  end
 
   return r
 end
