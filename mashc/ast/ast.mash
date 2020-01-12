@@ -218,14 +218,14 @@ func MashAST::NextNode(token_id):
 
   switch token -> info:
     case ttToken:
-      if token -> value in MashExprTokens:
+      if token -> short in MashExprTokensShort:
         return $NextExpr(token_id)
       else:
         // Here we should make structures from tokens
-        switch token -> value:
+        switch token -> short:
 
           // Import
-          case "import":
+          case tkImport:
             blk ?= new MashASTB_Import($TkWordValue($token(token_id + 1)),
                                        $TkStrValue($token(token_id + 2)),
                                        $TkStrValue($token(token_id + 3)))
@@ -255,7 +255,7 @@ func MashAST::NextNode(token_id):
           end
 
           // Import
-          case "api":
+          case tkAPI:
             blk ?= new MashASTB_RegAPI( $TkWordValue($token(token_id + 1)),
                                         $TkValue($TkNotNull($token(token_id + 2))) )
 
@@ -300,7 +300,7 @@ func MashAST::NextNode(token_id):
           end
 
           // Uses
-          case "uses":
+          case tkUses:
             token_id++
             ExprTokens ?= $NextExprTokens(token_id)
             $uses_lst -> add(new MashASTB_Uses(ExprTokens))
@@ -308,14 +308,14 @@ func MashAST::NextNode(token_id):
           end
 
           // Inline
-          case "inline":
+          case tkInline:
             block ?= new MashASTB_Inline($TkStrValue($token(token_id + 1)))
             token_id += 2
             return block
           end
 
           // Const
-          case "const":
+          case tkConst:
             if $TkCheck($token(token_id + 2)) == "stream":
               tk ?= $TkNotNull($token(token_id + 1))
               blk ?= new MashASTB_Const($TkWordValue(tk),
@@ -349,7 +349,7 @@ func MashAST::NextNode(token_id):
           end
 
           // Proc
-          case "proc":
+          case tkProc:
             if $TkValue($token(token_id + 2)) == "::": //class method
               is_class_method ?= true
               class_name ?= $TkWordValue($token(token_id + 1))
@@ -430,7 +430,7 @@ func MashAST::NextNode(token_id):
           end
 
           // Func
-          case "func":
+          case tkFunc:
             if $TkValue($token(token_id + 2)) == "::": //class method
               is_class_method ?= true
               class_name ?= $TkWordValue($token(token_id + 1))
@@ -511,7 +511,7 @@ func MashAST::NextNode(token_id):
           end
 
           // End
-          case "end":
+          case tkEnd:
             if $blockObjectsVect -> size() > 0:
               $blockObjectsVect -> rem_back()
             end
@@ -526,7 +526,7 @@ func MashAST::NextNode(token_id):
           end
 
           // If
-          case "if":
+          case tkIf:
             token_id++
             Expr ?= $NextExpr(token_id)
             if $TkTokenValue($token(token_id)) == ":":
@@ -540,7 +540,7 @@ func MashAST::NextNode(token_id):
           end
 
           // Else
-          case "else":
+          case tkElse:
             if $TkValue($token(token_id + 1)) <> ":":
               raise new Exception("Missed ':' in declaration of else statement at line " +
                                   (token -> line + 1) + " at file '" +
@@ -571,7 +571,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "for":
+          case tkFor:
             token_id++
             // for (<expr>; <expr>; <expr>):
             /*if $TkValue($token(token_id)) == "(":
@@ -636,7 +636,7 @@ func MashAST::NextNode(token_id):
           end
 
           // while
-          case "while":
+          case tkWhile:
             token_id++
 
             tk ?= $TkNotNull($token(token_id))
@@ -659,7 +659,7 @@ func MashAST::NextNode(token_id):
 
 
           // whilst
-          case "whilst":
+          case tkWhilst:
             token_id++
 
             tk ?= $TkNotNull($token(token_id))
@@ -680,23 +680,23 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "return":
+          case tkReturn:
             token_id++
             Expr ?= $NextExpr(token_id)
             return new MashASTB_Return(Expr)
           end
 
-          case "break":
+          case tkBreak:
             token_id++
             return new MashASTB_Break
           end
 
-          case "continue":
+          case tkContinue:
             token_id++
             return new MashASTB_Continue
           end
 
-          case "switch":
+          case tkSwitch:
             token_id++
 
             if $TkCheck($token(token_id)) == ":":
@@ -716,7 +716,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "case":
+          case tkCase:
             token_id++
 
             if $TkCheck($token(token_id)) == ":":
@@ -736,7 +736,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "default":
+          case tkDefault:
             token_id++
             if $TkTokenValue($token(token_id)) == ":":
               token_id++
@@ -749,7 +749,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "launch":
+          case tkLaunch:
             token_id++
             if $TkTokenValue($token(token_id)) == ":":
               token_id++
@@ -762,7 +762,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "async":
+          case tkAsync:
             token_id++
 
             if $TkCheck($token(token_id)) == ":":
@@ -784,14 +784,14 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "wait":
+          case tkWait:
             token_id++
             Expr ?= $NextExpr(token_id)
             return new MashASTB_Wait(Expr)
           end
 
           // Class block
-          case "class":
+          case tkClass:
             token_id++
 
             if $TkCheck($token(token_id)) == ":":
@@ -852,7 +852,7 @@ func MashAST::NextNode(token_id):
           end
 
           // Class field
-          case "var":
+          case tkVar:
             token_id++
 
             blk ?= new MashASTB_ClassField()
@@ -884,7 +884,7 @@ func MashAST::NextNode(token_id):
             return blk
           end
 
-          case "public":
+          case tkPublic:
             token_id++
             if $TkTokenValue($token(token_id)) == ":":
               token_id++
@@ -896,7 +896,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "protected":
+          case tkProtected:
             token_id++
             if $TkTokenValue($token(token_id)) == ":":
               token_id++
@@ -908,7 +908,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "private":
+          case tkPrivate:
             token_id++
             if $TkTokenValue($token(token_id)) == ":":
               token_id++
@@ -920,7 +920,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "try":
+          case tkTry:
             token_id++
             if $TkTokenValue($token(token_id)) == ":":
               token_id++
@@ -932,7 +932,7 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "catch":
+          case tkCatch:
             token_id++
 
             forVar ?= $TkWordValue($TkNotNull($token(token_id)))
@@ -973,19 +973,19 @@ func MashAST::NextNode(token_id):
             end
           end
 
-          case "raise":
+          case tkRaise:
             token_id++
             Expr ?= $NextExpr(token_id)
             return new MashASTB_Raise(Expr)
           end
 
-          case "safe":
+          case tkSafe:
             token_id++
             Expr ?= $NextExpr(token_id)
             return new MashASTB_Safe(Expr)
           end
 
-          case "enum":
+          case tkEnum:
             token_id++
             EnumName ?= $TkWordValue($TkNotNull($token(token_id)))
             token_id++
@@ -1115,15 +1115,15 @@ func MashAST::NextExprTokens(token_id):
     tk ?= $token(token_id)
 
     if tk <> null:
-      if ((tk -> value in MashExprTokens) & (tk -> info == ttToken)) |
+      if ((tk -> short in MashExprTokensShort) & (tk -> info == ttToken)) |
          (tk -> info in [ttWord, ttDigit, ttString]):
 
-        switch tk -> value:
-          case "(":
+        switch tk -> short:
+          case tkOBr:
             br_cnt++
           end
 
-          case ")":
+          case tkCBr:
             br_cnt--
           end
         end
@@ -1170,7 +1170,7 @@ func MashAST::NextParam(token_id):
     tk ?= $token(token_id)
 
     if tk <> null:
-      if (tk -> value in MashParamsTokens) &
+      if (tk -> short in MashParamsTokensShort) &
          (tk -> info == ttToken) |
          (tk -> info == ttWord):
         p -> add(tk)

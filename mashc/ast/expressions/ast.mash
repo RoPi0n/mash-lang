@@ -73,7 +73,7 @@ func MashExpressionAST::PrepareNodes(nodes):
   while i >= 0:
     n ?= nodes -> get(i)
     if n -> type == MashASTP_Operator:
-      if n -> Op -> value in MashOperationLeft:
+      if n -> Op -> short in MashOperationLeftShort:
         founded ?= false
         if i == 0:
           founded = true
@@ -101,7 +101,7 @@ func MashExpressionAST::PrepareNodes(nodes):
   while i < nodes -> count():
     n ?= nodes -> get(i)
     if n -> type == MashASTP_Operator:
-      if n -> Op -> value in MashOperationRight:
+      if n -> Op -> short in MashOperationRightShort:
         founded ?= false
         if i + 1 == nodes -> count():
           founded = true
@@ -140,7 +140,7 @@ func MashExpressionAST::MakeTree(nodes):
     i ?= nodes -> count() - 1
     for n back nodes -> items:
       if n -> type == MashASTP_Operator:
-        if n -> Op -> value in MashOperationsPriority[op_lvl]:
+        if n -> Op -> short in MashOperationsPriorityShort[op_lvl]:
           op ?= i
           op_obj ?= n
           break
@@ -188,12 +188,12 @@ func MashExpressionAST::NextPrimitive(token_id):
   token ?= $token(token_id)
   $lastTk ?= token
 
-  if (token -> info in [ttDigit, ttString, ttWord]) | (token -> value == "new"):
+  if (token -> info in [ttDigit, ttString, ttWord]) | (token -> short == tkNew):
     Obj ?= null
 
     MashExpressionAST_NextPrimitive_Lp:
 
-    if ($TkCheck($token(token_id + 1)) == "->") & (token -> info == ttWord):
+    if ($TkCheckShort($token(token_id + 1)) == tkByPtr) & (token -> info == ttWord):
       if Obj == null:
         Obj ?= new MashASTP_ObjectByRef()
         Obj -> ObjPath -> Add(new MashASTP_SimpleObject(token))
@@ -203,7 +203,7 @@ func MashExpressionAST::NextPrimitive(token_id):
         Obj ?= NewObj
       end
 
-      while ($TkCheck($token(token_id + 1)) == "->") &
+      while ($TkCheckShort($token(token_id + 1)) == tkByPtr) &
             ($TkCheckType($token(token_id + 2)) == ttWord):
         token_id += 2
         tk ?= $token(token_id)
@@ -212,15 +212,15 @@ func MashExpressionAST::NextPrimitive(token_id):
       end
 
       tk ?= $token(token_id + 1)
-      if $TkCheck(tk) == "->":
+      if $TkCheckShort(tk) == tkByPtr:
         raise new Exception("Invalid token after -> at line " + (tk -> line + 1) +
                             " at file '" + $fp + "'.")
       end
     end
 
     if Obj == null:
-      if token -> value == "new":
-        if $TkCheck($token(token_id + 1)) == "[":
+      if token -> short == tkNew:
+        if $TkCheckShort($token(token_id + 1)) == tkORBr:
           Obj ?= new MashASTP_SimpleObject(token)
         else:
           Obj ?= new MashASTP_Operator(token)
@@ -230,7 +230,7 @@ func MashExpressionAST::NextPrimitive(token_id):
       end
     end
 
-    if $TkCheck($token(token_id + 1)) == "(":
+    if $TkCheckShort($token(token_id + 1)) == tkOBr:
       token_id++
       ArgsBraces ?= $NextBraces(token_id)
       ArgsEnum ?= $MakeEnum(ArgsBraces)
@@ -239,7 +239,7 @@ func MashExpressionAST::NextPrimitive(token_id):
       Obj ?= ObjCall
     end
 
-    if $TkCheck($token(token_id + 1)) == "[":
+    if $TkCheckShort($token(token_id + 1)) == tkORBr:
       token_id++
       IndexesEnum ?= new MashASTP_Enum()
 
@@ -249,7 +249,7 @@ func MashExpressionAST::NextPrimitive(token_id):
         $astvect -> push_back(Index)
         IndexesEnum -> Objects -> Add(Index)
 
-        if $TkCheck($token(token_id + 1)) == "[":
+        if $TkCheckShort($token(token_id + 1)) == tkORBr:
           token_id++
         else:
           break
@@ -260,7 +260,7 @@ func MashExpressionAST::NextPrimitive(token_id):
       Obj ?= ObjIndexed
     end
 
-    if $TkCheck($token(token_id + 1)) in ["->", "(", "["]:
+    if $TkCheckShort($token(token_id + 1)) in [tkByPtr, tkOBr, tkORBr]:
       jump MashExpressionAST_NextPrimitive_Lp
     end
 
@@ -268,8 +268,8 @@ func MashExpressionAST::NextPrimitive(token_id):
   else:
     // Check for operators
     if token -> info == ttToken:
-      switch token -> value:
-        case "(":
+      switch token -> short:
+        case tkOBr:
           ExprTokens ?= $NextBraces(token_id)
           Expr ?= new MashExpressionAST(ExprTokens, $fp, $astvect)
           //Expr -> Process()
@@ -277,7 +277,7 @@ func MashExpressionAST::NextPrimitive(token_id):
           return Expr
         end
 
-        case "[":
+        case tkORbr:
           return $MakeEnum($NextRectBraces(token_id))
         end
 
@@ -303,12 +303,12 @@ func MashExpressionAST::NextBraces(token_id):
     end
 
     if tk -> info <> ttEndOfLine:
-      switch tk -> value:
-        case "(":
+      switch tk -> short:
+        case tkOBr:
           brace_cnt++
         end
 
-        case ")":
+        case tkCBr:
           brace_cnt--
         end
       end
@@ -336,12 +336,12 @@ func MashExpressionAST::NextRectBraces(token_id):
     end
 
     if tk -> info <> ttEndOfLine:
-      switch tk -> value:
-        case "[":
+      switch tk -> short:
+        case tkORBr:
           brace_cnt++
         end
 
-        case "]":
+        case tkCRBr:
           brace_cnt--
         end
       end
@@ -364,28 +364,28 @@ func MashExpressionAST::MakeEnum(tokens):
   rbr_cnt ?= 0
 
   for tk in tokens -> items:
-    switch tk -> value:
-      case "(":
+    switch tk -> short:
+      case tkOBr:
         br_cnt++
         Expr -> add(tk)
       end
 
-      case ")":
+      case tkCBr:
         br_cnt--
         Expr -> add(tk)
       end
 
-      case "[":
+      case tkORBr:
         rbr_cnt++
         Expr -> add(tk)
       end
 
-      case "]":
+      case tkCRBr:
         rbr_cnt--
         Expr -> add(tk)
       end
 
-      case ",":
+      case tkComma:
         if (br_cnt == 0) & (rbr_cnt == 0):
           Itm ?= new MashExpressionAST(Expr, $fp, $astvect)
           $astvect -> push_back(Itm)

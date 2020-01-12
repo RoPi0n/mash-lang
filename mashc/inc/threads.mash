@@ -1,8 +1,6 @@
 // Mash lang threads unit
 // Code version: 1.1
 
-uses classes.vector
-
 // common methods
 
 proc thr_create(method, arg):
@@ -131,11 +129,22 @@ class TThreadCall(TThread):
   end
 
   proc Execute():
-    while $Args -> Size() > 0:
-      $Args -> pop_back()
+    $args.len()
+
+    inline "peek global.arg_counter"
+    inline "pop"
+
+    for arg back $Args:
+      x ?= arg
+      inline "push tthreadcall__execute.x"
     end
 
-    $Method()
+    $Method
+    inline "jc"
+  end
+
+  func Clone():
+    return new TThreadCall($Method, $Args, false)
   end
 end
 
@@ -144,17 +153,9 @@ end
 ////////////////////////////////////////////////////////////////////////////////
 
 func go(method, [args]):
-  args_vect ?= new vector()
-  for arg in args:
-    args_vect -> push_back(arg)
-  end
-  return new TThreadCall(method, args_vect, true)
+  return new TThreadCall(method, args, true)
 end
 
-func Thread(method, [args]):
-  args_vect ?= new vector()
-  for arg in args:
-    args_vect -> push_back(arg)
-  end
-  return new TThreadCall(method, args_vect, false)
+func thread(method, [args]):
+  return new TThreadCall(method, args, false)
 end

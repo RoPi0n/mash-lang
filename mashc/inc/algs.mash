@@ -2,6 +2,8 @@
  *  That module contains implementation's of some algorithms.
  */
 
+uses threads
+
 proc ReverseArray(arr):
   l ?= len(arr)
   i ?= 0
@@ -41,13 +43,16 @@ func Partition(arr, low, high):
   i ?= low - 1
   pivot ?= arr[high]
 
-  for j in low..high:
+  j ?= low.copy()
+  while j < high:
     if arr[j] < pivot:
       i++
       _ ?= arr[i]
       arr[i] ?= arr[j]
       arr[j] ?= _
     end
+
+    j++
   end
 
   _ ?= arr[i + 1]
@@ -70,6 +75,25 @@ proc QuickSort(arr):
   return arr
 end
 
+proc ThreadedFromToQSort(arr, low, high, lvl):
+  if low < high:
+    pi ?= partition(arr,low,high)
+    if lvl > 0:
+      L ?= ThreadedFromToQSort.go(arr, low, pi - 1, lvl - 1)
+      R ?= ThreadedFromToQSort.go(arr, pi + 1, high, lvl - 1)
+      L -> WaitFor()
+      R -> WaitFor()
+    else:
+      safe FromToQSort(arr, low, pi - 1)
+      safe FromToQSort(arr, pi + 1, high)
+    end
+  end
+end
+
+proc ThreadedQuickSort(arr, threads):
+  ThreadedFromToQSort(arr, 0, len(arr) - 1, threads \ 2)
+  return arr
+end
 
 /*
  *  Binary search

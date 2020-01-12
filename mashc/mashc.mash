@@ -8,10 +8,12 @@ proc main():
 
   if ParamCount > 2:
     try:
+      ticksBefore ?= copy(TickCnt())
       cmp ?= new MashCompiler(ParamList[1], ParamList[2])
       cmp -> Compile()
 
       println("Success.")
+      println("Time elapsed: ", (TickCnt() - ticksBefore) / 1000, " sec.")
     catch E:
       println("[Error]: ", E -> Message)
       halt()

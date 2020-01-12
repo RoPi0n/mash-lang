@@ -17,7 +17,7 @@ enum MashTokenShort [
       tkCMSep, tkBegin, tkComma, tkDot, tkRange, tkIs,
 
       tkAddSym, tkSubSym, tkMulSym, tkDivSym, tkIDivSym, tkModSym,
-      tkAndSym, tkOrSym, tkXorSym, tkNotSym,
+      tkAndSym, tkOrSym, tkXorSym, tkNotSym, tkSHLSym, tkSHRSym,
 
       tkIf, tkElse, tkSwitch, tkCase, tkDefault,
       tkFor, tkIn, tkBack, tkBreak, tkContinue,
@@ -27,10 +27,11 @@ enum MashTokenShort [
       tkTry, tkCatch, tkRaise,
       tkLaunch, tkAsync, tkWait,
       tkConst, tkEnum,
-      tkInline,
       tkImport, tkAPI, tkUses,
+      tkInline,
       tkEnd, tkReturn,
-      tkSafe]
+      tkSafe,
+      tkNull, tkSpecial]
 
 var MashTokens = [
       "proc", "func",
@@ -44,7 +45,7 @@ var MashTokens = [
       "?=", "=", "@=", "?", "@",
       "::", ":", ",", ".", "..", "is",
 
-      "+", "-", "*", "/", "\", "%", "&", "|", "^", "~",
+      "+", "-", "*", "/", "\", "%", "&", "|", "^", "~", "<<", ">>",
 
       "if", "else",
       "switch", "case", "default",
@@ -60,7 +61,7 @@ var MashTokens = [
       "safe"],
 
     MashExprTokens = [
-      "+", "-", "*", "/", "\", "%", "&", "|", "^", "~",
+      "+", "-", "*", "/", "\", "%", "&", "|", "^", "~", "<<", ">>",
       "?=", "=", "@=", "?", "@",
 
       "==", ">=", "<=", "++", "--",
@@ -70,10 +71,20 @@ var MashTokens = [
       "(", ")", "[", "]", "<", ">",
       "->", "$", "this", "in", "..", "is", ",", ".", "new"],
 
+    MashExprTokensShort = [
+      tkAddSym, tkSubSym, tkMulSym, tkDivSym, tkIDivSym, tkModSym,
+      tkAndSym, tkOrSym, tkXorSym, tkNotSym, tkSHLSym, tkSHRSym,
+      tkAssign, tkMov, tkMovBP,
+      tkGVBP, tkGP, tkEq, tkBEq, tkSEq, tkInc, tkDec, tkAdd, tkSub,
+      tkMul, tkDiv, tkIDiv, tkMod, tkAnd, tkOr, tkXor, tkSHL, tkSHR, tkNEq,
+      tkOBr, tkCBr, tkORBr, tkCRBr, tkSm, tkBg,
+      tkByPtr, tkThis, tkSpecial, tkIn, tkRange, tkIs, tkComma, tkDot, tkNew],
+
     MashParamsTokens = ["[", "]"],
+    MashParamsTokensShort = [tkORBr, tkCRBr],
 
     MashOperatorsTokens = [
-      "+", "-", "*", "/", "\", "%", "&", "|", "^",
+      "+", "-", "*", "/", "\", "%", "&", "|", "^", "<<", ">>",
       "?=", "=", "@=", ".",
 
       "<", ">", "==", ">=", "<=",
@@ -81,7 +92,19 @@ var MashTokens = [
       "&=", "|=", "^=", "<<=", ">>=", "<>",
       "in", "..", "is"],
 
+    MashOperatorsTokensShort = [
+      tkAddSym, tkSubSym, tkMulSym, tkDivSym, tkIDivSym, tkModSym,
+      tkAndSym, tkOrSym, tkXorSym, tkSHLSym, tkSHRSym,
+      tkGVBP, tkAssign, tkMovBP, tkDot,
+
+      tkSm, tkBg, tkEq, tkBEq, tkSEq,
+      tkAdd, tkSub, tkMul, tkDiv, tkIDiv, tkMod,
+      tkAnd, tkOr, tkXor, tkSHL, tkSHR, skNEq,
+      tkIn, tkRange, tkIs],
+
     MashOperationToken = ["++", "--", "?", "@", "~", "-", "new", "."],
+    MashOperationTokenShort = [tkInc, tkDec, tkGVBP, tkGP,
+                               tkNotSym, tkSubSym, tkNew, tkDot],
 
     // For making correct expression AST
     MashOperationsPriority = [
@@ -90,15 +113,28 @@ var MashTokens = [
         "<<=", ">>="],                      // 1 lvl: 7th
 
        ["<", ">", "==", ">=", "<=", "<>"],  // 2 lvl: 6th
-       ["&", "|", "^", "in"],               // 3 lvl: 5th
+       ["&", "|", "^", "in", "<<", ">>"],   // 3 lvl: 5th
        ["..", "is"],                        // 4 lvl  4th
        ["+", "-"],                          // 5 lvl: 3rd
        ["*", "/", "\", "%"],                // 6 lvl: 2nd
        MashOperationToken],                 // 7 lvl: 1st
 
-    MashOperationLeft = ["?", "@", "~", "-", "new"],
-    MashOperationRight = ["++", "--"]
+    MashOperationsPriorityShort = [
+       [tkAssign, tkMov, tkMovBP, tkAdd, tkSub, tkMul,
+        tkDiv, tkIDiv, tkMod, tkAnd, tkOr, tkXor, tkSHL, tkSHR],
 
+       [tkSm, tkBg, tkEq, tkBEq, tkSEq, tkNEq],
+       [tkAndSym, tkOrSym, tkXorSym, tkIn, tkSHLSym, tkSHRSym],
+       [tkRange, tkIs],
+       [tkAddSym, tkSubSym],
+       [tkMulSym, tkDivSym, tkIDivSym, tkModSym],
+       MashOperationTokenShort],
+
+    MashOperationLeft = ["?", "@", "~", "-", "new"],
+    MashOperationLeftShort = [tkGVBP, tkGP, tkNotSym, tkSubSym, tkNew],
+
+    MashOperationRight = ["++", "--"],
+    MashOperationRightShort = [tkInc, tkDec]
 
 /*
  *  Token+Info container
@@ -117,17 +153,21 @@ proc MashToken::Create(value, info, line):
   $value ?= copy(value)
   $info  ?= copy(info)
   $line  ?= copy(line)
-  $short ?= null
+  $short ?= tkNull
 
-  if $info == ttToken:
-    i ?= 0
-    l ?= len(MashTokens)
-    while i < l:
-      if MashTokens[i] == $value:
-        $short ?= i
-        break
+  if $value == "this":
+    $short = tkSpecial
+  else:
+    if $info == ttToken:
+      i ?= 0
+      l ?= len(MashTokens)
+      while i < l:
+        if MashTokens[i] == $value:
+          $short ?= i
+          break
+        end
+        i++
       end
-      i++
     end
   end
 end

@@ -19,6 +19,7 @@ class MashBaseAST:
          TkValue,
          TkCheck,
          TkCheckType,
+         TkCheckShort,
 
          TkTokenValue,
          TkWordValue,
@@ -61,6 +62,14 @@ end
 func MashBaseAST::TkCheck(tk):
   if tk <> null:
     return tk -> value
+  else:
+    return ""
+  end
+end
+
+func MashBaseAST::TkCheckShort(tk):
+  if tk <> null:
+    return tk -> short
   else:
     return ""
   end

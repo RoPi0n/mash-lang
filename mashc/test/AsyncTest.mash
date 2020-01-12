@@ -1,0 +1,23 @@
+uses crt
+uses threads
+
+func foo(msg, msg2, [args]):
+  println(msg, msg2, " ", args)
+end
+
+proc main():
+  t ?= foo.go("Hi! ", "This function works asynchronous!")
+  t -> WaitFor()
+
+  t ?= foo.thread("Hello from new thread! ", "This function works asynchronous!", 1, 2, 3, [4, 5])
+  calls ?= [t]
+
+  for i in 1..4:
+    calls.append(t -> clone())
+  end
+
+  for c in calls:
+    c -> Resume()
+    c -> WaitFor()
+  end
+end
