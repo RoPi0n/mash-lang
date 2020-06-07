@@ -1,0 +1,49 @@
+uses crt
+uses math.plots
+
+proc main():
+  plt ?= new MathPlot3d(80, 10, new MathRotation(0, 0, 0))
+
+  cube ?= [ [-2, -2, -2],
+            [-2,  2, -2],
+            [ 2,  2, -2],
+            [ 2, -2, -2],
+            [-2, -2, -2],
+
+            [-2, -2,  2],
+
+            [-2,  2,  2],
+            [-2,  2, -2],
+            [-2,  2,  2],
+
+            [ 2,  2,  2],
+            [ 2,  2, -2],
+            [ 2,  2,  2],
+
+            [ 2, -2,  2],
+            [ 2, -2, -2],
+            [ 2, -2,  2],
+
+            [-2, -2,  2] ]
+
+  al   ?= 0
+  k    ?= 0.05
+
+  while true:
+    graph -> clear()
+
+    for p in cube:
+      plt -> NextPoint(p[0], p[1], p[2])
+    end
+
+    plt -> Finish()
+    plt -> Rotation ?= new MathRotation(al, al, al)
+
+    al += k
+    if al > 2 * m_pi: al = 0 end
+
+    gc()
+
+    sleep(1000 \ 60)
+  end
+end

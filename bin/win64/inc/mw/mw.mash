@@ -1,0 +1,87 @@
+uses network.tcp
+uses classes.dict
+uses strings
+uses mw.request
+uses mw.answer
+uses mw.page
+
+
+
+class MWServer(TcpServer):
+  public:
+    var server,
+        routes
+
+    var On_NotRouted,
+        On_BadRequest
+
+    init(port):
+      super(port)
+
+      $routes ?= new Dict()
+
+      $On_NotRouted  ?= MWOnNotRouted
+      $On_BadRequest ?= MWOnBadRequest
+    end
+
+    proc run():
+      $start()
+      while true:
+        sleep(1)
+        gc()
+      end
+    end
+
+    proc route(addr, method):
+      $routes -> set(addr, method)
+    end
+
+    func OnNotRouted(req):
+      return mw_text(200, "<html><head><meta charset='utf-8'><title>200</title></head><body><h1>This page not routed!</h1><br/><hr/><h3>Mash Web</h3></body></html>")
+    end
+
+    func OnNotFound(req):
+      return mw_text(404, "<html><head><meta charset='utf-8'><title>404</title></head><body><h1>404 - page/file not found!</h1><br/><hr/><h3>Mash Web</h3></body></html>")
+    end
+
+    func OnBadRequest(req):
+      return mw_text(400, "<html><head><meta charset='utf-8'><title>400</title></head><body><h1>Bad request!</h1><br/><hr/><h3>Mash Web</h3></body></html>")
+    end
+
+  private:
+    proc accept(conn):
+      try:
+        req ?= conn -> ReceiveLn(1000)
+        r ?= new MWRequest(req)
+
+        if r -> status == mwrs_Processed:
+          indx ?= $routes -> IndexOf(r -> target)
+          if indx <> null:
+            fnc ?= $routes -> values -> items[indx]
+            answ ?= fnc(r)
+            answ -> SendTo(conn)
+          else:
+            if r -> target.StrLower().LeftStr(8) == "/static/":
+              path ?= r -> target.copy()
+              path.cut(0, 1)
+              try:
+                answ ?= mw_file(200, path)
+              catch E:
+                answ ?= $OnNotFound(r)
+                E.println()
+              end
+              answ -> SendTo(conn)
+            else:
+              answ ?= $OnNotRouted(r)
+              answ -> SendTo(conn)
+            end
+          end
+        else:
+          answ ?= $OnBadRequest(r)
+          answ -> SendTo(conn)
+        end
+      catch E:
+        raise E
+      end
+    end
+end

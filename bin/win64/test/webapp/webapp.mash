@@ -1,0 +1,21 @@
+uses mw
+uses crt
+
+t_index ?= mw_template("body.htm")
+
+func _index_(req):
+  list_items ?= []
+  for i in 1..9:
+    list_items.append(["i", i])
+  end
+
+  return mw_page(200, t_index, ["test_var", "Он работает!"],
+                               ["test_list", list_items])
+end
+
+
+proc main():
+  serv ?= new MWServer(80)
+  serv -> route("/", _index_)
+  serv -> run()
+end

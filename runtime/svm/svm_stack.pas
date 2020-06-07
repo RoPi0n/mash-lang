@@ -18,12 +18,13 @@ type
     items: array of pointer;
     size, i_pos: cardinal;
     procedure init;
-    procedure push(p: pointer);
-    function peek: pointer;
-    procedure pop;
-    function popv: pointer;
-    procedure swp;
-    procedure drop;
+    procedure push(p: pointer); inline;
+    function peek: pointer; inline;
+    procedure pop; inline;
+    function popv: pointer; inline;
+    procedure swp; inline;
+    procedure drop; inline;
+    procedure free; inline;
   end;
 
   PStack = ^TStack;
@@ -86,13 +87,14 @@ end;
 procedure TStack.drop; inline;
 var
   c: cardinal;
+  m: TSVMMem;
 begin
   c := 0;
   while c < i_pos do
   begin
-    if items[c] <> nil then
-      //if TObject(items[c]) is TSVMMem then
-      Dec(TSVMMem(items[c]).m_refc);
+    m := TSVMMem(items[c]);
+    if m.m_type <> svmtNull then
+     InterlockedDecrement(m.m_rcnt);
 
     Inc(c);
   end;
@@ -100,6 +102,13 @@ begin
   SetLength(items, StackBlockSize);
   size := StackBlockSize;
   i_pos := 0;
+end;
+
+procedure TStack.free; inline;
+begin
+  drop;
+  SetLength(items, 0);
+  size := 0;
 end;
 
 end.

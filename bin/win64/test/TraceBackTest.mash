@@ -1,0 +1,23 @@
+uses crt
+
+func bar(a):
+  return a / 0
+end
+
+func foo(a):
+  if a < 3:
+    foo(a + 1)
+  else:
+    bar(a + 1)
+  end
+end
+
+proc main():
+  try:
+    foo(-2)
+  catch E:
+    E.println()
+  end
+
+  inputln()
+end

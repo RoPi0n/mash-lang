@@ -1,46 +1,35 @@
-////////////////////////////////////////////////////////////////////////////////
-// Tree
-////////////////////////////////////////////////////////////////////////////////
+/*
+ *  Tree (oblivious)
+ */
 
-uses <classes\types>
-uses <classes\list>
-
-class Tree(class):
+class Tree:
   protected:
     var Nodes
 
   public:
     var Value
-    proc Create
 
-    func AddNode,
-         GetNode
+    init(val):
+      $Nodes ?= new list()
+      $Value ?= val
+    end
 
-    proc DelNode,
-         Clear
-end
+    proc Clear():
+      for n in $Nodes -> items:  n -> Clear()  end
+      $Nodes -> Clear()
+    end
 
-proc Tree::Create(val):
-  $Nodes ?= new list()
-  $Value ?= val
-end
+    func AddNode(val):
+      n ?= new Tree(val)
+      $Nodes -> Add(n)
+      return n
+    end
 
-proc Tree::Clear():
-  $Nodes -> ForEach(Tree::Clear)
-  $Nodes -> Clear()
-end
+    func GetNode(num):
+      return $Nodes -> Get(num)
+    end
 
-func Tree::AddNode(val):
-  n ?= new Tree(val)
-  $Nodes -> Add(n)
-  return n
-end
-
-func Tree::GetNode(num):
-  return $Nodes -> Get(num)
-end
-
-proc Tree::DelNode(num):
-  Node ?= $Nodes -> Get(num)
-  $Nodes -> Delete(num)
+    proc DelNode(num):
+      $Nodes -> Delete(num)
+    end
 end

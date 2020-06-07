@@ -1,0 +1,34 @@
+uses crt
+uses math.plots
+
+proc main():
+  plt ?= new MathPlot3d(20, 20, new MathRotation(0, 0, 0))
+
+  x ?= 3.051522
+  y ?= 1.582542
+  z ?= 15.62388
+
+  a ?= 5
+  b ?= 15
+  c ?= 1
+
+  dt ?= 0.01
+
+  obj ?= []
+
+  i ?= 10000
+  while i > 0:
+    _x ?= x + a * (-x + y) * dt
+    _y ?= y + (b*x - y - z*x) * dt
+    _z ?= z + (-c*z + x*y) * dt
+    x ?= _x
+    y ?= _y
+    z ?= _z
+
+    plt -> NextPoint(y, x, z)
+    gc()
+    i--
+  end
+
+  inputln()
+end

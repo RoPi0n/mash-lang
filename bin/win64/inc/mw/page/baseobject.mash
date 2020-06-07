@@ -1,0 +1,17 @@
+/*
+ *  Something like a interface
+ */
+
+
+class MWPageBaseObject:
+  public:
+    var name
+
+    init(name):
+      $name ?= name
+    end
+
+    func gen(vars):
+      return ""
+    end
+end

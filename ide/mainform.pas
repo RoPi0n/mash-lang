@@ -250,7 +250,7 @@ begin
          EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
          EdtFrm.Saved := True;
          EdtFrm.UpdateState;
-         BuildFileAndRun(EdtFrm.DefFile, '/cns /o-', 'svmc.exe');
+         BuildFileAndRun(EdtFrm.DefFile, 'console', 'svmc.exe');
        end
       else
        begin
@@ -261,7 +261,7 @@ begin
             EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
             EdtFrm.Saved := True;
             EdtFrm.UpdateState;
-            BuildFileAndRun(EdtFrm.DefFile, '/cns /o-', 'svmc.exe');
+            BuildFileAndRun(EdtFrm.DefFile, 'console', 'svmc.exe');
           end;
        end;
     end;
@@ -405,24 +405,34 @@ var
    AProcess: TProcess;
    sl: TStringList;
    thr: QWord;
+   s: string;
 begin
    LogMemo.Lines.Clear;
    LogMemo.Repaint;
-   LogMemo.Lines.Add('Start building file: "' + fp + '"');
+   sl := TStringList.Create;
+   s := fp;
+   if Pos(ExtractFilePath(ParamStr(0)), s) > 0 then
+    Delete(s, 1, length(ExtractFilePath(ParamStr(0))));
+
+   LogMemo.Lines.Add('Start building file: "' + s + '"');
     try
       AProcess := TProcess.Create(Self);
-      sl := TStringList.Create;
+
       AProcess.Executable := 'mashc.exe';
-      AProcess.Parameters.Add(UTF8ToWinCP(fp));
-      while pos(' ', flags) > 0 do
+      AProcess.Parameters.Add(UTF8ToWinCP(s));
+      AProcess.Parameters.Add(UTF8ToWinCP(ChangeFileExt(s, '.asm')));
+
+      {while pos(' ', flags) > 0 do
        begin
          AProcess.Parameters.Add(copy(flags, 1, pos(' ', flags) - 1));
          Delete(flags, 1, pos(' ', flags));
        end;
+
       if Length(flags) > 0 then
-         AProcess.Parameters.Add(flags);
-      AProcess.Options := AProcess.Options + [poWaitOnExit, poUsePipes,
-         poNoConsole, poStderrToOutPut];
+         AProcess.Parameters.Add(flags);}
+
+      AProcess.Options := AProcess.Options + [poWaitOnExit, poUsePipes, poNoConsole, poStderrToOutPut];
+      AProcess.PipeBufferSize := 1024 * 1024;
       BeginThread(nil, 0, @BuildThread, Pointer(AProcess), 0, thr);
       Sleep(10);
       while AProcess.Running do
@@ -432,6 +442,27 @@ begin
        end;
       sl.LoadFromStream(AProcess.Output);
       LogMemo.Lines.AddStrings(sl);
+      FreeAndNil(AProcess);
+
+      AProcess := TProcess.Create(Self);
+
+      AProcess.Executable := 'asm.exe';
+      AProcess.Parameters.Add(UTF8ToWinCP(flags));
+      AProcess.Parameters.Add(UTF8ToWinCP(ChangeFileExt(s, '.asm')));
+      AProcess.Parameters.Add(UTF8ToWinCP(ChangeFileExt(s, '.vmc')));
+
+      AProcess.Options := AProcess.Options + [poWaitOnExit, poUsePipes, poNoConsole, poStderrToOutPut];
+      AProcess.PipeBufferSize := 1024 * 1024;
+      BeginThread(nil, 0, @BuildThread, Pointer(AProcess), 0, thr);
+      Sleep(10);
+      while AProcess.Running do
+       begin
+         Application.ProcessMessages;
+         Sleep(10);
+       end;
+      sl.LoadFromStream(AProcess.Output);
+      LogMemo.Lines.AddStrings(sl);
+      FreeAndNil(AProcess);
     except
       on E: Exception do
        begin
@@ -448,10 +479,13 @@ var
    AProcess: TProcess;
 begin
    fp_vmc := ExtractFilePath(fp) + ChangeFileExt(ExtractFileName(fp), '.vmc');
+
    if FileExists(fp_vmc) then
       SysUtils.DeleteFile(fp_vmc);
+
    BuildFile(fp, flags);
-   Sleep(1000);
+
+   Sleep(300);
    if FileExists(fp_vmc) then
     begin
        try
@@ -502,7 +536,7 @@ begin
          EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
          EdtFrm.Saved := True;
          EdtFrm.UpdateState;
-         BuildFile(EdtFrm.DefFile, '/cns /o+ /olvl 3');
+         BuildFile(EdtFrm.DefFile, 'console');
        end
       else
        begin
@@ -513,7 +547,7 @@ begin
             EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
             EdtFrm.Saved := True;
             EdtFrm.UpdateState;
-            BuildFile(EdtFrm.DefFile, '/cns /o+ /olvl 3');
+            BuildFile(EdtFrm.DefFile, 'console');
           end;
        end;
     end;
@@ -559,7 +593,7 @@ begin
          EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
          EdtFrm.Saved := True;
          EdtFrm.UpdateState;
-         BuildFileAndRun(EdtFrm.DefFile, '/gui /o-', 'svmg.exe');
+         BuildFileAndRun(EdtFrm.DefFile, 'gui', 'svmg.exe');
        end
       else
        begin
@@ -570,7 +604,7 @@ begin
             EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
             EdtFrm.Saved := True;
             EdtFrm.UpdateState;
-            BuildFileAndRun(EdtFrm.DefFile, '/gui /o-', 'svmg.exe');
+            BuildFileAndRun(EdtFrm.DefFile, 'gui', 'svmg.exe');
           end;
        end;
     end;
@@ -591,7 +625,7 @@ begin
          EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
          EdtFrm.Saved := True;
          EdtFrm.UpdateState;
-         BuildFile(EdtFrm.DefFile, '/gui /o+ /olvl 3');
+         BuildFile(EdtFrm.DefFile, 'gui');
        end
       else
        begin
@@ -602,7 +636,7 @@ begin
             EdtFrm.SynEdit.Lines.SaveToFile(EdtFrm.DefFile);
             EdtFrm.Saved := True;
             EdtFrm.UpdateState;
-            BuildFile(EdtFrm.DefFile, '/gui /o+ /olvl 3');
+            BuildFile(EdtFrm.DefFile, 'gui');
           end;
        end;
     end;

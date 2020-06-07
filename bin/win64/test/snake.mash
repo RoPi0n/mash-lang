@@ -1,0 +1,83 @@
+uses crt
+uses classes
+uses threads
+
+proc PrintXY(x, y, c):
+  crt -> gotoXY(x, y)
+  print(c)
+end
+
+proc borders():
+  crt -> clrscr()
+
+  for i in 1..40:
+    PrintXY(i, 1, "#")
+    PrintXY(i, 20, "#")
+  end
+
+  for i in 2..19:
+    PrintXY(1, i, "#")
+    PrintXY(40, i, "#")
+  end
+
+  PrintXY(44, 4, "Snake, written in Mash 1.2!")
+  PrintXY(44, 5, "Score: 0")
+end
+
+func RandFood():
+  Randomize()
+  return new point(RandomTo(36) + 2, RandomTo(16) + 2)
+end
+
+proc DrawPoint(p, ch):
+  PrintXY(p -> x, p -> y, ch)
+end
+
+snake ?= new list()
+food ?= RandFood()
+vect ?= new point(1, 0)
+score ?= 0
+gameover ?= false
+
+proc DrawAll():
+  DrawPoint(food, "&")
+  for i in snake -> items:
+    DrawPoint(i, "@")
+  end
+end
+
+proc CheckKey(k):
+  switch k:
+    case "w": if vect -> y <>  1: vect -> set( 0, -1) end end
+    case "a": if vect -> x <>  1: vect -> set(-1,  0) end end
+    case "s": if vect -> y <> -1: vect -> set( 0,  1) end end
+    case "d": if vect -> x <> -1: vect -> set( 1,  0) end end
+  end
+end
+
+proc Tick():
+  h ?= snake -> items[snake -> count() - 1]
+
+  head ?= new point(h -> x, h -> y)
+
+
+  DrawPoint(head, "@")
+  DrawPoint(food, "&")
+end
+
+proc main():
+  borders()
+
+  snake -> add(new point(5, 10))
+  snake -> add(new point(6, 10))
+  snake -> add(new point(7, 10))
+
+  DrawAll()
+  ///InputListener.go()
+
+  while true:
+    Tick()
+    gc()
+    sleep(100)
+  end
+end

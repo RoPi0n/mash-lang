@@ -1,0 +1,94 @@
+/*
+ *  This plotting system extends decart reference system
+ *
+ *  Axis X aimed right
+ *  Axis Y aimed up
+ *  Axis Z aimed on us
+ */
+
+uses math.plots.plot2d
+uses math.matrix
+uses classes.points
+
+class MathRotation:
+  public:
+    var rX, rY, rZ
+
+    init(rX, rY, rZ):
+      $rX ?= rX
+      $rY ?= rY
+      $rZ ?= rZ
+    end
+end
+
+class MathPlot3D(MathPlot):
+  public:
+    var Rotation, Distance
+
+    init(Scale, Distance, Rotation):
+      super(MPlot_CustomDecart, Scale)
+
+      $Rotation ?= Rotation
+      $Distance ?= Distance
+
+      //$DrawAxises()
+    end
+
+    proc GetProjection(x, y, z):
+      point_m ?= [ [x, y, z] ]
+
+      rot_x ?= [ [1,                    0,                     0],
+                 [0, cos($Rotation -> rX), -sin($Rotation -> rX)],
+                 [0, sin($Rotation -> rX),  cos($Rotation -> rX)] ]
+
+      rot_y ?= [ [ cos($Rotation -> rY), 0, sin($Rotation -> rY)],
+                 [                    0, 1,                    0],
+                 [-sin($Rotation -> rY), 0, cos($Rotation -> rY)] ]
+
+      rot_z ?= [ [cos($Rotation -> rZ), -sin($Rotation -> rZ), 0],
+                 [sin($Rotation -> rZ),  cos($Rotation -> rZ), 0],
+                 [                   0,                     0, 1], ]
+
+      rot_m ?= rot_x.matrix -> multiply(rot_y)
+      rot_m ?= rot_m.matrix -> multiply(rot_z)
+
+      result_m ?= point_m.matrix -> multiply(rot_m)
+
+      rX ?= result_m[0][0]
+      rY ?= result_m[0][1]
+      rZ ?= result_m[0][2]
+
+      return new point( rX * $Distance / (rZ + $Distance),
+                        rY * $Distance / (rZ + $Distance) )
+    end
+
+    proc DrawAxises():
+      Graph -> SetColor(Graph_LightGray)
+
+      Graph -> MoveTo($x0, $y0)
+      aX ?= $GetProjection(1000 * $Distance, 0, 0)
+      Graph -> LineTo(aX -> x, aX -> y)
+
+      Graph -> MoveTo($x0, $y0)
+      aY ?= $GetProjection(0, 1000 * $Distance, 0)
+      Graph -> LineTo(aY -> x, aY -> y)
+
+      Graph -> MoveTo($x0, $y0)
+      aZ ?= $GetProjection(0, 0, 1000 * $Distance)
+      Graph -> LineTo(aZ -> x, aZ -> y)
+
+      Graph -> SetColor(Graph_Black)
+    end
+
+    proc NextPoint(x, y, z):
+      prj ?= $GetProjection(x, y, z)
+      super(prj -> x, prj -> y)
+    end
+
+    proc Dot(x, y, z):
+      prj ?= $GetProjection(x, y, z)
+      super(prj -> x, prj -> y)
+    end
+end
+
+

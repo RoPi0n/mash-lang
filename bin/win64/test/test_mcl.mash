@@ -1,0 +1,35 @@
+uses forms
+uses crt
+
+class MyForm(MForm):
+  var Drawing
+
+  init():
+    super()
+    $Drawing ?= false
+  end
+
+  proc OnMouseDown(x, y, button):
+    $Drawing ?= true
+    $Canvas -> MoveTo(x, y)
+  end
+
+  proc OnMouseUp(x, y, button):
+    $Drawing ?= false
+  end
+
+  proc OnMouseMove(x, y):
+    if $Drawing:
+      $Canvas -> LineTo(x, y)
+    end
+  end
+
+  proc OnCloseQuery():
+    Halt()
+  end
+end
+
+proc main():
+  f ?= new MyForm()
+  application -> run()
+end

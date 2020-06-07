@@ -1,0 +1,212 @@
+class MWPageFrame(MWPageBaseObject):
+  public:
+    var code, blocks, defs
+
+    init(name, code):
+      super(name)
+      $code ?= code
+      $blocks ?= []
+      $defs ?= new Dict()
+      $preprocess()
+    end
+
+    proc preprocess():
+      s ?= ""
+      while $code.len() > 0:
+        p ?= $code.SubPos("{{")
+        if p <> null:
+          s ?= $code.LeftStr(p)
+          $code.Cut(0, p + 2)
+          $blocks.append(new MWPageFragment(null, s))
+          $code ?= $code.Trim()
+
+          checked ?= false
+          if $code.LeftStr(4).StrLower() == "uses":
+            $code.Cut(0, $code.SubPos("'") + 1)
+            s ?= $code.LeftStr($code.SubPos("'"))
+            $code.Cut(0, $code.SubPos("}}") + 2)
+
+            new_frame ?= new MWPageFrameLoader(null, s)
+            $blocks.append(new_frame)
+
+            i ?= 0
+            for k in new_frame -> defs -> keys -> items:
+              $defs -> set(k, new_frame -> defs -> values -> items[i])
+              i++
+            end
+
+            s ?= ""
+            checked ?= true
+          end
+
+          if ($code.LeftStr(3).StrLower() == "def") & (~checked):
+            $code.Cut(0, 3)
+            def_name ?= $code.LeftStr($code.SubPos("}}")).Trim().StrLower()
+
+            if def_name.len() == 0:
+              raise new Exception("MW: Invalid template")
+            end
+
+            $code.Cut(0, $code.SubPos("}}") + 2)
+            frm ?= ""
+            while $code.len() > 0:
+              p ?= $code.SubPos("{{")
+              if p <> null:
+                frm += $code.LeftStr(p)
+                $code.Cut(0, p + 2)
+                $code ?= $code.Trim()
+                if $code.LeftStr(3).StrLower() == "end":
+                  $code.Cut(0, 3)
+                  $code ?= $code.Trim()
+                  if $code.LeftStr(def_name.len()).Trim().StrLower() == def_name:
+                    $code.Cut(0, $code.SubPos("}}") + 2)
+                    break
+                  else:
+                    frm += "{{end "
+                  end
+                else:
+                  frm += "{{"
+                end
+              else:
+                frm += $code
+                $code ?= ""
+              end
+            end
+
+            if frm.len() > 0:
+              new_frame ?= new MWPageFrame(def_name, frm)
+              $defs -> set(def_name, new_frame)
+              i ?= 0
+              for k in new_frame -> defs -> keys -> items:
+                $defs -> set(k, new_frame -> defs -> values -> items[i])
+                i++
+              end
+            end
+
+            s ?= ""
+            checked ?= true
+          end
+
+          if ($code.LeftStr(4).StrLower() == "list") & (~checked):
+            $code.Cut(0, 4)
+            def_name ?= $code.LeftStr($code.SubPos("}}")).Trim().StrLower()
+
+            if def_name.len() == 0:
+              raise new Exception("MW: Invalid template")
+            end
+
+            $code.Cut(0, $code.SubPos("}}") + 2)
+            frm ?= ""
+            while $code.len() > 0:
+              p ?= $code.SubPos("{{")
+              if p <> null:
+                frm += $code.LeftStr(p)
+                $code.Cut(0, p + 2)
+                $code ?= $code.Trim()
+                if $code.LeftStr(3).StrLower() == "end":
+                  $code.Cut(0, 3)
+                  $code ?= $code.Trim()
+                  if $code.LeftStr(def_name.len()).Trim().StrLower() == def_name:
+                    $code.Cut(0, $code.SubPos("}}") + 2)
+                    break
+                  else:
+                    frm += "{{end "
+                  end
+                else:
+                  frm += "{{"
+                end
+              else:
+                frm += $code
+                $code ?= ""
+              end
+            end
+
+            if frm.len() > 0:
+              new_frame ?= new MWPageListFrame(def_name, frm)
+              $blocks.append(new_frame)
+
+              i ?= 0
+              for k in new_frame -> defs -> keys -> items:
+                $defs -> set(k, new_frame -> defs -> values -> items[i])
+                i++
+              end
+            end
+
+            s ?= ""
+            checked ?= true
+          end
+
+          // label
+          if ~checked:
+            s ?= $code.LeftStr($code.SubPos("}}")).Trim().StrLower()
+            $code.Cut(0, $code.SubPos("}}") + 2)
+
+            $blocks.append(new MWPageVariable(s))
+
+            s ?= ""
+          end
+        else:
+          s ?= $code
+          $code ?= ""
+        end
+
+        if s.len() > 0:
+          $blocks.append(new MWPageFragment(null, s))
+        end
+      end
+    end
+
+    func gen(vars):
+      html ?= ""
+
+      ln ?= $blocks.len()
+      i ?= 0
+      while i < ln:
+        html += $blocks[i] -> gen(vars)
+        i++
+      end
+
+      return html
+    end
+end
+
+
+class MWPageListFrame(MWPageFrame):
+  public:
+    func gen(vars):
+      html ?= ""
+
+      list_items ?= vars -> get($name)
+
+      for itm in list_items:
+        i ?= 0
+        for k in itm -> keys -> items:
+          vars -> set($name + "." + k, itm -> values -> items[i])
+          i++
+        end
+
+        ln ?= $blocks.len()
+        i ?= 0
+        while i < ln:
+          html += $blocks[i] -> gen(vars)
+          i++
+        end
+
+        gc()
+      end
+
+      return html
+    end
+end
+
+
+class MWPageFrameLoader(MWPageFrame):
+  public:
+    init(name, path):
+      fs ?= new FileStream(path, fmOpenRead)
+      code ?= fs -> ReadText()
+      fs -> close()
+
+      super(name, code)
+    end
+end

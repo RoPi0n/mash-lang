@@ -1,0 +1,81 @@
+uses crt
+uses classes.points
+uses threads
+
+class game_io:
+  proc PrintXY(x, y, c):
+    crt -> gotoXY(x, y)
+    print(c)
+  end
+
+  proc DrawWindow():
+    crt -> clrscr()
+
+    for i in 1..40:
+      $PrintXY(i, 1, "#")
+      $PrintXY(i, 20, "#")
+    end
+
+    for i in 2..19:
+      $PrintXY(1, i, "#")
+      $PrintXY(40, i, "#")
+    end
+
+    $PrintXY(44, 4, "Snake, written in Mash 1.2!")
+    $PrintXY(44, 5, "Score: 0")
+  end
+
+  proc GameOver(score):
+    crt -> clrscr()
+    $PrintXY(1, 1, "Game over!")
+    $PrintXY(1, 2, "Your score: " + score)
+    crt -> CursorOn()
+  end
+end
+
+move_vectors ?= [
+  new point( 0, -1), // W
+  new point(-1,  0), // A
+  new point( 0,  1), // S
+  new point( 1,  0)  // D
+]
+
+class game_state:
+  var moving,
+      lastindx, indx
+
+  init():
+    $indx ?= 3
+    $moving ?= new point(1, 0)
+  end
+
+  proc Move(indx):
+    $indx ?= indx
+  end
+
+  func GetMoving():
+    $moving -> x = move_vectors[$indx] -> x
+    $moving -> y = move_vectors[$indx] -> y
+
+    return $moving
+  end
+end
+
+
+proc input_listener(state):
+  while True:
+    k ?= crt -> ReadKey()
+
+    switch k:
+      case "w": v ?= 0 end
+      case "a": v ?= 1 end
+      case "s": v ?= 2 end
+      case "d": v ?= 3 end
+    end
+
+    state -> Move.sync(v)
+
+    gc()
+    sleep(10)
+  end
+end

@@ -1,0 +1,69 @@
+uses threads
+uses classes.list
+
+
+
+class Coroutine:
+  private:
+    var FunctionAddr,
+        NextAddr,
+        HaveResult,
+        Result,
+        JumpFromYield
+
+    proc Function(): end
+
+  public:
+    init(Addr):
+      $HaveResult    ?= false
+      $JumpFromYield ?= false
+      $FunctionAddr  ?= copy(Addr)
+      $NextAddr      ?= copy(Addr)
+      $Function      ?= $FunctionAddr
+    end
+
+
+    proc Call():
+      if $Function == $NextAddr:
+        $HaveResult = false
+        $JumpFromYield = false
+
+        $Function()
+      else:
+        $HaveResult = false
+        $JumpFromYield = false
+
+        $NextAddr()
+
+        if ~$JumpFromYield:
+          $NextAddr = $FunctionAddr
+        end
+      end
+
+      if $HaveResult:
+        r ?= $Result
+        inline "push $r"
+        $HaveResult ?= false
+      end
+    end
+
+    proc Yield([result]):
+      if len(result) > 0:
+        $HaveResult = true
+        $Result ?= result[0]
+      else:
+        $HaveResult = false
+      end
+
+      $JumpFromYield = true
+
+      addr ?= null
+
+      inline "plc"
+      inline "peek $addr"
+      inline "pop"
+
+      $NextAddr = addr
+      inline "jrx"
+    end
+end

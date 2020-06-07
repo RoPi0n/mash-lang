@@ -24,15 +24,18 @@ uses
   {$endif}
   SysUtils, Classes,
   svm_mem,
-  svm_grabber,
   svm_common,
   svm_utils,
   svm_callbacks,
   svm_stack,
   svm_exceptions,
-  svm_core;
+  svm_core,
+  svm_grabber,
+  svm_threads;
 
 {***** Main *******************************************************************}
+
+//{$Define WindowsSEH}
 
 {$IfDef BuildInLibrary}
 
@@ -47,9 +50,10 @@ end.
 var
   vm:TSVM;
 begin
-  {$IfDef Windows}
+  {$IfDef WindowsSEH}
     SVM_InitVEH;
   {$EndIf}
+  InitSVMM;
 
   {$IfNDef BuildGUI}
   if ParamCount<1 then
@@ -63,14 +67,18 @@ begin
   {$EndIf}
 
   GrabbersStorage := TThreadList.Create;
+  InitThreads;
 
   new(vm.bytes);
   new(vm.consts);
   new(vm.extern_methods);
   new(vm.mem);
 
+  new(vm.local_mem);
+
   vm.isMainThread := true;
   vm.CustomArgsMode := false;
+  vm.pVM_NULL := VM_NULL;
 
   vm.stack.init;
   vm.rstack.init;
@@ -88,13 +96,17 @@ begin
   Dispose(vm.consts);
   Dispose(vm.extern_methods);
   Dispose(vm.mem);
+  Dispose(vm.local_mem);
   Dispose(vm.bytes);
 
   GlobalTerm;
+  FreeThreads;
   FreeAndNil(GrabbersStorage);
 
-  {$IfDef Windows}
+  {$IfDef WindowsSEH}
     SVM_FreeVEH;
   {$EndIf}
+
+  FreeSVMM;
 end.
 {$EndIf}

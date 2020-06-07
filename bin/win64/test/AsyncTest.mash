@@ -1,0 +1,35 @@
+uses classes
+uses crt
+uses threads
+
+class myclass:
+  var a
+
+  init(a):
+    $a ?= a
+  end
+
+  func foo(msg, msg2, [args]):
+    println.sync($a, " ", msg, msg2, " ", args)
+  end
+end
+
+
+proc main():
+  m ?= new myclass(10)
+
+  lst ?= new list()
+
+  for i in 1..10:
+    lst -> add(m -> foo.go(1, 2, 3, 4, 5))
+    sleep(1)
+  end
+
+  for i in lst -> items:
+    i -> WaitFor()
+  end
+
+  println("ok")
+
+  inputln()
+end

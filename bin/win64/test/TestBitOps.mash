@@ -1,0 +1,7 @@
+uses crt
+
+proc main():
+  println(7 >> 1)
+  println((3 << 1) + 1)
+  inputln()
+end

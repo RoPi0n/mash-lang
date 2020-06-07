@@ -1,0 +1,35 @@
+uses network.tcp
+uses crt
+
+proc accept(conn):
+  println.sync("Accepted!")
+
+  content ?= "<html><head><meta charset='utf-8'><title>Mash!</title></head><body><h1>Hello, world!</h1><br/><hr/><h3>Этот сайт работает на Mash!</h3></body></html>"
+
+  answ ?= "HTTP/1.0 200" + CRLF
+  answ += "Content-type: Text/HTML" + CRLF
+  answ += "Content-length: " + content.len() + CRLF
+  answ += "Connection: close" + CRLF
+  answ += "Server: Mash HTTP server" + CRLF
+  answ += "" + CRLF
+  answ += content
+
+  try:
+    conn -> SendLn(answ)
+  catch E:
+    println.sync(E)
+  end
+end
+
+proc main():
+  tcp ?= new TcpServer(80)
+  tcp -> accept ?= accept
+  tcp -> start()
+
+  while true:
+    sleep(1)
+    gc()
+  end
+
+  inputln()
+end

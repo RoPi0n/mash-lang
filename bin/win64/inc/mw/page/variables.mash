@@ -1,0 +1,24 @@
+/*
+ *  Variables for html
+ */
+
+class MWPageVariable(MWPageBaseObject):
+  public:
+    func gen(vars):
+      v ?= vars -> get($name)
+      return v -> gen(vars)
+    end
+end
+
+class MWPageValue:
+  public:
+    var value
+
+    init(value):
+      $value ?= value
+    end
+
+    func gen(vars):
+      return $value
+    end
+end

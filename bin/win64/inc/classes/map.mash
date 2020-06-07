@@ -1,123 +1,55 @@
-////////////////////////////////////////////////////////////////////////////////
-//  Map
-////////////////////////////////////////////////////////////////////////////////
+/*
+ *  Map<key, value> implementation. Nothing interesting.
+ */
 
-uses <classes\list>
-uses <classes\types>
+uses classes.list
 
-class Map(class):
+class Map:
   protected:
     var Objects,
         Keys
 
   public:
-    proc Create
+    init():
+      $Objects ?= new list()
+      $Keys ?= new list()
+    end
 
-    proc Add,
-         Delete,
-         DeleteAt,
-         Clear
+    func Add(Obj, Key):
+      Index ?= $Keys -> NextIns(Key)
+      $Objects -> Insert(Obj, Index)
+      return Index
+    end
 
-    func Get,
-         At,
-         KeyAt,
-         IndexOf,
-         KeyIndexOf,
-         Size
-end
+    proc Delete(Key):
+      Indx ?= $Keys -> Find(Key)
+      $Keys -> Delete(Indx)
+      $Objects -> Delete(Indx)
+    end
 
-proc Map::Create():
-  $Objects ?= new list()
-  $Keys ?= new list()
-end
+    proc DeleteAt(Index):
+      $Keys -> Delete(Index)
+      $Objects -> Delete(Index)
+    end
 
+    proc Clear():
+      $Keys -> Clear()
+      $Objects -> Clear()
+    end
 
-proc Map::Add(Obj, Key):
-  $Objects -> Insert(Obj, $Keys -> NextIns(Key))
-end
+    func Get(Key):
+      return $Objects -> Items[$Keys -> Find(Key)]
+    end
 
-proc Map::Delete(Key):
-  Indx ?= $Keys -> Find(Key)
-  $Keys -> Delete(Indx)
-  $Objects -> Delete(Indx)
-end
+    proc Set(Key, Object):  $Objects -> Items[$Keys -> Find(Key)] ?= Object  end
 
-proc Map::DeleteAt(Index):
-  $Keys -> Delete(Index)
-  $Objects -> Delete(Index)
-end
+    func At(Index):  return $Objects -> Items[Index]  end
 
-proc Map::Clear():
-  $Keys -> Clear()
-  $Objects -> Clear()
-end
+    func KeyAt(Index):  return $Keys -> Items[Index]  end
 
+    func IndexOf(Obj):  return $Objects -> IndexOf(Obj)  end
 
-func Map::Get(Key):
-  return $Objects -> Items[$Keys -> Find(Key)]
-end
+    func KeyIndexOf(Key):  return $Keys -> Find(Key)  end
 
-func Map::At(Index):
-  return $Objects -> Items[Index]
-end
-
-func Map::KeyAt(Index):
-  return $Keys -> Items[Index]
-end
-
-func Map::IndexOf(Obj):
-  return $Objects -> IndexOf(Obj)
-end
-
-func Map::KeyIndexOf(Key):
-  return $Keys -> Find(Key)
-end
-
-func Map::Size():
-  return copy($Keys -> Size)
-end
-
-////////////////////////////////////////////////////////////////////////////////
-//  HashMap
-////////////////////////////////////////////////////////////////////////////////
-
-class HashMap(Map):
-  public:
-    proc Add
-    func IndexOf
-end
-
-proc HashMap::Add(obj):
-  Map::Add$(obj, obj -> GetHash())
-end
-
-func HashMap::IndexOf(obj):
-  return $KeyIndexOf(obj -> GetHash())
-end
-
-////////////////////////////////////////////////////////////////////////////////
-//  StringMap
-////////////////////////////////////////////////////////////////////////////////
-
-class StringMap(Map):
-  public:
-    proc Add
-    func IndexOf
-end
-
-func GetStrHash(s):
-  l ?= len(s)
-  r ?= copy(l)
-  for(i ?= 1; i <= l; i++):
-    r = (r * i + l) ^ s[i]
-  end
-  return r
-end
-
-proc StringMap::Add(s):
-  Map::Add$(s, GetStrHash(s))
-end
-
-func StringMap::IndexOf(s):
-  return $KeyIndexOf(GetStrHash(s))
+    func Size():  return copy($Keys -> Size)  end
 end

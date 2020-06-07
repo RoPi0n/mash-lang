@@ -1,0 +1,120 @@
+uses classes.stringlist
+uses classes.dict
+uses strings
+
+enum MWRequestStatus [ mwrs_Invalid, mwrs_Processed ]
+
+enum MWRequestType [
+  mwrt_Get,
+  mwrt_Post
+]
+
+enum MWRequestProtocol [ mwrp_http_1_0, mwrp_http_1_1, mwrp_unknown ]
+
+
+
+class MWRequest:
+  public:
+    var lines,
+        status
+
+    var request,
+        target,
+        protocol,
+        args
+
+
+    init(req):
+      $lines ?= new StringList()
+      $lines -> SetText(req)
+      $args ?= new Dict()
+
+      $status ?= mwrs_Invalid
+
+      if $lines -> count() > 0:
+        header ?= $lines -> get(0)
+
+        parsed_req ?= false
+        if header.LeftStr(3).StrUpper() == "GET":
+          header.cut(0, 4)
+          $request ?= mwrt_Get
+          parsed_req = true
+        end
+
+        if (header.LeftStr(4).StrUpper() == "POST") & (~parsed_req):
+          header.cut(0, 5)
+          $request ?= mwrt_Post
+          parsed_req = true
+        end
+
+        if parsed_req:
+          p ?= header.SubPos(" ")
+          if p <> null:
+            req_line ?= header.LeftStr(p)
+            header.cut(0, p + 1)
+
+            parsed_protocol ?= false
+            switch header.StrUpper().Trim():
+              case "HTTP/1.0":
+                $protocol ?= mwrp_http_1_0
+                parsed_protocol = true
+              end
+
+              case "HTTP/1.1":
+                $protocol ?= mwrp_http_1_1
+                parsed_protocol = true
+              end
+
+              default:
+                $protocol ?= mwrp_unknown
+                parsed_protocol = true
+              end
+            end
+
+            if parsed_protocol:
+              p ?= req_line.SubPos("?")
+              if p == null:
+                $target ?= req_line
+                $status ?= mwrs_Processed
+              else:
+                $target ?= req_line.LeftStr(p)
+                req_line.Cut(0, p + 1)
+
+                parsed_args ?= true
+
+                p ?= req_line.SubPos("&")
+                while p <> null:
+                  s ?= req_line.LeftStr(p)
+                  req_line.Cut(0, p + 1)
+
+                  _p ?= s.SubPos("=")
+                  if _p <> null:
+                    arg_key ?= s.LeftStr(_p)
+                    s.Cut(0, _p + 1)
+                    arg_val ?= s
+                    $args -> set(arg_key, arg_val)
+                  else:
+                    parsed_args ?= false
+                  end
+
+                  p ?= req_line.SubPos("&")
+                end
+
+                _p ?= req_line.SubPos("=")
+                if _p <> null:
+                  arg_key ?= req_line.LeftStr(_p)
+                  req_line.Cut(0, _p + 1)
+                  arg_val ?= req_line
+                  $args -> set(arg_key, arg_val)
+                else:
+                  parsed_args ?= false
+                end
+
+                if parsed_args: $status ?= mwrs_Processed end
+              end
+            end
+          end
+        end
+      end
+    end
+end

@@ -1,0 +1,48 @@
+/*
+ *  Dictionary
+ */
+
+uses classes.list
+
+
+
+class Dict:
+  public:
+    var keys, values
+
+    init():
+      $keys ?= new list()
+      $values ?= new list()
+    end
+
+    proc IndexOf(key):
+      return $keys -> IndexOf(key)
+    end
+
+    proc Set(key, value):
+      indx ?= $IndexOf(key)
+      if indx == null:
+        $keys -> add(key)
+        $values -> add(value)
+      else:
+        $values -> items[indx] ?= value
+      end
+    end
+
+    proc Get(key):
+      indx ?= $IndexOf(key)
+      if indx == null:
+        raise new Exception("Dict: Value not found")
+      end
+      return $values -> items[indx]
+    end
+
+    proc Clear():
+      $keys -> clear()
+      $values -> clear()
+    end
+
+    func Count():
+      return $keys -> count()
+    end
+end

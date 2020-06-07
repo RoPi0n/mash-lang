@@ -2,8 +2,6 @@
 // Mash streams
 ////////////////////////////////////////////////////////////////////////////////
 
-uses <files>
-
 // imports
 
 import _Stream_Create                 "streams.lib" "_Stream_Create"
@@ -12,6 +10,7 @@ import _Stream_GetCaretPos            "streams.lib" "_Stream_GetCaretPos"
 import _Stream_WriteFromMemoryStream  "streams.lib" "_Stream_WriteFromStream"
 import _Stream_ReadFromMemoryStream   "streams.lib" "_Stream_ReadFromStream"
 import _Stream_CopyFromStream         "streams.lib" "_Stream_CopyFromStream"
+import _Stream_CopyBuffer             "streams.lib" "_Stream_CopyBuffer"
 import _Stream_WriteByte              "streams.lib" "_Stream_WriteByte"
 import _Stream_WriteWord              "streams.lib" "_Stream_WriteWord"
 import _Stream_WriteInt               "streams.lib" "_Stream_WriteInt"
@@ -24,14 +23,17 @@ import _Stream_ReadFloat              "streams.lib" "_Stream_ReadFloat"
 import _Stream_ReadStr                "streams.lib" "_Stream_ReadStr"
 import _Stream_GetSize                "streams.lib" "_Stream_GetSize"
 import _Stream_Clear                  "streams.lib" "_Stream_Clear"
+import _Stream_UnPack                 "streams.lib" "_Stream_UnPack"
 
 import _MemoryStream_Create           "streams.lib" "_MemoryStream_Create"
+import _MemoryStream_LoadFromResource "streams.lib" "_MemoryStream_LoadFromResource"
 import _MemoryStream_LoadFromStream   "streams.lib" "_MemoryStream_LoadFromStream"
 import _MemoryStream_StoreToStream    "streams.lib" "_MemoryStream_StoreToStream"
 import _MemoryStream_LoadFromFile     "streams.lib" "_MemoryStream_LoadFromFile"
 import _MemoryStream_SaveToFile       "streams.lib" "_MemoryStream_SaveToFile"
 
 import _FileStream_Create             "streams.lib" "_FileStream_Create"
+import _FileStream_Close              "streams.lib" "_FileStream_Close"
 
 /*
  *  Base TStream class
@@ -46,41 +48,9 @@ class TStream:
 
   public:
     // constructor & destructor
-    proc Create
-
-    // main methods
-    proc Seek,
-         Clear
-
-    func GetCaretPos,
-         GetSize
-
-    // streams I/O operations
-    proc WriteFromMemoryStream,
-         ReadFromMemoryStream,
-         CopyFromStream
-
-    // I/O operations
-
-    proc Write,
-         WriteU,
-         WriteByte,
-         WriteWord,
-         WriteInt,
-         WriteFloat,
-         WriteStr
-
-    func ReadByte,
-         ReadWord,
-         ReadInt,
-         ReadFloat,
-         ReadStr
-end
-
-// constructor & destructor
-
-proc TStream::Create(resource):
-  $StreamPtr ?= resource
+    init(res):
+      $StreamPtr ?= res
+    end
 end
 
 // some methods
@@ -93,12 +63,16 @@ proc TStream::Clear():
   _Stream_Clear($StreamPtr)
 end
 
-func TStream::GetCaretPos():
+func TStream::Pos():
   return _Stream_GetCaretPos($StreamPtr)
 end
 
-func TStream::GetSize():
+func TStream::Size():
   return _Stream_GetSize($StreamPtr)
+end
+
+func TStream::UnPack():
+  return _Stream_UnPack($StreamPtr)
 end
 
 // stream operations
@@ -117,18 +91,14 @@ end
 
 // writers
 
-proc TStream::Write():
-  var t
-  t ?= argcount
-  while t > 0:
-    $WriteU()
-    dec t
+proc TStream::Write([args]):
+  for arg in args:
+    $WriteU(arg)
   end
 end
 
 proc TStream::WriteU(value):
   switch typeof(value):
-
     case typeWord:
       $WriteWord(value)
       break
@@ -149,8 +119,9 @@ proc TStream::WriteU(value):
       break
     end
 
-    else:
+    default:
       raise "With TStream: I/O error, invalid type cast!"
+    end
   end
 end
 
@@ -196,6 +167,29 @@ func TStream::ReadStr(ln):
   return _Stream_ReadStr($StreamPtr, ln)
 end
 
+func TStream::ReadText():
+  r ?= ""
+  i ?= 0
+  while i < $Size():
+    r += $ReadByte().chr()
+    i++
+  end
+
+  return r
+end
+
+proc TStream::ReadBuf(from_stream, len):
+  if ~_Stream_CopyBuffer($StreamPtr, from_stream -> StreamPtr, len):
+    raise new Exception("Native stream I/O exception")
+  end
+end
+
+proc TStream::WriteBuf(from_stream, len):
+  if ~_Stream_CopyBuffer(from_stream -> StreamPtr, $StreamPtr, len):
+    raise new Exception("Native stream I/O exception")
+  end
+end
+
 /*
  *  MemoryStream class
  */
@@ -203,31 +197,28 @@ end
 class MemoryStream(TStream):
   public:
     // constructor & destructor
-    proc Create
+    init([args]):
+      switch len(args):
+        case 0:
+          $StreamPtr ?= _MemoryStream_Create()
+        end
 
-    // some methods
-    proc LoadFromStream, StoreToStream,
-         LoadFromFile,   SaveToFile
-end
+        case 1:
+          $StreamPtr ?= args[0] -> StreamPtr
+        end
 
-// constructor & destructor
-
-proc MemoryStream::Create([args]):
-  switch len(args):
-    case 0:
-      $StreamPtr ?= _MemoryStream_Create()
+        default:
+          raise new Exception("MemoryStream::Create -> Wrong number of paramethers!")
+        end
+      end
     end
-
-    case 1:
-      $StreamPtr ?= args[0] -> StreamPtr
-    end
-
-    else:
-      raise new Exception("MemoryStream::Create -> Wrong number of paramethers!")
-  end
 end
 
 // some methods
+
+proc MemoryStream::LoadFromResource(ResourcePtr):
+  _MemoryStream_LoadFromResource($StreamPtr, ResourcePtr)
+end
 
 proc MemoryStream::LoadFromStream(mstream):
   _MemoryStream_LoadFromStream($StreamPtr, mstream -> StreamPtr)
@@ -238,39 +229,49 @@ proc MemoryStream::StoreToStream(mstream):
 end
 
 proc MemoryStream::LoadFromFile(fp):
-  _MemoryStream_LoadFromFile(fp, $StreamPtr)
+  if ~_MemoryStream_LoadFromFile(fp, $StreamPtr):
+    raise new Exception("File I/O exception")
+  end
 end
 
 proc MemoryStream::SaveToFile(fp):
-  println("we here")
-  _MemoryStream_SaveToFile(fp, $StreamPtr)
+  if ~_MemoryStream_SaveToFile(fp, $StreamPtr):
+    raise new Exception("File I/O exception")
+  end
 end
 
 /*
  *  FileStream
  */
 
+// FileStream modes
+
+enum TFileStreamMode [
+   fmCreate         = 0xFF00,
+   fmOpenRead       = 0,
+   fmOpenWrite      = 1,
+   fmOpenReadWrite  = 2,
+
+   fmShareCompat    = 0x0000,
+   fmShareExclusive = 0x0010,
+   fmShareDenyWrite = 0x0020,
+   fmShareDenyRead  = 0x0030,
+   fmShareDenyNone  = 0x0040
+]
+
 class FileStream(TStream):
   public:
     // constructor & destructor
-    proc Create
-end
+    init(fpath, openmode):
+      $StreamPtr ?= _FileStream_Create(fpath, openmode)
 
-// FileStream modes
+      if $StreamPtr == null:
+        $StreamPtr ?= null
+        raise new Exception("Raised native FileStream exception")
+      end
+    end
 
-word fmCreate         0xFF00
-word fmOpenRead       0
-word fmOpenWrite      1
-word fmOpenReadWrite  2
-
-word fmShareCompat    0x0000
-word fmShareExclusive 0x0010
-word fmShareDenyWrite 0x0020
-word fmShareDenyRead  0x0030
-word fmShareDenyNone  0x0040
-
-// constructor & destructor
-
-proc FileStream::Create(fpath, openmode):
-  $StreamPtr ?= _FileStream_Create(fpath, openmode)
+    proc Close():
+      _FileStream_Close($StreamPtr)
+    end
 end

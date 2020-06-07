@@ -1,0 +1,28 @@
+uses sockets
+uses threads
+uses crt
+
+proc foo():
+  while true:
+    try:
+      sock ?= new Socket()
+      sock -> Connect("127.0.0.1", "12345")
+
+      s ?= sock -> ReceiveLn(-1)
+      println.sync(s)
+    catch E:
+      E.print()
+    end
+
+    sleep(10)
+    gc()
+  end
+end
+
+proc main():
+  for i in 1..200:
+    foo.go()
+  end
+
+  inputln()
+end

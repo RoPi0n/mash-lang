@@ -11,6 +11,8 @@ type
     {** for stack **}
     bcPH,     // [top] = [var]
     bcPK,     // [var] = [top]
+    bcPHL,
+    bcPKL,
     bcPP,     // pop
     bcSDP,    // stkdrop
     bcSWP,    // [top] <-> [top-1]
@@ -21,6 +23,7 @@ type
     bcJN,     // [top] <> 0 ? jp [top-1]
     bcJC,     // jp [top] & push callback point as ip+1
     bcJR,     // jp to last callback point & rem last callback point
+    bcJRP,
 
     {** for untyped's **}
     bcEQ,     // [top] == [top-1] ? [top] = 1 : [top] = 0
@@ -105,7 +108,8 @@ type
     bcDBP,   // debug method call
 
     bcRST,   // Extra stack for recursion
-    bcRLD
+    bcRLD,
+    bcRDP
 
     //bcCOPST  //set handler for class-object operation
   );

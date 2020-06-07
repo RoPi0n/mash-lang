@@ -1,0 +1,28 @@
+uses "gen\svm\gen.mash"
+
+enum SupportedArch [saSVM]
+
+class Generator:
+  protected:
+    var Arch,
+        GenInstance
+
+  public:
+    init(Arch):
+      $Arch ?= Arch
+
+      switch Arch:
+        case saSVM:
+          $GenInstance ?= new GeneratorSVM()
+        end
+
+        default:
+          $GenInstance ?= new GeneratorSVM()
+        end
+      end
+    end
+
+    func Gen(Sem):
+      return $GenInstance -> Gen(Sem)
+    end
+end

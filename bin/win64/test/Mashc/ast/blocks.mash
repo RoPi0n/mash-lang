@@ -1,0 +1,301 @@
+uses classes.list
+uses "parser\token.mash"
+
+/*
+ *  Constructions
+ */
+
+// Import
+class MashASTB_Import:
+  var method_name, lib, name
+
+  init(m_name, lib, name):
+    $method_name ?= m_name
+    $lib ?= lib
+    $name ?= name
+  end
+end
+
+// RegAPI
+class MashASTB_RegAPI:
+  var method_name, number
+
+  init(m_name, num):
+    $method_name ?= m_name
+    $number ?= num
+  end
+end
+
+
+// Uses
+class MashASTB_Uses:
+  var expr
+
+  init(expr):
+    $expr ?= expr
+  end
+end
+
+// Inline
+class MashASTB_Inline:
+  var val
+
+  init(val):
+    $val ?= val
+  end
+end
+
+
+// Const
+class MashASTB_Const:
+  var Name, Value, isStream
+
+  init(Name, Value):
+    $Name ?= Name
+    $Value ?= Value
+    $isStream ?= false
+  end
+end
+
+
+// Method
+class MashASTB_Method:
+  var is_function, method_name, is_class_method, class_name,
+      params,
+      nodes,
+
+      line, fp,
+
+      // For sem & gen
+      varlist
+
+  init(is_function, method_name, is_class_method, class_name, line, fp):
+    $is_function ?= is_function
+    $method_name ?= method_name
+    $is_class_method ?= is_class_method
+    $class_name ?= class_name
+
+    $params ?= new list()
+    $nodes ?= new list()
+
+    $line ?= line
+    $fp ?= fp
+
+    $varlist ?= new list()
+  end
+end
+
+// If
+class MashASTB_If:
+  var Expr, Nodes, hasElse, NodesElse
+
+  init(Expr):
+    $Expr ?= Expr
+    $nodes ?= new list()
+    $hasElse ?= false
+    $nodesElse ?= new list()
+  end
+end
+
+// For each (in/back)
+class MashASTB_ForEach:
+  var forVar, isBack, Expr,
+      Nodes
+
+  init(forVar, isBack, Expr):
+    $forVar ?= forVar
+    $isBack ?= isBack
+    $Expr ?= Expr
+
+    $Nodes ?= new list()
+  end
+end
+
+// While
+class MashASTB_While:
+  var Expr, Nodes
+
+  init(Expr):
+    $Expr ?= Expr
+    $nodes ?= new list()
+  end
+end
+
+class MashASTB_Whilst(MashASTB_While): end
+
+// Return
+class MashASTB_Return:
+  var Expr
+  init(Expr):
+    $Expr ?= Expr
+  end
+end
+
+// Switch & case
+class MashASTB_Switch():
+  var Expr, Nodes, hasElse, caseElse
+
+  init(Expr):
+    $Expr ?= Expr
+    $Nodes ?= new list()
+    $hasElse ?= false
+    $caseElse ?= null
+  end
+
+  proc AddElse(c):
+    if $hasElse:
+      raise new Exception("Switch block can'h have more than one else case.")
+    else:
+      $caseElse ?= c
+      $hasElse = true
+    end
+  end
+end
+
+class MashASTB_Case:
+  var Expr, isElse, Nodes
+
+  init(Expr, isElse):
+    $Expr ?= Expr
+    $isElse ?= isElse
+    $Nodes ?= new list()
+  end
+end
+
+// Launch
+class MashASTB_Launch:
+  var Nodes
+
+  init():
+    $Nodes ?= new list()
+  end
+end
+
+// Async
+class MashASTB_Async:
+  var Nodes, forVar
+
+  init(forVar):
+    $Nodes ?= new list()
+    $forVar ?= forVar
+  end
+end
+
+// Wait
+class MashASTB_Wait:
+  var Expr
+
+  init(Expr):
+    $Expr ?= Expr
+  end
+end
+
+
+// Break & Continue
+class MashASTB_Break:
+end
+
+class MashASTB_Continue:
+end
+
+// Class
+
+class MashASTB_Class:
+  var name, vars, methods, parents
+
+  init(name):
+    $name ?= name
+    $vars ?= new list()
+    $methods ?= new list()
+    $parents ?= new list()
+  end
+end
+
+class MashClassMethodRef:
+  var name, reference
+
+  init(name, r):
+    $name ?= name
+    $reference ?= r
+  end
+end
+
+
+// Class fields
+class MashASTB_ClassField:
+  var names
+
+  init():
+    $names ?= new list()
+  end
+end
+
+// Sections
+class MashASTB_Public:
+end
+
+class MashASTB_Private:
+end
+
+class MashASTB_Protected:
+end
+
+// Try..catch & raise
+class MashASTB_Try:
+  var Nodes, hasCatch, NodesCatch, forVar
+
+  init():
+    $nodes ?= new list()
+    $hasCatch ?= false
+    $NodesCatch ?= new list()
+    $forVar ?= null
+  end
+end
+
+class MashASTB_Raise:
+  var Expr
+
+  init(Expr):
+    $Expr ?= Expr
+  end
+end
+
+// Safe
+class MashASTB_Safe:
+  var Expr
+
+  init(Expr):
+    $Expr ?= Expr
+  end
+end
+
+// Enum
+class MashASTB_Enum:
+  var Name, Objects
+
+  init(Name):
+    $Name ?= Name
+    $Objects ?= new list()
+  end
+end
+
+class MashASTB_EnumItem:
+  var Name, hasDefValue, DefValue
+
+  init(Name):
+    $Name ?= Name
+    $hasDefValue ?= false
+    $DefValue ?= null
+  end
+end
+
+/*
+ *  Expressions & other
+ */
+class MashASTB_Expression:
+  var tokens
+
+  init():
+    $tokens ?= new list()
+  end
+end

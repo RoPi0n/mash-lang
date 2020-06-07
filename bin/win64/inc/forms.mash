@@ -1,1 +1,5 @@
-uses <mcl\forms>
+/*
+ *  MCL is a Mash Control Library
+ */
+
+uses mcl.forms

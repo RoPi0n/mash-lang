@@ -1,0 +1,27 @@
+uses crt
+
+func factor(n):
+  if n > 1:
+    return n * factor(n - 1)
+  else:
+    return 1
+  end
+end
+
+proc main():
+  while true:
+    tm ?= TickCnt()
+    k ?= 0
+    while k < 100:
+      i ?= 1
+      while i <= 20:
+        factor(i)
+        i++
+      end
+      k++
+    end
+    println(TickCnt() - tm)
+    gc()
+  end
+  inputln()
+end

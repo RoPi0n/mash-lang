@@ -1,0 +1,51 @@
+uses crt
+uses math.plots
+
+proc main():
+  plt ?= new MathPlot3d(10, 50, new MathRotation(0, 0, 0))
+
+  x ?= 3.051522
+  y ?= 1.582542
+  z ?= 15.62388
+
+  a ?= 5
+  b ?= 15
+  c ?= 1
+
+  dt ?= 0.05
+
+  obj ?= []
+
+  i ?= 200
+  while i > 0:
+    _x ?= x + a * (-x + y) * dt
+    _y ?= y + (b*x - y - z*x) * dt
+    _z ?= z + (-c*z + x*y) * dt
+    x ?= _x
+    y ?= _y
+    z ?= _z
+
+    obj.append([x, y, z])
+
+    i--
+  end
+
+  al ?= 0
+
+  while true:
+    graph -> clear()
+    for p in obj:
+      plt -> NextPoint(p[1], p[2], p[0])
+    end
+    plt -> finish()
+    gc()
+
+    if al < 2 * m_pi: al += 0.01 else: al ?= 0 end
+
+    plt -> Rotation ?= new MathRotation(al, al, al)
+
+    sleep(1000 \ 60)
+  end
+
+  inputln()
+end

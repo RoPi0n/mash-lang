@@ -8,6 +8,7 @@ interface
 uses
   Classes,
   SysUtils,
+  syncobjs,
   svm_common,
   svm_stack,
   svm_res,
@@ -20,24 +21,39 @@ uses
 {***** Context ****************************************************************}
 type
   TSVMThreadContext = class
-  public
-    CtxMemory: PMemory;
-    CtxStack: TStack;
-    constructor Create(mem: PMemory; stack: PStack);
-    destructor Destroy; override;
+    public
+      CtxMemory: PMemory;
+      CtxStack: TStack;
+      constructor Create(mem: PMemory; stack: PStack);
+      destructor Destroy; override;
   end;
 
   TSVMThread = class(TThread)
-  public
-    vm: PSVM;
-    constructor Create(bytes: PByteArr; consts: PConstSection;
-      extern_methods: PImportSection; svm_memory: PMemory;
-      method: TInstructionPointer; arg: pointer);
-    procedure Execute; override;
-    destructor Destroy; override;
+    public
+      vm: PSVM;
+      constructor Create(bytes: PByteArr; consts: PConstSection;
+        extern_methods: PImportSection; svm_memory, svm_local_memory: PMemory;
+        method: TInstructionPointer; arg: pointer);
+      procedure Execute; override;
+      destructor Destroy; override;
   end;
 
+  procedure InitThreads;
+  procedure FreeThreads;
+
+  procedure RefCounterInc(m: TSVMMem); inline;
+  procedure RefCounterDec(m: TSVMMem); inline;
 implementation
+
+procedure InitThreads;
+begin
+
+end;
+
+procedure FreeThreads;
+begin
+
+end;
 
 {***** Context ****************************************************************}
 
@@ -75,10 +91,56 @@ begin
   inherited;
 end;
 
+// Some features
+
+procedure RefCounterInc(m: TSVMMem); inline;
+var
+  c, l: cardinal;
+  _m: TSVMMem;
+begin
+  if m.m_type in [svmtArr, svmtClass] then
+   begin
+     c := 0;
+     l := Length(PMemArray(m.m_val)^);
+     while c < l do
+      begin
+        _m := TSVMMem(PMemArray(m.m_val)^[c]);
+        if _m.m_type <> svmtNull then
+         InterlockedIncrement(_m.m_rcnt);
+        Inc(c);
+      end;
+   end;
+
+  if m.m_type <> svmtNull then
+   InterlockedIncrement(m.m_rcnt);
+end;
+
+procedure RefCounterDec(m: TSVMMem); inline;
+var
+  c, l: cardinal;
+  _m: TSVMMem;
+begin
+  if m.m_type in [svmtArr, svmtClass] then
+   begin
+     c := 0;
+     l := Length(PMemArray(m.m_val)^);
+     while c < l do
+      begin
+        _m := TSVMMem(PMemArray(m.m_val)^[c]);
+        if _m.m_type <> svmtNull then
+         InterlockedDecrement(_m.m_rcnt);
+        Inc(c);
+      end;
+   end;
+
+  if m.m_type <> svmtNull then
+   InterlockedDecrement(m.m_rcnt);
+end;
+
 {***** Thread *****************************************************************}
 
 constructor TSVMThread.Create(bytes: PByteArr; consts: PConstSection;
-  extern_methods: PImportSection; svm_memory: PMemory;
+  extern_methods: PImportSection; svm_memory, svm_local_memory: PMemory;
   method: TInstructionPointer; arg: pointer);
 var
   c, ml: cardinal;
@@ -94,28 +156,30 @@ begin
   vm^.stack.init;
   vm^.rstack.init;
   vm^.cbstack.init;
+  vm^.pVM_NULL := VM_NULL;
 
   //fill mem map
-  new(vm^.mem);
+  vm^.mem := svm_memory;
+  new(vm^.local_mem);
+
   ml := Length(svm_memory^);
-  SetLength(vm^.mem^, ml);
+  SetLength(vm^.local_mem^, ml);
   c := 0;
   while c < ml do
   begin
-    vm^.mem^[c] := svm_memory^[c];
-
-    if svm_memory^[c] <> nil then
-      //if TObject(svm_memory^[c]) is TSVMMem then
-      Inc(TSVMMem(svm_memory^[c]).m_refc);
+    vm^.local_mem^[c] := svm_local_memory^[c];
+    RefCounterInc(TSVMMem(vm^.local_mem^[c]));
 
     Inc(c);
   end;
 
+  RefCounterInc(TSVMMem(arg));
+  InterlockedDecrement(TSVMMem(arg).m_rcnt);
   vm^.stack.push(arg);
   vm^.ip := method;
   vm^.grabber := TGrabber.Create;
   m := NewSVMM_Ref(self, vm^.grabber);
-  m.m_refc := 1;
+  m.m_rcnt := 1;
   vm^.stack.push(m);
 
   inherited Create(True);
@@ -126,28 +190,32 @@ begin
   vm^.RunThread;
 end;
 
+
 destructor TSVMThread.Destroy;
 var
   c, ml: cardinal;
+  m: TSVMMem;
 begin
-  ml := Length(vm^.mem^);
+  ml := Length(vm^.local_mem^);
   c := 0;
   while c < ml do
   begin
-    if vm^.mem^[c] <> nil then
-      //if TObject(vm^.mem^[c]) is TSVMMem then
-      Dec(TSVMMem(vm^.mem^[c]).m_refc);
+    m := TSVMMem(vm^.local_mem^[c]);
+    RefCounterDec(m);
 
     Inc(c);
   end;
 
-  vm^.stack.drop;
-  vm^.rstack.drop;
+  vm^.stack.free;
+  vm^.rstack.free;
+  SetLength(vm^.try_blocks.trblocks, 0);
 
+  vm^.grabber.RunFull;
   GrabbersStorage.Add(vm^.grabber);
+  //InterlockedIncrement(GrabbersInStorage);
 
-  SetLength(vm^.mem^, 0);
-  Dispose(vm^.mem);
+  SetLength(vm^.local_mem^, 0);
+  Dispose(vm^.local_mem);
   Dispose(vm);
 
   inherited Destroy;

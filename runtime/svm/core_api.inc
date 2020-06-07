@@ -2,19 +2,25 @@ procedure SVM_Init; stdcall;
 begin
   GrabbersStorage := TThreadList.Create;
 
-  {$IfDef Windows}
+  {$IfDef WindowsSEH}
     SVM_InitVEH;
   {$EndIf}
+
+  InitSVMM;
+  InitThreads;
 end;
 
 procedure SVM_Free; stdcall;
 begin
   GlobalTerm;
+  FreeThreads;
   FreeAndNil(GrabbersStorage);
 
-  {$IfDef Windows}
+  {$IfDef WindowsSEH}
     SVM_FreeVEH;
   {$EndIf}
+
+  FreeSVMM;
 end;
 
 function SVM_CreateVM(CustomArgs: boolean):PSVM; stdcall;
@@ -26,6 +32,7 @@ begin
   new(Result^.mem);
 
   Result^.isMainThread := true;
+  Result^.pVM_NULL := VM_NULL;
   Result^.stack.init;
   Result^.rstack.init;
   Result^.cbstack.init;

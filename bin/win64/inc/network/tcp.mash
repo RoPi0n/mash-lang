@@ -1,0 +1,61 @@
+uses sockets
+uses classes.asyncpool
+
+
+
+class TcpServer:
+  private:
+    var listener,
+        max_threads,
+        pool,
+        active,
+        listen_thr,
+        port
+
+    proc listen():
+      while $active:
+        conn ?= $listener -> accept()
+        $pool -> AddTask($process_connection.callable(conn))
+        //$process_connection(conn)
+        gc()
+      end
+    end
+
+    proc process_connection(connection):
+      $accept(connection)
+      connection -> close()
+    end
+
+  public:
+    init(port):
+      $max_threads ?= 8
+      $active ?= false
+      $port ?= port
+    end
+
+    proc start():
+      $listener ?= new Socket()
+      $listener -> bind("0.0.0.0", $port)
+      $listener -> listen()
+      $pool ?= new AsyncPool($max_threads)
+      $active ?= true
+      $listen_thr ?= $listen.go()
+    end
+
+    proc stop():
+      $active ?= false
+      $listen_thr -> waitfor()
+      $pool -> stop()
+      $listener -> close()
+      $listener ?= null
+    end
+
+    proc accept(connection):
+      // For overriding
+    end
+end
+
+
+
+class TcpClient(Socket):
+end

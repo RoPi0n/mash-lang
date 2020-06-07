@@ -1,0 +1,26 @@
+{{uses 'index.htm'}}
+
+
+
+{{ def body }}
+    <div class="container h-100">
+        <div class="row align-items-center h-100">
+            <div class="col-6 mx-auto">
+                <div class="jumbotron text-center">
+                    <div class="row">
+                        <div class="col-md-auto">
+                            <img src="/static/images/logo.png" class="img-fluid">
+                        </div>
+                        <div class="col">
+                            <h4>Почему Mash?</h4>
+
+                            {{ list test_list }}
+                              {{ test_list.i }} - {{ test_var }}<br/>
+                            {{ end test_list }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{{ end body }}

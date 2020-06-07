@@ -1,35 +1,39 @@
 /*
- *  Algs.mash
  *  That module contains implementation's of some algorithms.
  */
 
-uses <bf>
+uses threads
 
+/*
+ *  Routines
+ */
 proc ReverseArray(arr):
   l ?= len(arr)
-  for (i ?= 0; i < len \ 2; i++):
-    tmp ?= arr[l - i - 1]
+  i ?= 0
+  while i < (l \ 2):
+    _ ?= arr[l - i - 1]
     arr[l - i - 1] ?= arr[i]
-    arr[i] ?= tmp
+    arr[i] ?= _
+    i++
   end
 end
 
 func GetMax(arr, n):
   mx ?= arr[0]
-  for (i ?= 1; i < n; i++):
-    if arr[i] > mx:
-      mx = arr[i]
-    end
+  i ?= 1
+  while i < n:
+    if arr[i] > mx: mx = arr[i] end
+    i++
   end
   return mx
 end
 
 func GetMin(arr, n):
   mn ?= arr[0]
-  for (i ?= 1; i < n; i++):
-    if arr[i] < mn:
-      mn = arr[i]
-    end
+  i ?= 1
+  while i < n:
+    if arr[i] < mn: mn = arr[i] end
+    i++
   end
   return mn
 end
@@ -37,194 +41,71 @@ end
 /*
  *  Quick sorting algorithm implementation.
  */
+func Partition(arr, low, high):
+  i ?= low - 1
+  pivot ?= arr[high]
 
-proc FromToQSort(arr, left, right):
-  i ?= left
-  j ?= right
-  pivot ?= arr[(left + right) \ 2]
-
-  while i < (j + 1):
-    while arr[i] < pivot:
+  j ?= low.copy()
+  while j < high:
+    if arr[j] < pivot:
       i++
-    end
-
-    while arr[j] > pivot:
-      j--
-    end
-
-    if i < (j + 1):
-      tmp ?= arr[i]
+      _ ?= arr[i]
       arr[i] ?= arr[j]
-      arr[j] ?= tmp
-      i++
-      j--
+      arr[j] ?= _
     end
+
+    j++
   end
 
-  if left < j:
-    safe FromToQSort(arr, left, j)
-  end
+  _ ?= arr[i + 1]
+  arr[i + 1] ?= arr[high]
+  arr[high] ?= _
 
-  if i < right:
-    safe FromToQSort(arr, i, right)
+  return i + 1
+end
+
+proc FromToQSort(arr, low, high):
+  if low < high:
+    pi ?= partition(arr,low,high)
+    FromToQSort(arr, low, pi - 1)
+    FromToQSort(arr, pi + 1, high)
   end
 end
 
 proc QuickSort(arr):
   FromToQSort(arr, 0, len(arr) - 1)
+  return arr
 end
 
-/*
- *  Multithreaded Quick sorting algorithm implementation.
- */
-
-proc FromToThrQSort(arr, left, right, lvl, maxlvl):
-  i ?= left
-  j ?= right
-  pivot ?= arr[(left + right) \ 2]
-
-  while i < (j + 1):
-    while arr[i] < pivot:
-      i++
-    end
-
-    while arr[j] > pivot:
-      j--
-    end
-
-    if i < (j + 1):
-      tmp ?= arr[i]
-      arr[i] ?= arr[j]
-      arr[j] ?= tmp
-      i++
-      j--
-    end
-  end
-
-  if lvl < maxlvl:
-    async ThrL:
-      if left < j:
-        FromToThrQSort(arr, copy(left), copy(j), lvl + 1, maxlvl)
+proc ThreadedFromToQSort(arr, low, high, lvl):
+  if low < high:
+    pi ?= partition(arr,low,high)
+    if lvl > 0:
+      async L:
+        ThreadedFromToQSort(arr, low, pi - 1, lvl - 1)
       end
-    end
 
-
-    async ThrR:
-      if i < right:
-        FromToThrQSort(arr, copy(i), copy(right), lvl + 1, maxlvl)
+      async R:
+        ThreadedFromToQSort(arr, pi + 1, high, lvl - 1)
       end
-    end
 
-    wait ThrL, ThrR
-  else:
-    if left < j:
-      safe FromToThrQSort(arr, left, j, lvl, maxlvl)
-    end
-
-    if i < right:
-      safe FromToThrQSort(arr, i, right, lvl, maxlvl)
-    end
-  end
-end
-
-proc ThrQuickSort(arr, maxthr):
-  FromToThrQSort(arr, 0, len(arr) - 1, 0, maxthr \ 2)
-end
-
-/*
- *  Heap sorting algorithm implementation.
- */
-
-proc HeapSortTo(arr, n):
-  i ?= n / 2
-
-  while true:
-    if i > 0:
-      i--
-      t ?= arr[i]
+      wait L
+      wait R
     else:
-      n--
-      if n == 0:
-        exit
-      end
-      t ?= arr[n]
-      arr[n] ?= arr[0]
+      FromToQSort(arr, low, pi - 1)
+      FromToQSort(arr, pi + 1, high)
     end
-
-    parent ?= i
-    child ?= i * 2 + 1
-
-    while child < n:
-      if (child + 1 < n) & (arr[child + 1] > arr[child]):
-        child++
-      end
-
-      if arr[child] > t:
-        arr[parent] ?= arr[child]
-        parent ?= child
-        child ?= parent * 2 + 1
-      else:
-        break
-      end
-    end
-    arr[parent] ?= t
   end
 end
 
-proc HeapSort(arr):
-  HeapSortTo(arr, len(arr) - 1)
-
-  n ?= len(arr) - 1
-  t ?= arr[n]
-  for (i ?= n; i > 0; i--):
-    arr[i] ?= arr[i - 1]
-  end
-  arr[0] ?= t
-end
-
-/*
- *  Radix sort
- */
-
-proc CountSort(arr, n, e):
-  output ?= new[n]
-  count ?= new[10]
-
-  for (i ?= 0; i < 10; i++):
-    count[i] ?= 0
-  end
-
-  for (i = 0; i < n; i++):
-    count[(arr[i] \ e) % 10]++
-  end
-
-  for (i = 1; i < 10; i++):
-    count[i] += count[i - 1]
-  end
-
-  for (i = n - 1; i >= 0; i--):
-    output[count[(arr[i] \ e) % 10] - 1] ?= arr[i]
-    count[(arr[i] \ e) % 10]--
-  end
-
-  for (i = 0; i < n; i++):
-    arr[i] ?= output[i]
-  end
-end
-
-proc RadixSort(arr):
-  n ?= len(arr)
-  m ?= getMax(arr, n)
-
-  for (e ?= 1; m \ e > 0; e *= 10):
-    CountSort(arr, n, e)
-  end
+proc ThreadedQuickSort(arr, threads):
+  ThreadedFromToQSort(arr, 0, len(arr) - 1, threads \ 2)
+  return arr
 end
 
 /*
  *  Binary search
  */
-
 func FromToBinSearch(arr, left, right, key):
   while true:
     midd ?= (left + right) \ 2
@@ -298,8 +179,7 @@ func FromToInterpolarSearch(arr, left, right, key):
 
   while (arr[left] < key) & (arr[right] > key) & (~found):
 
-    pos = left + ( (key - arr[left]) * (right - left) ) /
-                   (arr[right] - arr[left])
+    pos = left + (key - arr[left]) * (right - left) / (arr[right] - arr[left])
 
     if arr[pos] < key:
       left = pos + 1

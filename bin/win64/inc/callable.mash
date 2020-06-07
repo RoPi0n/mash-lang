@@ -1,0 +1,50 @@
+/*
+ *  Anonymous functions implementation
+ */
+
+class TCallable:
+  public:
+    var _this, method, args
+
+    init(_this, method, args):
+      $_this ?= _this
+      $method ?= method
+      $args ?= args
+    end
+
+    proc call([args]):
+      _this ?= $_this
+      method ?= $method
+
+      for arg back args:
+        x ?= arg
+        inline "push $x"
+      end
+
+      for arg back $args:
+        x ?= arg
+        inline "push $x"
+      end
+
+      argc ?= $args.len() + args.len()
+      inline "push $argc"
+      inline "peek global.arg_counter"
+      inline "pop"
+      inline "push $_this"
+      inline "peek global.this"
+      inline "pop"
+      inline "push $method"
+      inline "jc"
+    end
+end
+
+
+
+func callable(method, [args]):
+  _this ?= null
+  inline "push global.this"
+  inline "peek $_this"
+  inline "pop"
+
+  return new TCallable(_this, method, args)
+end

@@ -1,7 +1,0 @@
-import Socks.WSAStartup       "socks.lib" "WSAStartup"
-import Socks.WSACleanup       "socks.lib" "WSACleanup"
-import Socks.Socket           "socks.lib" "Socket"
-import Socks.Connect          "socks.lib" "Connect"
-import Socks.SendMemoryStream "socks.lib" "SendMemoryStream"
-import Socks.RecvMemoryStream "socks.lib" "RecvMemoryStream"
-import Socks.CloseSocket      "socks.lib" "CloseSocket"

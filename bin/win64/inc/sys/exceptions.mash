@@ -1,73 +1,113 @@
-// Abstract exceptions
+/*
+ *  This file are important library of mash language.
+ *  Don't modify this if you don't know what's you doing.
+ */
 
-str ERaisedException  "ERaisedException"
-str EInvalidVMOp      "EInvalidSVMOperation"
-str EInvalidTypeCast  "EInvalidSVMTypeCast"
-str EAbstractError    "EAbstractError"
-str EUnknownException "EUnknownException"
+uses sys.arrays
 
-var EAbstractException = [
-       ERaisedException,
-       EInvalidVMOp,
-       EInvalidTypeCast,
-       EAbstractError,
-       EUnknownException]
+enum EAbstractException [
+  ERaisedException  = "ERaisedException",
+  EInvalidVMOp      = "EInvalidSVMOperation",
+  EInvalidTypeCast  = "EInvalidSVMTypeCast",
+  EAbstractError    = "EAbstractError",
+  EUnknownException = "EUnknownException"
+]
 
-// Common exceptions
+enum EMathException [
+  EIntError    = "EInterror",
+  EDivByZero   = "EDivByZero",
+  ERangeError  = "ERangeError",
+  EIntOverflow = "EIntOverflow",
 
-str EIntError         "EInterror"
-str EDivByZero        "EDivByZero"
-str ERangeError       "ERangeError"
-str EIntOverflow      "EIntOverflow"
+  EMathError   = "EMathError",
+  EInvalidOp   = "EInvalidOp",
+  EZeroDivide  = "EZeroDivide",
+  EOverflow    = "EOverflow",
+  EUnderflow   = "EUnderflow"
+]
 
-str EMathError        "EMathError"
-str EInvalidOp        "EInvalidOp"
-str EZeroDivide       "EZeroDivide"
-str EOverflow         "EOverflow"
-str EUnderflow        "EUnderflow"
+enum ECriticalException [
+  EAccessViolation = "EAccessViolation",
+  EOSError         = "EOSError",
+  ENoThreadSupport = "ENoThreadSupport"
+]
 
-var EMathException = [EIntError,
-                      EDivByZero,
-                      ERangeError,
-                      EIntOverflow,
-
-                      EMathError,
-                      EInvalidOp,
-                      EZeroDivide,
-                      EOverflow,
-                      EUnderflow]
-
-// Critical exceptions
-
-str EAccessViolation "EAccessViolation"
-str EOSError         "EOSError"
-str ENoThreadSupport "ENoThreadSupport"
-
-var ECriticalException = [EAccessViolation,
-                          EOSError,
-                          ENoThreadSupport]
-
-// Exception catching
+// Exception catching / raising class
 
 class Exception:
-  var ClassName, Message
-  proc Create
+  public:
+    var ClassName,
+        Message,
+        Addr,
+        TraceBackStack
+
+    init(Message):
+      $ClassName ?= ERaisedException
+      $Message ?= Message
+      $Addr ?= null
+      $TraceBackStack ?= system_traceback_stack
+    end
+
+    func ToString():
+      s ?= "Exception <" + $ClassName + ">, Message: '" + $Message + "', at address: #" + $TraceBackStack[0] -> Addr + LnBreak + "Call trace:"
+      i ?= len($TraceBackStack) - 1
+      for r in $TraceBackStack:
+        s += LnBreak
+
+        switch i:
+          case len($TraceBackStack) - 1:
+            s += ".<- " + r -> ToString() + ", [raised]"
+          end
+
+          case 0:
+            s += "'-> " + r -> ToString() + ", [catched]"
+          end
+
+          default:
+            s += "|   " + r -> ToString()
+          end
+        end
+
+        i--
+      end
+      return s
+    end
 end
 
-proc Exception::Create(Message):
-  $ClassName ?= ERaisedException
-  $Message ?= Message
-end
-
-func __MakeException(classname, message):
-  if classname == ERaisedException:
-    return message
+func system_makeexception(Addr, ClassName, Message):
+  if ClassName == ERaisedException:
+    return Message
   else:
     E ?= new Exception
-    E -> ClassName ?= classname
-    E -> Message ?= message
+    E -> ClassName ?= ClassName
+    E -> Message ?= Message
+    E -> Addr ?= Addr
+    E -> TraceBackStack ?= system_traceback_stack
+    system_traceback_stack ?= []
     return E
   end
 end
 
-var EUnknown = __MakeException(EUnknownException, "Unknown raised exception.")
+class TraceBackRecord:
+  var Addr, MethodName, MethodAddr
+
+  init(Addr, MethodName, MethodAddr):
+    $Addr ?= Addr
+    $MethodName ?= MethodName
+    $MethodAddr ?= MethodAddr
+  end
+
+  func ToString():
+    return "At method '" + $MethodName + "', (#" + $MethodAddr + ")"
+  end
+end
+
+proc system_traceback(Addr, MethodName, MethodAddr):
+  system_traceback_stack.append(new TraceBackRecord(Addr, MethodName, MethodAddr))
+end
+
+proc system_reset_traceback():
+  system_traceback_stack ?= []
+end
+
+EUnknown ?= system_makeexception(0, EUnknownException, "Unknown raised exception")

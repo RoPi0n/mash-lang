@@ -1,0 +1,230 @@
+uses classes.list
+uses classes.stringlist
+uses "parser\token.mash"
+uses strings
+uses math.base
+
+/*
+ *  This class should break mash code to tokens
+ */
+class MashParser:
+  protected:
+    var fp, code, tokens,
+        line,
+
+        commentGoing
+
+  public:
+    init(code, fp):
+      $code ?= code
+      $fp ?= fp
+      $tokens ?= new list()
+      $line ?= 0
+
+      $commentGoing ?= false
+    end
+end
+
+proc MashParser::Parse():
+  while $code -> size > $line:
+    s ?= $code -> get($line).trim()
+
+    if len(s) > 0:
+      $ParseLine(s)
+      if $tokens -> count() > 0:
+        tk ?= $tokens -> items[$tokens -> count() - 1]
+        if tk -> info <> ttEndOfLine:
+          $tokens -> add(new MashToken("", ttEndOfLine, $line))
+        end
+      end
+    end
+
+    $line++
+    gc()
+  end
+
+  $Preprocess()
+end
+
+proc MashParser::Preprocess():
+  i ?= 1
+  while i < ($tokens -> count() - 1):
+    tk ?= $tokens -> items[i]
+
+    if tk -> info == ttEndOfLine:
+      tkL ?= $tokens -> items[i - 1]
+      tkR ?= $tokens -> items[i + 1]
+
+      if (tkR -> info == ttEndOfLine) | (tkR -> value in MashOperatorsTokens) | (tkL -> value in MashOperatorsTokens) |
+         (tkR -> value in [",", ")", "]", "->"]) | (tkL -> value in [",", "(", "[", "->"]):
+        $tokens -> delete(i)
+        i = 0
+      end
+    end
+    i++
+    gc()
+  end
+end
+
+AlphaChars ?= "abcdefghijklmnopqrstuvwxyz_"
+DigitChars ?= "0123456789"
+HexChars   ?= "0123456789abcdef"
+
+proc MashParser::ParseLine(s):
+  while len(s) > 0:
+    if s.leftstr(2) == "//":
+      break
+    end
+
+    if s.leftstr(2) == "/*":
+      $commentGoing = true
+      s.cut(0, 2)
+    end
+
+    while (s.leftstr(1) == DQuote) & (~$commentGoing):
+      s.cut(0, 1)
+      line_ended ?= false
+
+      st ?= ""
+      while len(s) > 0:
+        if s[0] == DQuote:
+          line_ended = true
+          s.cut(0, 1)
+          break
+        else:
+          st += s[0]
+          s.cut(0, 1)
+        end
+      end
+
+      $tokens -> add(new MashToken(st, ttString, $line))
+
+      if ~line_ended:
+        raise new Exception("Missed string end " + DQuote + " symbol at line " +
+                            ($line + 1) + " at file '" + $fp + "'")
+      end
+
+      s = s.trim()
+    end
+
+    if ~$commentGoing:
+      s ?= s.trim()
+
+      if len(s) > 0:
+        // Searching for word or token
+        if strlower(s[0]) in AlphaChars:
+          wrd ?= ""
+
+          /*while len(s) > 0:
+            ch ?= strlower(s[0])
+            if (ch in AlphaChars) | (ch in DigitChars):
+              wrd += ch
+              s.Cut(0, 1)
+            else:
+              break
+            end
+          end */
+
+          /*if wrd == "init":
+            $tokens -> add(new MashToken("proc", ttToken, $line))
+            $tokens -> add(new MashToken("create", ttWord, $line))
+          else:
+            tt ?= check(wrd in MashTokens, ttToken, ttWord)
+            $tokens -> add(new MashToken(wrd, tt, $line))
+          end */
+        /*else:
+          // Searching for digit|float|hex
+          if s[0] in DigitChars:
+            dig ?= ""
+            dot ?= false
+
+            if s.leftstr(2) == "0x":
+              dig ?= "$"
+              s.cut(0, 2)
+
+              while (len(s) > 0) & (strlower(s.leftstr(1)) in HexChars):
+                dig += strlower(s[0])
+                s.cut(0, 1)
+              end
+            else:
+              while len(s) > 0:
+                if s[0] in DigitChars:
+                  dig += s[0]
+                  s.cut(0, 1)
+                else:
+                  if (s[0] == ".") & (~dot) & (s.SubStr(1, 1) in DigitChars):
+                    dig += s[0]
+                    s.cut(0, 1)
+                  else:
+                    break
+                  end
+                end
+              end
+            end
+
+            if len(dig) == 0:
+              raise new Exception("Invalid token (digit?) at line " +
+                                  ($line + 1) + " at file '" + $fp + "'")
+            end
+
+            $tokens -> add(new MashToken(dig, ttDigit, $line))
+          else:
+            // Searching for operator
+            t ?= ""
+            op ?= ""
+            founded ?= false
+            brk ?= false
+            spaces ?= 0
+
+            ts ?= copy(s)
+
+            while (len(ts) > 0) & (~brk):
+              if ts[0] <> " ":
+                t += ts[0]
+              else:
+                spaces++
+              end
+              ts.cut(0, 1)
+
+              if t in MashTokens:
+                op ?= copy(t)
+                founded = true
+              end
+
+              brk = true
+              for tk in MashTokens:
+                if t in tk:
+                  brk = false
+                  break
+                end
+              end
+            end
+
+            s.cut(0, len(op) + spaces)
+
+            if op == "$":
+              $tokens -> add(new MashToken("this", ttWord, $line))
+              $tokens -> add(new MashToken("->", ttToken, $line))
+            else:
+              $tokens -> add(new MashToken(op, ttToken, $line))
+            end
+          end */
+        end 
+      end
+    end
+
+    if $commentGoing:
+      if s.leftstr(2) == "*/":
+        $commentGoing = false
+        s.cut(0, 2)
+      else:
+        if len(s) > 0:
+          s.cut(0, 1)
+        end
+      end
+    end
+
+    s = s.trim()
+    gc()
+  end
+end

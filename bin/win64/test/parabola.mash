@@ -1,0 +1,13 @@
+uses math.plots
+uses crt
+
+func parabola(x):
+  if x > 1: return null end
+  return x * x
+end
+
+proc main():
+  p ?= new MathPlot(MathPlot -> Decart, MathPlot -> DefScale)
+  p -> Draw(Parabola)
+  inputln()
+end

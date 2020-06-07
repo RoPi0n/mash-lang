@@ -1,5 +1,6 @@
 unit svm_core;
 
+//{$define WindowsSEH}
 {$mode objfpc}
 {$H+}
 
@@ -24,7 +25,7 @@ type
   public
     ip, end_ip: TInstructionPointer;
     mainclasspath: string;
-    mem: PMemory;
+    mem, local_mem: PMemory;
     grabber: TGrabber;
     stack, rstack: TStack;
     cbstack: TCallBackStack;
@@ -33,6 +34,7 @@ type
     extern_methods: PImportSection;
     try_blocks: TTRBlocks;
     isMainThread, CustomArgsMode: boolean;
+    pVM_NULL: TSVMMem;
     procedure Run;
     procedure RunThread;
     procedure LoadByteCodeFromFile(fn: string);
@@ -62,7 +64,7 @@ begin
     while c > 1 do
     begin
       r := NewSVMM_FS(ParamStr(c), Grabber);
-      r.m_refc := 1;
+      r.m_rcnt := 1;
       self.stack.push(r);
       Dec(c);
     end;
@@ -73,12 +75,12 @@ begin
     s := ExtractFilePath(ParamStr(0)) + ParamStr(1);
 
   r := NewSVMM_FS(s, Grabber);
-  r.m_refc := 1;
+  r.m_rcnt := 1;
 
   self.stack.push(r);
 
   r := NewSVMM_FW(self.stack.i_pos, Grabber);
-  r.m_refc := 1;
+  r.m_rcnt := 1;
   self.stack.push(r);
 
   self.RunThread;
@@ -137,8 +139,8 @@ var
   p, p2: pointer;
   r: TSVMMem;
   s: string;
-  c: cardinal;
-  {$IfDef Windows}
+  c, j: cardinal;
+  {$IfDef WindowsSEH}
   lst: TList;
   {$EndIf}
 begin
@@ -146,12 +148,15 @@ begin
     try
       while self.ip < self.end_ip do
       begin
-          {$IfDef DebugVer}
+        {if isMainThread and (GrabbersInStorage > 0) then
+         GlobalGC;}
+
+        {$IfDef DebugVer}
         writeln('IP: ', self.ip, ', Op: ',
           GetEnumName(TypeInfo(TComand), self.bytes^[self.ip]));
-          {$EndIf}
+        {$EndIf}
 
-          {$IfDef Windows}
+        {$IfDef WindowsSEH}
         if VEHExceptions_Count > 0 then
           try
             lst := VEHExceptions.LockList;
@@ -179,7 +184,7 @@ begin
           finally
             VEHExceptions.UnlockList;
           end;
-          {$EndIf}
+        {$EndIf}
 
         case TInstruction(self.bytes^[self.ip]) of
           bcPH:
@@ -190,9 +195,7 @@ begin
 
             p := self.mem^[c];
 
-            if p <> nil then
-              //if TObject(p) is TSVMMem then
-              Inc(TSVMMem(p).m_refc);
+            InterlockedIncrement(TSVMMem(p).m_rcnt);
 
             self.stack.push(p);
 
@@ -206,30 +209,56 @@ begin
               self.bytes^[self.ip + 1]);
 
             p := self.mem^[c];
-
-            if p <> nil then
-              //if TObject(p) is TSVMMem then
-              Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             p2 := self.stack.peek;
 
             self.mem^[c] := p2;
 
-            if p2 <> nil then
-              if TObject(p2) is TSVMMem then
-                Inc(TSVMMem(p2).m_refc);
+            InterlockedIncrement(TSVMMem(p2).m_rcnt);
 
             Inc(self.ip, 5);
           end;
 
+
+          bcPHL:
+          begin
+            c := cardinal((self.bytes^[self.ip + 4] shl 24) +
+              (self.bytes^[self.ip + 3] shl 16) + (self.bytes^[self.ip + 2] shl 8) +
+              self.bytes^[self.ip + 1]);
+
+            p := self.local_mem^[c];
+
+            InterlockedIncrement(TSVMMem(p).m_rcnt);
+
+            self.stack.push(p);
+
+            Inc(self.ip, 5);
+          end;
+
+          bcPKL:
+          begin
+            c := cardinal((self.bytes^[self.ip + 4] shl 24) +
+              (self.bytes^[self.ip + 3] shl 16) + (self.bytes^[self.ip + 2] shl 8) +
+              self.bytes^[self.ip + 1]);
+
+            p := self.local_mem^[c];
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
+
+            p2 := self.stack.peek;
+
+            self.local_mem^[c] := p2;
+
+            InterlockedIncrement(TSVMMem(p2).m_rcnt);
+
+            Inc(self.ip, 5);
+          end;
+
+
           bcPP:
           begin
             p := self.stack.popv;
-
-            if p <> nil then
-              //if TObject(p) is TSVMMem then
-              Dec(TSVMMem(p).m_refc);
-
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
             Inc(self.ip);
           end;
 
@@ -238,10 +267,10 @@ begin
             self.stack.drop;
             Inc(self.ip);
 
-              {$IfDef BuildInLibrary}
+            {$IfDef BuildInLibrary}
             if DbgCallBack <> nil then
               TDbgCallBack(DbgCallBack)(@self);
-              {$EndIf}
+            {$EndIf}
           end;
 
           bcSWP:
@@ -253,7 +282,7 @@ begin
           bcJP:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             self.ip := TSVMMem(p).GetW;
           end;
@@ -261,12 +290,12 @@ begin
           bcJZ:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             if TSVMMem(p).GetI = 0 then
             begin
               p := self.stack.popv;
-              Dec(TSVMMem(p).m_refc);
+              InterlockedDecrement(TSVMMem(p).m_rcnt);
 
               self.ip := TSVMMem(p).GetW;
             end
@@ -277,12 +306,12 @@ begin
           bcJN:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             if TSVMMem(p).GetI <> 0 then
             begin
               p := self.stack.popv;
-              Dec(TSVMMem(p).m_refc);
+              InterlockedDecrement(TSVMMem(p).m_rcnt);
 
               self.ip := TSVMMem(p).GetW;
             end
@@ -293,57 +322,83 @@ begin
           bcJC:
           begin
             self.cbstack.push(self.ip + 1);
-              {$IfDef DebugVer}
+            {$IfDef DebugVer}
             writeln(' - Point to jump: ', TSVMMem(self.stack.peek).GetW);
-{$EndIf}
+            {$EndIf}
 
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             self.ip := TSVMMem(p).GetW;
 
-              {$IfDef BuildInLibrary}
+            {$IfDef BuildInLibrary}
             if DbgCallBack <> nil then
               TDbgCallBack(DbgCallBack)(@self);
-              {$EndIf}
+            {$EndIf}
           end;
 
           bcJR:
           begin
             self.ip := Self.cbstack.popv;
-              {$IfDef BuildInLibrary}
+            {$IfDef BuildInLibrary}
             if DbgCallBack <> nil then
               TDbgCallBack(DbgCallBack)(@self);
-              {$EndIf}
+            {$EndIf}
+          end;
+
+          bcJRP:
+          begin
+            self.cbstack.pop;
+            Inc(self.ip);
           end;
 
           bcEQ:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            p2 := self.stack.popv;
 
-            r := CreateSVMMemCopy(TSVMMem(p), Grabber);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
-            p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            if p = p2 then
+             begin
+               r := NewSVMM(self.grabber);
+               r.SetB(true);
+               r.m_rcnt := 1;
+               self.stack.push(r);
+             end
+            else
+             begin
+               if (TSVMMem(p).m_type = svmtNull) or (TSVMMem(p2).m_type = svmtNull) then
+                begin
+                  r := NewSVMM(self.grabber);  
+                  r.m_rcnt := 1;
+                  r.SetB((TSVMMem(p).m_type = svmtNull) and (TSVMMem(p2).m_type = svmtNull));
+                  self.stack.push(r);
+                end
+               else
+                begin
+                  r := CreateSVMMemCopy(TSVMMem(p), Grabber);
+                  r.m_rcnt := 1;
+                  self.stack.push(r);
+                  r.OpEq(TSVMMem(p2));
+                end;
+             end;
 
-            r.m_refc := 1;
-            self.stack.push(r);
-            r.OpEq(TSVMMem(p));
             Inc(self.ip);
           end;
 
           bcBG:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := CreateSVMMemCopy(TSVMMem(p), Grabber);
 
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             r.OpBg(TSVMMem(p));
             Inc(self.ip);
@@ -352,13 +407,13 @@ begin
           bcBE:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
             r := CreateSVMMemCopy(TSVMMem(p), Grabber);
 
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             r.OpBe(TSVMMem(p));
             Inc(self.ip);
@@ -375,7 +430,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpAnd(TSVMMem(p2));
@@ -387,7 +442,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpOr(TSVMMem(p2));
@@ -399,7 +454,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpXor(TSVMMem(p2));
@@ -411,7 +466,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpSHR(TSVMMem(p2));
@@ -423,7 +478,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpSHL(TSVMMem(p2));
@@ -433,10 +488,10 @@ begin
           bcNEG:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
             r := NewSVMM_F(TSVMMem(p).m_val^, TSVMMem(p).m_type, Grabber);
             r.OpNeg;
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             Inc(self.ip);
           end;
@@ -458,7 +513,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpAdd(TSVMMem(p2));
@@ -470,7 +525,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpSub(TSVMMem(p2));
@@ -482,7 +537,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpMul(TSVMMem(p2));
@@ -494,7 +549,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpDiv(TSVMMem(p2));
@@ -506,7 +561,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpMod(TSVMMem(p2));
@@ -518,7 +573,7 @@ begin
             p := self.stack.popv;
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p);
             TSVMMem(p).OpIDiv(TSVMMem(p2));
@@ -528,10 +583,13 @@ begin
           bcMV:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
+
+            if (p = pointer(VM_NULL)) or (p2 = pointer(VM_NULL)) then
+             raise ENullPointer.Create('Null pointer exception');
 
             TSVMMem(p).SetM(TSVMMem(p2));
             Inc(self.ip);
@@ -540,46 +598,42 @@ begin
           bcMVBP:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
-
-              {$HINTS OFF}
+            {$HINTS OFF}
             TSVMMem(Pointer(TSVMMem(p).GetW)).SetM(TSVMMem(p2));
-              {$HINTS ON}
+            {$HINTS ON}
             Inc(self.ip);
           end;
 
           bcGVBP:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
-              {$HINTS OFF}
+            {$HINTS OFF}
             r := TSVMMem(Pointer(TSVMMem(p).GetW));
             self.stack.push(r);
 
-            Inc(r.m_refc);
-              {$HINTS ON}
+            Inc(r.m_rcnt);
+            {$HINTS ON}
             Inc(self.ip);
           end;
 
           bcMVP:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
-              {$HINTS OFF}
+            {$HINTS OFF}
             p2 := self.stack.popv;
-
-            if p2 <> nil then
-              if TObject(p2) is TSVMMem then
-                Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             TSVMMem(p).SetW(longword(p2));
-              {$HINTS ON}
+            {$HINTS ON}
 
             Inc(self.ip);
           end;
@@ -587,27 +641,39 @@ begin
           bcMS:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
-            SetLength(self.mem^, TSVMMem(p).GetW);
-              {$IfDef DebugVer}
+            c := Length(self.mem^);
+            j := TSVMMem(p).GetW;
+            SetLength(self.mem^, j);
+            SetLength(self.local_mem^, j);
+
+            while c < j do
+             begin
+               self.mem^[c] := VM_NULL;
+               self.local_mem^[c] := VM_NULL;
+               inc(c);
+             end;
+
+            {$IfDef DebugVer}
             writeln(' - Mem size: ', Length(self.mem^));
-{$EndIf}
+            {$EndIf}
             Inc(self.ip);
           end;
 
           bcNW:
           begin
             r := NewSVMM(Grabber);
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             Inc(self.ip);
           end;
 
           bcMC:
           begin
-            r := CreateSVMMemCopy(TSVMMem(self.stack.peek), Grabber);
-            r.m_refc := 1;
+            p := self.stack.peek;
+            r := CreateSVMMemCopy(TSVMMem(p), Grabber);
+            r.m_rcnt := 1;
             self.stack.push(r);
             Inc(self.ip);
           end;
@@ -615,9 +681,7 @@ begin
           bcMD:
           begin
             p := self.stack.peek;
-            if p <> nil then
-              //if TObject(p) is TSVMMem then
-              Inc(TSVMMem(p).m_refc);
+            InterlockedIncrement(TSVMMem(p).m_rcnt);
 
             self.stack.push(p);
             Inc(self.ip);
@@ -628,18 +692,19 @@ begin
             grabber.Run;
 
             if isMainThread then
-              GlobalGC;
+             GlobalGC;
 
+            //writeln('GC stack: ', grabber.Stack.i_pos, ', Safe stack: ', rstack.i_pos);
             Inc(self.ip);
           end;
 
           bcNA:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := NewArr(@self.stack, cardinal(TSVMMem(p).GetW), self.Grabber);
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             Inc(self.ip);
           end;
@@ -647,20 +712,11 @@ begin
           bcTF:
           begin
             p := self.stack.popv;
-            if TObject(p) is TSVMMem then
-            begin
-              Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
-              r := NewSVMM_FW(byte(TSVMMem(p).m_type), Grabber);
-              r.m_refc := 1;
-              self.stack.push(r);
-            end
-            else
-            begin
-              r := NewSVMM_FW(byte(TSVMTypeAddr), Grabber);
-              r.m_refc := 1;
-              self.stack.push(r);
-            end;
+            r := NewSVMM_FW(byte(TSVMMem(p).m_type), Grabber);
+            r.m_rcnt := 1;
+            self.stack.push(r);
 
             Inc(self.ip);
           end;
@@ -674,10 +730,10 @@ begin
           bcSF:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := NewSVMM_FW(TSVMMem(p).GetSize, Grabber);
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             Inc(self.ip);
           end;
@@ -685,10 +741,10 @@ begin
           bcAL:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := NewSVMM_FW(TSVMMem(p).ArrGetSize, Grabber);
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             Inc(self.ip);
           end;
@@ -696,7 +752,7 @@ begin
           bcSL:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             TSVMMem(self.stack.peek).ArrSetSize(TSVMMem(p).GetW);
             Inc(self.ip);
@@ -705,16 +761,13 @@ begin
           bcPA:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             p2 := TSVMMem(p).ArrGet(r.GetW, Grabber);
-
-            if p2 <> nil then
-              //if TObject(p2) is TSVMMem then
-              Inc(TSVMMem(p2).m_refc);
+            InterlockedIncrement(TSVMMem(p2).m_rcnt);
 
             self.stack.push(p2);
             Inc(self.ip);
@@ -723,10 +776,10 @@ begin
           bcSA:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             TSVMMem(p).ArrSet(r.GetW, self.stack.popv);
             Inc(self.ip);
@@ -740,7 +793,7 @@ begin
               (self.bytes^[self.ip + 2] shl 8) +
               self.bytes^[self.ip + 1]))),
               Grabber);
-            r.m_refc := 1;
+            r.m_rcnt := 1;
 
             self.stack.push(r);
 
@@ -761,39 +814,40 @@ begin
           bcINV:
           begin
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             Inc(self.ip);
 
             TExternalFunction(self.extern_methods^.GetFunc(r.GetW))(@self);
 
-              {$IfDef BuildInLibrary}
+            {$IfDef BuildInLibrary}
             if DbgCallBack <> nil then
               TDbgCallBack(DbgCallBack)(@self);
-              {$EndIf}
+            {$EndIf}
           end;
 
           bcPHN:
           begin
-            r := NewSVMM(self.grabber);
-            r.m_refc := 1;
+            self.stack.push(VM_NULL);
 
-            self.stack.push(r);
             Inc(self.ip);
           end;
 
           bcCTHR:
           begin
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             p := self.stack.popv;
             // don't touch ref cnt because new thread will have it in stack.
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
+            // 05.03.2020 - wtf? Return decrement...
+
 
             p2 := NewSVMM_Ref(TSVMThread.Create(self.bytes,
-              self.consts, self.extern_methods, self.mem, r.GetW, p),
+              self.consts, self.extern_methods, self.mem, self.local_mem, r.GetW, p),
               self.grabber);
-            TSVMMem(p2).m_refc := 1;
+            TSVMMem(p2).m_rcnt := 1;
 
             self.stack.push(p2);
             Inc(self.ip);
@@ -801,42 +855,43 @@ begin
 
           bcSTHR:
           begin
-              {$WARNINGS OFF}
+            {$WARNINGS OFF}
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             TSVMThread(r.m_val).Suspend;
-              {$WARNINGS ON}
+            {$WARNINGS ON}
             Inc(self.ip);
           end;
 
           bcRTHR:
           begin
-              {$WARNINGS OFF}
+            {$WARNINGS OFF}
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             TSVMThread(r.m_val).Resume;
-              {$WARNINGS ON}
+            {$WARNINGS ON}
             Inc(self.ip);
           end;
 
           bcTTHR:
           begin
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             TSVMThread(r.m_val).Terminate;
+            //PushTerminatedThread(TSVMThread(r.m_val));
             Inc(self.ip);
           end;
 
           bcTHSP:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             TSVMThread(TSVMMem(p).m_val).Priority := TThreadPriority(r.GetW);
             Inc(self.ip);
@@ -845,7 +900,7 @@ begin
           bcPLC:
           begin
             r := NewSVMM_FW(self.cbstack.peek, Grabber);
-            r.m_refc := 1;
+            r.m_rcnt := 1;
             self.stack.push(r);
             Inc(self.ip);
           end;
@@ -871,10 +926,10 @@ begin
           bcTR:
           begin
             p := self.stack.popv;
-            Dec(TSVMMem(p).m_refc);
+            InterlockedDecrement(TSVMMem(p).m_rcnt);
 
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             try_blocks.add(TSVMMem(p).GetW, r.GetW);
             Inc(self.ip);
@@ -900,14 +955,14 @@ begin
             p := self.stack.popv;
 
             r := TSVMMem(p);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
             S := string(r.GetS);
 
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             p2 := self.stack.popv;
-            Dec(TSVMMem(p2).m_refc);
+            InterlockedDecrement(TSVMMem(p2).m_rcnt);
 
             System.Delete(s, TSVMMem(p2).GetW + 1, r.GetW);
             TSVMMem(p).SetS(s);
@@ -918,10 +973,10 @@ begin
           bcCHORD:
           begin
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             p := NewSVMM_FW(Ord(r.GetS[1]), Grabber);
-            TSVMMem(p).m_refc := 1;
+            TSVMMem(p).m_rcnt := 1;
 
             self.stack.push(p);
             Inc(self.ip);
@@ -930,10 +985,10 @@ begin
           bcORDCH:
           begin
             r := TSVMMem(self.stack.popv);
-            Dec(r.m_refc);
+            InterlockedDecrement(r.m_rcnt);
 
             p := NewSVMM_FS(Chr(r.GetW), Grabber);
-            TSVMMem(p).m_refc := 1;
+            TSVMMem(p).m_rcnt := 1;
 
             self.stack.push(p);
             Inc(self.ip);
@@ -965,6 +1020,12 @@ begin
             Inc(self.ip);
           end;
 
+          bcRDP:
+          begin
+            rstack.drop;
+            Inc(self.ip);
+          end;
+
           else
             VMError('Error: not supported operation, byte 0x' +
               IntToHex(self.bytes^[self.ip], 2) + ', at #' + IntToStr(self.ip));
@@ -974,13 +1035,17 @@ begin
       on E: Exception do
       begin
         p := NewSVMM_FS(E.Message, Grabber);
-        TSVMMem(p).m_refc := 1;
-
-        p2 := NewSVMM_FS(E.ClassName, Grabber);
-        TSVMMem(p2).m_refc := 1;
-
+        TSVMMem(p).m_rcnt := 1;
         self.stack.push(p);
-        self.stack.push(p2);
+
+        p := NewSVMM_FS(E.ClassName, Grabber);
+        TSVMMem(p).m_rcnt := 1;
+        self.stack.push(p);
+
+        p := NewSVMM_FW(self.ip, Grabber);
+        TSVMMem(p).m_rcnt := 1;
+        self.stack.push(p);
+
         self.ip := self.try_blocks.TR_Catch(E);
       end;
     end;

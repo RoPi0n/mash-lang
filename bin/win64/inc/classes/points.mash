@@ -1,50 +1,55 @@
-////////////////////////////////////////////////////////////////////////////////
-// Point's
-////////////////////////////////////////////////////////////////////////////////
-
 class point:
   public:
     var x, y
 
-    proc Create,
-         Set
+    init(x, y):
+      $x ?= x
+      $y ?= y
+    end
 
-    func Compare
-end
+    proc Set(x, y):
+      $x = x
+      $y = y
+    end
 
-proc point::Create(x, y):
-  $x ?= new(x)
-  $y ?= new(y)
-end
+    func Compare(p):
+      return ($x == p -> x) & ($y == p -> y)
+    end
 
-proc point::Set(x, y):
-  $x = x
-  $y = y
-end
+    func ToString():
+      return "(" + $x + "; " + $y + ")"
+    end
 
-func point::Compare(p):
-  return ($x == p->x) & ($y == p->y)
+    func Clone():
+      return new point($x, $y)
+    end
 end
 
 class point3d:
   public:
     var x, y, z
-    proc Create, Set
-    func Compare
-end
 
-proc point3d::Create(x, y, z):
-  $x ?= new(x)
-  $y ?= new(y)
-  $z ?= new(z)
-end
+    init(x, y, z):
+      $x ?= x
+      $y ?= y
+      $z ?= z
+    end
 
-proc point3d::Set(x, y, z):
-  $x = x
-  $y = y
-  $z = z
-end
+    proc Set(x, y, z):
+      $x = x
+      $y = y
+      $z = z
+    end
 
-func point3d::Compare(p):
-  return ($x == p->x) & ($y == p->y) & ($z == p->z)
+    func Compare(p):
+      return ($x == p -> x) & ($y == p -> y) & ($z == p -> z)
+    end
+
+    func ToString():
+      return "(" + $x + "; " + $y + "; " + $z + ")"
+    end
+
+    func Clone():
+      return new point3d($x, $y, $z)
+    end
 end

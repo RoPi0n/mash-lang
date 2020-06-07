@@ -1,0 +1,27 @@
+uses classes
+uses crt
+
+func FillSpaces(s):
+  r ?= ""
+  for i in 0..(5 - s.str().len()):
+    r += " "
+  end
+  return r + s
+end
+
+proc main():
+  try:
+    sl ?= new StringList()
+    sl -> LoadFromFile("TestStream.mash")
+
+    i ?= 1
+    for ln in sl -> items:
+      println(FillSpaces(i), "| ", ln)
+      i++
+    end
+  catch E:
+    E.print()
+  end
+
+  inputln()
+end

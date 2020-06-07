@@ -1,173 +1,190 @@
 object EditorFrame: TEditorFrame
   Left = 0
-  Height = 450
+  Height = 562
   Top = 0
-  Width = 709
+  Width = 886
   Align = alClient
-  ClientHeight = 450
-  ClientWidth = 709
+  ClientHeight = 562
+  ClientWidth = 886
+  DesignTimePPI = 120
+  ParentFont = False
   TabOrder = 0
-  DesignLeft = 464
-  DesignTop = 55
+  DesignLeft = 660
+  DesignTop = 476
   object EditorPanel: TPanel
     Left = 0
-    Height = 450
+    Height = 562
     Top = 0
-    Width = 488
+    Width = 880
     Align = alClient
     BevelOuter = bvNone
-    ClientHeight = 450
-    ClientWidth = 488
+    ClientHeight = 562
+    ClientWidth = 880
+    ParentFont = False
     TabOrder = 0
     object FindDlgPanel: TPanel
       Left = 0
-      Height = 23
+      Height = 29
       Top = 0
-      Width = 488
+      Width = 880
       Align = alTop
       BevelOuter = bvNone
-      ClientHeight = 23
-      ClientWidth = 488
+      ClientHeight = 29
+      ClientWidth = 880
+      ParentFont = False
       TabOrder = 0
       object Edit1: TEdit
         Left = 0
-        Height = 21
+        Height = 27
         Hint = 'Text to find...'
         Top = 1
-        Width = 136
+        Width = 170
         HelpType = htKeyword
         HelpKeyword = 'Text to find...'
         Align = alLeft
         BorderSpacing.Top = 1
         BorderSpacing.Bottom = 1
+        ParentFont = False
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
         TextHint = 'Text to find...'
       end
       object CheckBox1: TCheckBox
-        Left = 140
-        Height = 23
+        Left = 175
+        Height = 29
         Top = 0
-        Width = 93
+        Width = 115
         Align = alLeft
-        BorderSpacing.Left = 4
+        BorderSpacing.Left = 5
         Caption = 'Case sensitive'
+        ParentFont = False
         TabOrder = 1
       end
       object Button1: TButton
-        Left = 237
-        Height = 23
+        Left = 295
+        Height = 29
         Top = 0
-        Width = 67
+        Width = 84
         Align = alLeft
-        BorderSpacing.Left = 4
+        BorderSpacing.Left = 5
         Caption = 'Find'
         OnClick = Button1Click
+        ParentFont = False
         TabOrder = 2
       end
       object Button2: TButton
-        Left = 429
-        Height = 23
+        Left = 806
+        Height = 29
         Top = 0
-        Width = 59
+        Width = 74
         Align = alRight
         Caption = 'Cancel'
         OnClick = Button2Click
+        ParentFont = False
         TabOrder = 3
       end
     end
     object ReplaceDlgPanel: TPanel
       Left = 0
-      Height = 23
-      Top = 23
-      Width = 488
+      Height = 29
+      Top = 29
+      Width = 880
       Align = alTop
       BevelOuter = bvNone
-      ClientHeight = 23
-      ClientWidth = 488
+      ClientHeight = 29
+      ClientWidth = 880
+      ParentFont = False
       TabOrder = 1
       object Edit2: TEdit
         Left = 0
-        Height = 21
+        Height = 27
         Top = 1
-        Width = 136
+        Width = 170
         HelpType = htKeyword
         Align = alLeft
         BorderSpacing.Top = 1
         BorderSpacing.Bottom = 1
+        ParentFont = False
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
         TextHint = 'Replace from...'
       end
       object CheckBox2: TCheckBox
-        Left = 356
-        Height = 23
+        Left = 445
+        Height = 29
         Top = 0
-        Width = 93
+        Width = 115
         Align = alLeft
-        BorderSpacing.Left = 4
+        BorderSpacing.Left = 5
         Caption = 'Case sensitive'
+        ParentFont = False
         TabOrder = 1
       end
       object Button3: TButton
-        Left = 453
-        Height = 23
+        Left = 565
+        Height = 29
         Top = 0
-        Width = 67
+        Width = 84
         Align = alLeft
-        BorderSpacing.Left = 4
+        BorderSpacing.Left = 5
         Caption = 'Replace'
         OnClick = Button3Click
+        ParentFont = False
         TabOrder = 2
       end
       object Button4: TButton
-        Left = 429
-        Height = 23
+        Left = 806
+        Height = 29
         Top = 0
-        Width = 59
+        Width = 74
         Align = alRight
         Caption = 'Cancel'
         OnClick = Button4Click
+        ParentFont = False
         TabOrder = 3
       end
       object Edit3: TEdit
-        Left = 138
-        Height = 21
+        Left = 172
+        Height = 27
         Top = 1
-        Width = 136
+        Width = 170
         HelpType = htKeyword
         Align = alLeft
         BorderSpacing.Left = 2
         BorderSpacing.Top = 1
         BorderSpacing.Bottom = 1
+        ParentFont = False
         ParentShowHint = False
         ShowHint = True
         TabOrder = 4
         TextHint = 'Replace to...'
       end
       object Button5: TButton
-        Left = 274
-        Height = 23
+        Left = 342
+        Height = 29
         Top = 0
-        Width = 78
+        Width = 98
         Align = alLeft
         Caption = 'Replace all'
         OnClick = Button5Click
+        ParentFont = False
         TabOrder = 5
       end
     end
     inline SynEdit: TSynEdit
       Left = 0
-      Height = 404
-      Top = 46
-      Width = 488
+      Height = 504
+      Top = 58
+      Width = 880
       Align = alClient
+      Font.CharSet = RUSSIAN_CHARSET
+      Font.Color = clBlack
       Font.Height = -15
       Font.Name = 'Consolas'
       Font.Pitch = fpFixed
-      Font.Quality = fqCleartype
+      Font.Quality = fqDraft
       ParentColor = False
       ParentFont = False
       PopupMenu = PopupMenu1
@@ -177,7 +194,7 @@ object EditorFrame: TEditorFrame
       OnMouseUp = SynEditMouseUp
       OnMouseWheelDown = SynEditMouseWheelDown
       OnMouseWheelUp = SynEditMouseWheelUp
-      Gutter.Width = 57
+      Gutter.Width = 68
       Gutter.MouseActions = <>
       RightGutter.Width = 0
       RightGutter.MouseActions = <>
@@ -607,8 +624,6 @@ object EditorFrame: TEditorFrame
       MouseTextActions = <>
       MouseSelActions = <>
       Lines.Strings = (
-        'uses <bf>'
-        ''
         'proc main():'
         '  // write your code here.'
         'end'
@@ -636,7 +651,7 @@ object EditorFrame: TEditorFrame
       OnChange = SynEditChange
       inline SynLeftGutterPartList1: TSynGutterPartList
         object SynGutterMarks1: TSynGutterMarks
-          Width = 24
+          Width = 30
           MouseActions = <>
         end
         object SynGutterLineNumber1: TSynGutterLineNumber
@@ -650,18 +665,19 @@ object EditorFrame: TEditorFrame
           LeadingZeros = False
         end
         object SynGutterChanges1: TSynGutterChanges
-          Width = 4
+          Width = 5
           MouseActions = <>
           ModifiedColor = 59900
           SavedColor = clGreen
         end
         object SynGutterSeparator1: TSynGutterSeparator
-          Width = 2
+          Width = 3
           MouseActions = <>
           MarkupInfo.Background = clWhite
           MarkupInfo.Foreground = clGray
         end
         object SynGutterCodeFolding1: TSynGutterCodeFolding
+          Width = 13
           MouseActions = <>
           MarkupInfo.Background = clNone
           MarkupInfo.Foreground = clGray
@@ -672,50 +688,54 @@ object EditorFrame: TEditorFrame
     end
   end
   object CodeSchemePanel: TPanel
-    Left = 493
-    Height = 450
+    Left = 880
+    Height = 562
     Top = 0
-    Width = 216
+    Width = 0
     Align = alRight
     BevelOuter = bvNone
-    ClientHeight = 450
-    ClientWidth = 216
+    ClientHeight = 562
+    ClientWidth = 0
     Color = clBtnFace
     ParentColor = False
+    ParentFont = False
     TabOrder = 1
     object Panel1: TPanel
       Left = 0
-      Height = 24
+      Height = 30
       Top = 0
-      Width = 216
+      Width = 0
       Align = alTop
       Alignment = taLeftJustify
       BevelColor = clBtnFace
       BevelOuter = bvNone
       BorderStyle = bsSingle
       Caption = ' Code scheme:'
-      ClientHeight = 20
-      ClientWidth = 212
+      ClientHeight = 30
+      ClientWidth = 0
+      ParentFont = False
       TabOrder = 0
       object Button6: TButton
-        Left = 160
-        Height = 20
+        Left = -65
+        Height = 30
         Top = 0
-        Width = 52
+        Width = 65
         Align = alRight
         Caption = 'Hide'
         OnClick = Button6Click
+        ParentFont = False
         TabOrder = 0
       end
     end
     object SchemeTreeView: TTreeView
       Left = 0
-      Height = 426
-      Top = 24
-      Width = 216
+      Height = 532
+      Top = 30
+      Width = 0
       TabStop = False
       Align = alClient
       Images = CodeSchemeImageList
+      ParentFont = False
       ReadOnly = True
       StateImages = CodeSchemeImageList
       TabOrder = 1
@@ -724,10 +744,10 @@ object EditorFrame: TEditorFrame
     end
   end
   object Splitter1: TSplitter
-    Left = 488
-    Height = 450
+    Left = 880
+    Height = 562
     Top = 0
-    Width = 5
+    Width = 6
     Align = alRight
     ResizeAnchor = akRight
   end
@@ -737,7 +757,7 @@ object EditorFrame: TEditorFrame
     Comments = [csCStyle]
     DetectPreprocessor = False
     IdentifierChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz'
-    KeyAttri.Foreground = 8388672
+    KeyAttri.Foreground = 14090882
     KeyWords.Strings = (
       'ASYNC'
       'BACK'
@@ -745,35 +765,32 @@ object EditorFrame: TEditorFrame
       'CASE'
       'CATCH'
       'CLASS'
+      'CONST'
+      'CONTINUE'
       'COPY'
-      'DEC'
+      'DEFAULT'
       'ELSE'
       'END'
+      'ENUM'
       'FINALLY'
       'FOR'
       'FUNC'
-      'GC'
       'IF'
       'IMPORT'
       'IN'
-      'INC'
-      'JUMP'
+      'INIT'
+      'INLINE'
+      'IS'
       'LAUNCH'
       'NEW'
       'NULL'
-      'PEEK'
-      'POP'
       'PRIVATE'
       'PROC'
       'PROTECTED'
       'PUBLIC'
-      'PUSH'
-      'PUSHC'
       'RAISE'
-      'REM'
       'RETURN'
-      'SAFE'
-      'STKDROP'
+      'STREAM'
       'SUPER'
       'SWITCH'
       'THIS'
@@ -785,12 +802,7 @@ object EditorFrame: TEditorFrame
       'WHILST'
     )
     Objects.Strings = (
-      'ENUM'
-      'INT'
-      'REAL'
-      'STR'
-      'STREAM'
-      'WORD'
+      ''
     )
     NumberAttri.Foreground = 33023
     StringAttri.Foreground = clGray
@@ -799,12 +811,12 @@ object EditorFrame: TEditorFrame
     Entity = False
     DollarVariables = True
     ActiveDot = False
-    left = 160
-    top = 144
+    left = 200
+    top = 180
   end
   object CodeSchemeImageList: TImageList
-    left = 600
-    top = 232
+    left = 750
+    top = 290
     Bitmap = {
       4C69060000001000000010000000FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
       FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
@@ -1003,8 +1015,8 @@ object EditorFrame: TEditorFrame
   end
   object PopupMenu1: TPopupMenu
     Images = MainFrm.ImageList1
-    left = 320
-    top = 144
+    left = 400
+    top = 180
     object MenuItem1: TMenuItem
       Caption = 'Undo'
       ImageIndex = 15
@@ -1049,8 +1061,8 @@ object EditorFrame: TEditorFrame
     end
   end
   object SaveDialog1: TSaveDialog
-    left = 408
-    top = 144
+    left = 510
+    top = 180
   end
   object SynCompletion: TSynCompletion
     OnPaintItem = SynCompletionPaintItem
@@ -1066,19 +1078,19 @@ object EditorFrame: TEditorFrame
     ExecCommandID = ecSynCompletionExecute
     Editor = SynEdit
     ToggleReplaceWhole = False
-    left = 160
-    top = 208
+    left = 200
+    top = 260
   end
   object CWUpdateTimer: TTimer
     Interval = 3000
     OnTimer = CWUpdateTimerTimer
-    left = 544
-    top = 64
+    left = 680
+    top = 80
   end
   object CodeSchemeTimer: TTimer
     Interval = 5000
     OnTimer = CodeSchemeTimerTimer
-    left = 600
-    top = 152
+    left = 750
+    top = 190
   end
 end

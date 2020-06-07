@@ -1,0 +1,16 @@
+uses crt
+uses classes
+
+proc main():
+  m ?= new map()
+                        
+  m -> add("World", 1)
+  m -> add("Hello", 0)
+  m -> add("!", 2)
+
+  for i in 0..2:
+    print(m -> get(i), " ")
+  end
+
+  inputln()
+end

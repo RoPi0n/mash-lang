@@ -20,6 +20,7 @@ type
     Label3: TLabel;
     Label4: TLabel;
     procedure Button1Click(Sender: TObject);
+    procedure Label4Click(Sender: TObject);
   private
 
   public
@@ -38,6 +39,11 @@ implementation
 procedure TAboutFrm.Button1Click(Sender: TObject);
 begin
   Close;
+end;
+
+procedure TAboutFrm.Label4Click(Sender: TObject);
+begin
+
 end;
 
 end.

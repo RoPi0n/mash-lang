@@ -1,0 +1,260 @@
+/*
+ *  Little framework for draw plots.
+ */
+
+uses math.base
+uses math.complex
+uses graph
+
+enum MPlotType [
+  MPlot_Decart = 0,
+  MPlot_CustomDecart = 1,
+  MPlot_Polar = 2
+]
+
+const MPlot_DefScale -1
+
+MathPlot -> SetDefaults()
+
+class MathPlot:
+  private:
+    var MaxX, MaxY, StepsX,
+        X0, Y0, DrawingInProcess
+
+  public:
+    var scType, scScale
+
+    var Decart, Polar, DefScale
+
+    proc SetDefaults():
+      $Decart ?= MPlot_Decart
+      $Polar ?= MPlot_Polar
+      $DefScale ?= MPlot_DefScale
+    end
+
+
+    init(scType, scScale):
+      $scType ?= scType
+
+      if scScale == MPlot_DefScale:
+        $scScale ?= 100
+      else:
+        $scScale ?= scScale
+      end
+
+      $DrawingInProcess ?= false
+
+      Graph -> Initialize()
+      $MaxX ?= Graph -> GetMaxX()
+      $MaxY ?= Graph -> GetMaxY()
+
+      $stepsX ?= $MaxX \ $scScale \ 2 + 1
+
+      $x0 ?= $MaxX \ 2
+      $y0 ?= $MaxY \ 2
+
+      switch $scType:
+        case MPlot_Decart:
+          $DrawDecartAxises()
+        end
+
+        case MPlot_Polar:
+          $DrawPolarAxises()
+        end
+
+        case MPlot_CustomDecart:
+          $scType ?= MPlot_Decart
+        end
+
+        default:
+          raise new Exception("MathPlot: Invalid plot type")
+        end
+      end
+    end
+end
+
+/*
+ *  Routines
+ */
+
+proc MathPlot::Clear():
+  Graph -> Clear()
+end
+
+proc MathPlot::DrawDecartAxises():
+  steps ?= $MaxX \ $scScale \ 2
+
+  Graph -> MoveTo($x0, 0)
+  Graph -> LineTo($x0, $MaxY)
+
+  Graph -> MoveTo(0, $y0)
+  Graph -> LineTo($MaxX, $y0)
+
+  i ?= -steps
+  while i < steps:
+    x ?= $x0 + $scScale * i
+    Graph -> MoveTo(x, $y0)
+    Graph -> LineTo(x, $y0 + 5)
+    Graph -> LineTo(x, $y0 - 5)
+
+    y ?= $y0 + $scScale * i
+    Graph -> MoveTo($x0, y)
+    Graph -> LineTo($x0 + 5, y)
+    Graph -> LineTo($x0 - 5, y)
+
+    i++
+  end
+
+  Graph -> SetColor(Graph_Blue)
+
+  Graph -> MoveTo($x0 + 10, $y0 - $scScale)
+  Graph -> OutText(str(1))
+
+  Graph -> MoveTo($x0 + 10, $y0 + $scScale)
+  Graph -> OutText(str(-1))
+
+  Graph -> MoveTo($x0 + $scScale, $y0 + 10)
+  Graph -> OutText(str(1))
+
+  Graph -> MoveTo($x0 - $scScale, $y0 + 10)
+  Graph -> OutText(str(-1))
+
+  Graph -> MoveTo($x0 + 10, $y0 + 10)
+  Graph -> OutText(str(0))
+
+  Graph -> SetColor(Graph_Black)
+end
+
+proc MathPlot::DrawPolarAxises():
+  steps ?= $MaxX \ $scScale \ 2
+
+  Graph -> MoveTo($x0, 0)
+  Graph -> LineTo($x0, $MaxY)
+
+  Graph -> MoveTo(0, $y0)
+  Graph -> LineTo($MaxX, $y0)
+
+  Graph -> SetColor(Graph_LightGray)
+  i ?= 1
+  while i < (steps + 4):
+    Graph -> Ellipse($x0, $y0, 0, 360, $scScale * i, $scScale * i)
+    i++
+  end
+
+  Graph -> MoveTo($x0 - 2000, $y0 + 2000)
+  Graph -> LineTo($x0 + 2000, $y0 - 2000)
+
+  Graph -> MoveTo($x0 + 2000, $y0 + 2000)
+  Graph -> LineTo($x0 - 2000, $y0 - 2000)
+
+  Graph -> SetColor(Graph_Blue)
+
+  Graph -> MoveTo($x0 + 10, $y0 - $scScale)
+  Graph -> OutText(str(1))
+
+  Graph -> MoveTo($x0 + 10, $y0 + $scScale)
+  Graph -> OutText(str(-1))
+
+  Graph -> MoveTo($x0 + $scScale, $y0 + 10)
+  Graph -> OutText(str(1))
+
+  Graph -> MoveTo($x0 - $scScale, $y0 + 10)
+  Graph -> OutText(str(-1))
+
+  Graph -> MoveTo($x0 + 10, $y0 + 10)
+  Graph -> OutText(str(0))
+
+  Graph -> SetColor(Graph_Black)
+end
+
+/*
+ *  X & Y coords offsets
+ */
+
+func MathPlot::OffsetX(x):
+  return $x0 + Trunc(x * $scScale)
+end
+
+func MathPlot::OffsetY(y):
+  return $y0 - Trunc(y * $scScale)
+end
+
+/*
+ *  Drawing splains point by point
+ */
+
+proc MathPlot::NextPoint(x, y):
+  pX ?= $OffsetX(x)
+  pY ?= $OffsetY(y)
+
+  if $DrawingInProcess:
+    Graph -> LineTo(pX, pY)
+  else:
+    Graph -> MoveTo(pX, pY)
+    $DrawingInProcess = true
+  end
+end
+
+proc MathPlot::NextPolar(length, angle):
+  vect ?= cmath -> uniteViaExp(length, angle)
+  $NextPoint(vect -> Re, vect -> Im)
+end
+
+proc MathPlot::BreakSpline():
+  if $DrawingInProcess:
+    $DrawingInProcess = false
+    Graph -> Ellipse(Graph -> GetX(), Graph -> GetY(), 0, 360, 4, 4)
+  end
+end
+
+proc MathPlot::Finish():
+  $DrawingInProcess = false
+end
+
+proc MathPlot::Next(i, res):
+  if $scType == MPlot_Decart:
+    $NextPoint(i, res)
+  else:
+    $NextPolar(res, i)
+  end
+end
+
+proc MathPlot::Dot(i, res):
+  if $scType == MPlot_Decart:
+    Graph -> FillEllipse($OffsetX(i), $OffsetY(res), 2, 2)
+  else:
+    cn ?= cmath -> uniteViaExp(i, res)
+    Graph -> FillEllipse($OffsetX(cn -> Re), $OffsetY(cn -> Im), 2, 2)
+  end
+end
+
+proc MathPlot::Function(fun, from, to, step):
+  first ?= true
+  i ?= copy(from)
+
+  while i < to:
+    try:
+      r ?= Fun(i)
+      if @r == @null:
+        $BreakSpline()
+      else:
+        $Next(i, r)
+      end
+    catch E:
+      $BreakSpline()
+    end
+
+    gc()
+    i += step
+  end
+
+  $DrawingInProcess ?= false
+end
+
+proc MathPlot::Draw(fun):
+  if $scType == MPlot_Decart:
+    $Function(fun, -$stepsX, $stepsX, 0.01)
+  else:
+    $Function(fun, 0, 90, 0.01)
+  end
+end

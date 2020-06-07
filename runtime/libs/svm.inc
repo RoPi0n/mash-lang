@@ -44,6 +44,7 @@ procedure __Return_String(SVM: Pointer; val: PString); stdcall; external svmlib 
 procedure __Return_Bool(SVM: Pointer; val: boolean); stdcall; external svmlib name '__Return_Bool';
 procedure __Return_Ref(SVM: Pointer; val: pointer; dcbp: pointer); stdcall; external svmlib name '__Return_Ref';
 procedure __Return_Object(SVM: Pointer; val: pointer); stdcall; external svmlib name '__Return_Object';
+procedure __Return_Null(SVM: Pointer); stdcall; external svmlib name '__Return_Null';
 
 function __Next_String(SVM: Pointer): string; overload;
 begin

@@ -1,0 +1,83 @@
+uses crt
+uses classes.points
+uses math.matrix
+uses math.plots
+
+func parabola(x):
+  return x * x
+end
+
+proc main():
+  plt ?= new MathPlot(MathPlot -> Decart, 80)
+
+  obj ?= []
+
+  z ?= -2
+  while z <= 2:
+    obj.append([z.copy(), -parabola(z) + 2, 0])
+    z += 0.5
+  end
+
+  obj.append([0, -10, 0])
+
+  z ?= -2
+  while z <= 2:
+    obj.append([0, -parabola(z) + 2, z.copy()])
+    z += 0.5
+  end
+
+  dist ?= 10
+  al   ?= 0
+  k    ?= 0.05
+
+  while true:
+    /*rot_x ?= [ [1,       0,        0],
+               [0, cos(al), -sin(al)],
+               [0, sin(al),  cos(al)] ]*/
+
+    rot_y ?= [ [ cos(al), 0, sin(al)],
+               [       0, 1,       0],
+               [-sin(al), 0, cos(al)] ]
+
+    /*rot_z ?= [ [cos(al), -sin(al), 0],
+               [sin(al),  cos(al), 0],
+               [0,       0,        1], ] */
+
+    //rot_m ?= rot_x.matrix -> multiply(rot_y)
+    //rot_m ?= rot_m.matrix -> multiply(rot_z)
+
+    m ?= obj.matrix -> multiply(rot_y)
+    
+    Graph -> Clear()
+
+    for p in m:
+      dX ?= p[0]
+      dY ?= p[1]
+      dZ ?= p[2]
+
+      x ?= dX * dist / (dZ + dist)
+      y ?= dY * dist / (dZ + dist)
+
+      if dY <> -10:
+        plt -> Next(x, y)
+        plt -> Dot(x, y)
+      else:
+        plt -> Finish()
+      end
+    end
+    plt -> Finish()
+
+    sleep(1000 \ 60)
+
+    if abs(k) >= 1:
+      k *= -1
+    end
+
+    al += k
+    if al >= m_pi: al = 0 end
+
+    gc()
+  end
+
+  inputln()
+end

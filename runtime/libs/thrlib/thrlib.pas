@@ -8,29 +8,66 @@ uses
 
 {$I '..\svm.inc'}
 
+
+type
+  TMashCriticalSection = class
+    public
+      lock_flag: cardinal;
+
+      constructor Create;
+
+      procedure Enter;
+      function  TryEnter: boolean;
+      procedure Leave;
+  end;
+
+
+constructor TMashCriticalSection.Create;
+begin
+  lock_flag := 0;
+end;
+
+procedure TMashCriticalSection.Enter;
+begin
+  while InterlockedCompareExchange(lock_flag, 1, 0) = 1 do
+   sleep(1);
+end;
+
+function TMashCriticalSection.TryEnter: boolean;
+begin
+  Result := InterlockedCompareExchange(lock_flag, 1, 0) = 0;
+end;
+
+procedure TMashCriticalSection.Leave;
+begin
+  InterlockedCompareExchange(lock_flag, 0, 1);
+end;
+
+
+
 procedure CRITSECT_DESTRUCTOR(pCritSect: pointer); stdcall;
 begin
-  TCriticalSection(pCritSect).Free;
+  TMashCriticalSection(pCritSect).Free;
 end;
 
 procedure CRITSECT_CREATE(pctx: pointer); stdcall;
 begin
-  __Return_Ref(pctx, TCriticalSection.Create, @CRITSECT_DESTRUCTOR);
+  __Return_Ref(pctx, TMashCriticalSection.Create, @CRITSECT_DESTRUCTOR);
 end;
 
 procedure CRITSECT_ENTER(pctx: pointer); stdcall;
 begin
-  TCriticalSection(__Next_Ref(pctx)).Enter;
+  TMashCriticalSection(__Next_Ref(pctx)).Enter;
 end;
 
 procedure CRITSECT_LEAVE(pctx: pointer); stdcall;
 begin
-  TCriticalSection(__Next_Ref(pctx)).Leave;
+  TMashCriticalSection(__Next_Ref(pctx)).Leave;
 end;
 
 procedure CRITSECT_TRYENTER(pctx: pointer); stdcall;
 begin
-  __Return_Bool(pctx, TCriticalSection(__Next_Ref(pctx)).TryEnter);
+  __Return_Bool(pctx, TMashCriticalSection(__Next_Ref(pctx)).TryEnter);
 end;
 
 {EXPORTS DB}

@@ -1,5 +1,6 @@
 unit svm_exceptions;
 
+//{$define WindowsSEH}
 {$mode objfpc}
 {$H+}
 
@@ -9,7 +10,7 @@ uses
   Classes,
   SysUtils,
   svm_common
-  {$IfDef Windows},
+  {$IfDef WindowsSEH},
     Windows,
     JwaWinBase,
     JwaWinNT
@@ -35,7 +36,7 @@ type
   EUnknownException = class(Exception);
 
 {***** Windows VEH ************************************************************}
-{$IfDef Windows}
+{$IfDef WindowsSEH}
 
 var
   VEHExceptions: TThreadList;
@@ -73,7 +74,7 @@ begin
   end
   else
   begin
-    {$IfDef Windows}
+    {$IfDef WindowsSEH}
     writeln('Unhandled exception <', E.ClassName, '>', sLineBreak,
       '- Message: "', E.Message, '"', sLineBreak,
       '- ThreadID: ', GetCurrentThreadId);
@@ -91,7 +92,7 @@ begin
   setlength(self.trblocks, length(self.trblocks) - 1);
 end;
 
-{$IfDef Windows}
+{$IfDef WindowsSEH}
 
 // For Win 32/64 VEH exceptions.
 
@@ -155,7 +156,7 @@ end;
 
 procedure RaiseSafeException;
 begin
-  {$IfDef Windows}
+  {$IfDef WindowsSEH}
     VEHExceptions.Add(Pointer(GetCurrentThreadId));
     Inc(VEHExceptions_Count);
   {$Else}

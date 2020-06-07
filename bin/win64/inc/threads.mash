@@ -1,37 +1,34 @@
 // Mash lang threads unit
-// Code version: 1.0
+// Code version: 1.2
 
-uses <bf>
-uses <classes\vector>
-
-// common methods
+uses sync
 
 proc thr_create(method, arg):
-  push arg
-  push method
-  cthr
+  inline "push thr_create.arg"
+  inline "push thr_create.method"
+  inline "cthr"
 end
 
 proc thr_async(method, arg):
-  push arg
-  push method
-  cthr
-  rthr
+  inline "push thr_async.arg"
+  inline "push thr_async.method"
+  inline "cthr"
+  inline "rthr"
 end
 
 proc thr_resume(thr):
-  push thr
-  rthr
+  inline "push thr_resume.thr"
+  inline "rthr"
 end
 
 proc thr_suspend(thr):
-  push thr
-  sthr
+  inline "push thr_suspend.thr"
+  inline "sthr"
 end
 
 proc thr_terminate(thr):
-  push thr
-  tthr
+  inline "push thr_terminate.thr"
+  inline "tthr"
 end
 
 enum ThreadPriority [tpIdle,
@@ -43,9 +40,9 @@ enum ThreadPriority [tpIdle,
                      tpTimeCritical]
 
 proc thr_setpriority(thr, priority):
-  push priority
-  push thr
-  thsp
+  inline "push thr_setpriority.priority"
+  inline "push thr_setpriority.thr"
+  inline "thsp"
 end
 
 proc thr_kill(thr):
@@ -57,139 +54,157 @@ end
 // Thread controller class
 ////////////////////////////////////////////////////////////////////////////////
 
+proc TThread_Join(CurrentThreadContext, ThreadClass):
+  system_reset_traceback()
+  ThreadClass -> Execute()
+  ThreadClass -> Kill()
+end
+
 class TThread:
-  protected:
+  private:
     var ThreadContext
 
   public:
     var Resumed,
         Terminated
 
-    proc Create,
+    proc Execute():
+      // method for overriding
+    end
 
-         Execute, //for overriding
-         Suspend,
-         Resume,
-         Terminate,
-         WaitFor,
-         ReJoin,
-         SetPriority //Control proc's
+    init(Resumed):
+      $Resumed ?= false
+      $Terminated ?= false
+      $ThreadContext ?= thr_create(TThread_Join, this)
+      if Resumed:  $Resume()  end
+    end
+
+    proc ReJoin(Resumed):
+      $ThreadContext ?= thread(TThread_Join, this)
+      if Resumed:  return $Resume()  end
+    end
+
+    proc Suspend():
+      thr_suspend($ThreadContext)
+      $Resumed = false
+      return this
+    end
+
+    proc Resume():
+      thr_resume($ThreadContext)
+      $Resumed = true
+      return this
+    end
+
+    proc SetPriority(priority):
+      thr_setpriority($ThreadContext, priority)
+    end
+
+    proc Kill():
+      if ~$Terminated:
+        $Resumed = false
+        $Terminated = true
+        thr_terminate($ThreadContext)
+      end
+    end
+
+    proc WaitFor():
+      while ~$Terminated:
+        Sleep(1)
+        gc()
+      end
+    end
 end
 
-proc TThread::Execute():
-  // method for overriding
-end
+////////////////////////////////////////////////////////////////////////////////
+//  TThreadCall
+////////////////////////////////////////////////////////////////////////////////
 
-proc TThread_Join(CurrentThreadContext, ThreadClass):
-  ThreadClass->Execute()
-  ThreadClass->Terminate()
-end
+class TThreadCall(TThread):
+  var GlobalThis, Method, Args
 
-proc TThread::Create(Resumed):
-  $Resumed ?= false
-  $Terminated ?= false
-  $ThreadContext ?= thr_create(TThread_Join, $)
-  if Resumed:
-    $Resume()
+  init(pThis, Method, Args, Resumed):
+    $GlobalThis ?= pThis
+    $Method ?= Method
+    $Args ?= Args
+    super(Resumed)
   end
-end
 
-proc TThread::Free():
-  if ~$Terminated:
-    $Terminate()
+  proc Execute():
+    $args.len()
+
+    inline "peek global.arg_counter"
+    inline "pop"
+
+    for arg back $Args:
+      x ?= arg
+      inline "push $x"
+    end
+
+    th ?= $GlobalThis
+    $Method
+    inline "push $th"
+    inline "peek global.this"
+    inline "pop"
+    inline "jc"
   end
-end
 
-proc TThread::ReJoin(Resumed):
-  $ThreadContext ?= thread(TThread_Join, $)
-  if Resumed:
-    $Resume()
-  end
-end
-
-proc TThread::Suspend():
-  thr_suspend($ThreadContext)
-  $Resumed = false
-end
-
-proc TThread::Resume():
-  thr_resume($ThreadContext)
-  $Resumed = true
-end
-
-proc TThread::SetPriority(priority):
-  thr_setpriority($ThreadContext, priority)
-end
-
-proc TThread::Terminate():
-  $Resumed = false
-  $Terminated = true
-  thr_terminate($ThreadContext)
-end
-
-proc TThread::WaitFor():
-  while ~$Terminated:
-    Sleep(1)
-    gc()
+  func Clone():
+    return new TThreadCall($GlobalThis, $Method, $Args, false)
   end
 end
 
 ////////////////////////////////////////////////////////////////////////////////
-//  Async
+//  Quick threaging
 ////////////////////////////////////////////////////////////////////////////////
 
-class TAsyncCallThread(TThread):
-  var Method, Args
-  proc Create, Execute
+func go(method, [args]):
+  pThis ?= null
+  inline "push global.this"
+  inline "peek $pthis"
+  inline "pop"
+  t ?= new TThreadCall(pThis, method, args, false)
+  t -> Resume()
+  return t
 end
 
-proc TAsyncCallThread::Create(Method, Args):
-  $Method ?= Method
-  $Args ?= Args
-  TThread::Create$(true)
+func thread(method, [args]):
+  pThis ?= null
+  inline "push global.this"
+  inline "peek $pthis"
+  inline "pop"
+  return new TThreadCall(pThis, method, args, false)
 end
 
-proc TAsyncCallThread::Execute():
-  while $Args->Size() > 0:
-    $Args -> pop_back()
+GlobalLock ?= new CriticalSection()
+
+func sync(method, [args]):
+  pThis ?= null
+  inline "push global.this"
+  inline "peek $pthis"
+  inline "pop"
+
+  try:
+    GlobalLock -> Enter()
+
+    args.len()
+    inline "peek global.arg_counter"
+    inline "pop"
+
+    for arg back args:
+      x ?= arg
+      inline "push $x"
+    end
+
+    inline "push $pthis"
+    inline "peek global.this"
+    inline "pop"
+    inline "push $method"
+    inline "jc"
+
+    GlobalLock -> Leave()
+  catch E:
+    GlobalLock -> Leave()
+    raise E
   end
-  call $Method
-end
-
-func Async(method, [args]):
-  args_vect ?= new vector()
-  for arg in args:
-    args_vect -> push_back(arg)
-  end
-  return new TAsyncCallThread(method, args_vect)
-end
-
-////////////////////////////////////////////////////////////////////////////////
-//  QuickThread
-////////////////////////////////////////////////////////////////////////////////
-
-class TQThreadCallThread(TThread):
-  var Method, Args
-  proc Create, Execute
-end
-
-proc TQThreadCallThread::Create(Method, Args):
-  $Method ?= Method
-  $Args ?= Args
-  TThread::Create$(false)
-end
-
-proc TQThreadCallThread::Execute():
-  while $Args->Size() > 0:
-    $Args -> pop_back()
-  end
-  call $Method
-end
-
-func Thread(method, [args]):
-  args_vect ?= new vector()
-  for arg in args:
-    args_vect -> push_back(arg)
-  end
-  return new TQThreadCallThread(method, args_vect)
 end

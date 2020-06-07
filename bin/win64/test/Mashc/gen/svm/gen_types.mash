@@ -1,0 +1,40 @@
+/*
+ *  Some types
+ */
+
+class CallBegin:
+end
+
+class CallEnd:
+end
+
+class PreGenerated:
+  var code
+
+  init(code):
+    $code ?= code
+  end
+end
+
+class PreGeneratedSet(list):
+  proc Next(s):
+    $Add( new PreGenerated(s) )
+  end
+end
+
+class BreakPoint:
+  var PointLabel
+
+  init(lbl):
+    $PointLabel ?= lbl
+  end
+end
+
+class PopBreakPoint:
+end
+
+class ContinuePoint(BreakPoint):
+end
+
+class PopContinuePoint:
+end

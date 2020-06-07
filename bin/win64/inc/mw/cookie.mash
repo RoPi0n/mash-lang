@@ -1,0 +1,14 @@
+/*
+ *  Set/Get cookies
+ */
+
+
+class MWCookie:
+  public:
+    var name, value
+
+    init(name, value):
+      $name ?= name
+      $value ?= value
+    end
+end

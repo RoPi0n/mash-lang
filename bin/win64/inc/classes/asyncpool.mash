@@ -1,0 +1,91 @@
+uses classes.list
+uses threads
+uses callable
+
+
+class AsyncWorker(TThread):
+  public:
+    var tasklist,
+        active
+
+    init():
+      $tasklist ?= new SyncList()
+      $active ?= true
+      super(true)
+    end
+
+    proc Execute():
+      while true:
+        if $tasklist -> count() > 0:
+          task ?= $tasklist -> get(0)
+          $tasklist -> delete(0)
+          task -> call()
+        else:
+          if $active: sleep(1) else: break end
+        end
+        gc()
+      end
+    end
+
+    func PushTask(task):
+      $tasklist -> add(task)
+    end
+
+    func CountTasks():
+      return $tasklist -> count()
+    end
+
+    proc Finish():
+      $active ?= false
+      $WaitFor()
+    end
+end
+
+
+class AsyncPool:
+  public:
+    var workers, cs
+
+    init(workers_count):
+      $workers ?= new list()
+      $cs ?= new CriticalSection()
+
+      i ?= 0
+      while i < workers_count:
+        worker ?= new AsyncWorker()
+        $workers -> add(worker)
+        i++
+      end
+    end
+
+    proc AddTask(task):
+      $cs -> Enter()
+
+      if $workers -> count() > 0:
+        mint ?= null
+        minw ?= null
+        for w in $workers -> items:
+          _ ?= w -> CountTasks()
+          if mint == null:
+            mint ?= _
+            minw ?= w
+          end
+
+          if _ < min:
+            mint ?= _
+            minw ?= w
+          end
+        end
+      end
+
+      minw -> PushTask(task)
+
+      $cs -> Leave()
+    end
+
+    proc Stop():
+      for w in $workers -> items:
+        w -> Finish()
+      end
+    end
+end

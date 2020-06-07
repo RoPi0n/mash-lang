@@ -1,0 +1,55 @@
+////////////////////////////////////////////////////////////////////////////////
+//  Thread pool
+////////////////////////////////////////////////////////////////////////////////
+
+uses classes.list
+uses threads
+
+class ThreadPool:
+  private:
+    var pool,
+        waiting_for, worker_thr
+
+    proc worker():
+      while (~$waiting_for) | ($pool -> count() > 0) | ($queue -> count() > 0):
+        i ?= 0
+        while i < $pool -> count():
+          if $pool -> items[i] -> terminated:
+            $pool -> delete(i)
+            i--
+          end
+          i++
+        end
+
+        while ($pool -> count() < $max_threads) & ($queue -> count() > 0):
+          t ?= $queue -> get(0)
+          $queue -> delete(0)
+          $pool -> add(t)
+          t -> Resume()
+        end
+
+        sleep(1)
+      end
+    end
+
+
+  public:
+    var queue, max_threads
+
+    init(max_threads):
+      $pool ?= new List()
+      $queue ?= new SyncList()
+      $waiting_for ?= false
+      $max_threads ?= max_threads
+      $worker_thr ?= $worker.go()
+    end
+
+    proc AddThread(thr):
+      $queue -> add(thr)
+    end
+
+    proc WaitFor():
+      $waiting_for ?= true
+      $worker_thr -> WaitFor()
+    end
+end

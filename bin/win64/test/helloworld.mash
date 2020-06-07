@@ -1,0 +1,4 @@
+uses crt
+
+println("Hello world!")
+inputln()

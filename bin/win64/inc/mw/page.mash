@@ -1,0 +1,79 @@
+/*
+ *  MW html generator
+ */
+
+uses classes.streams
+uses classes.list
+uses classes.dict
+uses strings
+
+uses mw.answer
+
+uses mw.page.baseobject
+uses mw.page.variables
+uses mw.page.fragment
+uses mw.page.frame
+
+/*
+ *  Template format:
+ *    Include : {{ uses 'file.htm' }}
+ *    Label   : {{ var_name/section_name }}
+ *    List    : {{ list list_name }} ... {{ end list_name }}
+ *            : {{ list_name.var_name }}
+ *    Define  : {{ def section_name }} ... {{ end section_name }}
+ */
+
+
+proc mw_unpack_var(d, p_var):
+  key ?= p_var[0]
+  val ?= p_var[1]
+
+  if val is TypeArray:
+    val_arr ?= []
+
+    for v in val:
+      val_dict ?= new Dict()
+      mw_unpack_var(val_dict, v)
+      val_arr.append(val_dict)
+    end
+
+    val ?= val_arr
+
+    d -> set(key, val)
+  else:
+    d -> set(key, new MWPageValue(val))
+  end
+end
+
+
+func mw_process(code, page, vars):
+  vars_dict ?= new Dict()
+  for v in vars:
+    mw_unpack_var(vars_dict, v)
+  end
+
+  i ?= 0
+  for k in page -> defs -> keys -> items:
+    vars_dict -> set(k, page -> defs -> values -> items[i])
+    i++
+  end
+
+  buf ?= new MWAnswerBuffer()
+  buf -> content -> write(page -> gen(vars_dict))
+
+  answ ?= new MWAnswer(code, buf)
+  return answ
+end
+
+
+func mw_template(path):
+  return new MWPageFrameLoader(null, path)
+end
+
+func mw_page(code, page, [vars]):
+  return mw_process(code, page, vars)
+end
+
+func mw_gen(code, path, [vars]):
+  return mw_process(code, mw_template(path), vars)
+end

@@ -1,0 +1,100 @@
+/*
+ *  Sockets
+ */
+
+import  _Socket_Create             "sockets.lib" "_Socket_Create"
+import  _Socket_Close              "sockets.lib" "_Socket_Close"
+import  _Socket_Connect            "sockets.lib" "_Socket_Connect"
+import  _Socket_Bind               "sockets.lib" "_Socket_Bind"
+import  _Socket_Listen             "sockets.lib" "_Socket_Listen"
+import  _Socket_Accept             "sockets.lib" "_Socket_Accept"
+import  _Socket_SetTimeOut         "sockets.lib" "_Socket_SetTimeOut"
+import  _Socket_SetBlockingMode    "sockets.lib" "_Socket_SetBlockingMode"
+import  _Socket_SendStream         "sockets.lib" "_Socket_SendStream"
+import  _Socket_SendString         "sockets.lib" "_Socket_SendString"
+import  _Socket_ReceiveStream      "sockets.lib" "_Socket_ReceiveStream"
+import  _Socket_ReceiveBuffer      "sockets.lib" "_Socket_ReceiveBuffer"
+import  _Socket_ReceiveString      "sockets.lib" "_Socket_ReceiveString"
+
+
+uses classes.streams
+
+
+CR   ?= chr(0x0d)
+LF   ?= chr(0x0a)
+CRLF ?= CR + LF
+
+
+class Socket:
+  private:
+    var Sock
+
+  public:
+    init():
+      $Sock ?= _Socket_Create()
+    end
+
+    proc Close():
+      _Socket_Close($Sock)
+    end
+
+    proc Connect(host, port):
+      if ~_Socket_Connect($Sock, host, port):
+        raise new Exception("Native socket exception")
+      end
+    end
+
+    proc Bind(host, port):
+      if ~_Socket_Bind($Sock, host, port):
+        raise new Exception("Native socket exception")
+      end
+    end
+
+    proc Listen():
+      _Socket_Listen($Sock)
+    end
+
+    func Accept():
+      AcceptedSocket ?=  new Socket
+      AcceptedSocket -> sock ?= _Socket_Accept($Sock)
+      return AcceptedSocket
+    end
+
+    proc SetTimeOut(TimeOut):
+      _Socket_SetTimeOut($Sock, TimeOut)
+    end
+
+    proc SetBlockingMode(mode_bool):
+      _Socket_SetBlockingMode($Sock, mode_bool)
+    end
+
+    proc SendStream(pStream):
+      _Socket_SendStream($Sock, pStream -> UnPack())
+    end
+
+    proc SendLn(st):
+      _Socket_SendString($Sock, st)
+    end
+
+    proc ReceiveStream(pStream, TimeOut):
+      if ~_Socket_ReceiveStream($Sock, pStream -> UnPack(), TimeOut):
+        raise new Exception("Native socket exception")
+      end
+    end
+
+    func ReceiveBuffer(pStream, BufLen):
+      sz ?= _Socket_ReceiveBuffer($Sock, pStream -> UnPack(), BufLen)
+      if sz == null:
+        raise new Exception("Native socket exception")
+      end
+      return sz
+    end
+
+    func ReceiveLn(TimeOut):
+      s ?= _Socket_ReceiveString($Sock, TimeOut)
+      if s == null:
+        raise new Exception("Native socket exception")
+      end
+      return s
+    end
+end

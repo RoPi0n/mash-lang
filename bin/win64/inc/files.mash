@@ -2,7 +2,8 @@
 // Files
 ////////////////////////////////////////////////////////////////////////////////
 
-uses <strings>
+uses strings
+uses algs
 
 import FileExists   "files.lib" "FILEEXISTS"
 import DirExists    "files.lib" "DIREXISTS"
@@ -13,21 +14,21 @@ import ScanDir      "files.lib" "SCANDIR"
 import ScanDirFirst "files.lib" "SCANDIRFIRST"
 
 func ExtractFilePath(path):
-  path ?= s_Reverse(path)
-  s_Del(path, 0, s_Pos(sysslash, path))
-  return s_Reverse(path)
+  path ?= path.copy().Reverse()
+  path.Cut(0, path.SubPos(sysslash))
+  return path.Reverse()
 end
 
 func ExtractFileDir(path):
-  path ?= s_Reverse(path)
-  s_Del(path, 0, s_Pos(sysslash, path) + 1)
-  return s_Reverse(path)
+  path ?= path.copy().Reverse()
+  path.Cut(0, path.SubPos(sysslash) + 1)
+  return path.Reverse()
 end
 
 func PreparePath(path):
-  if s_Pos(":" + sysslash, path) > 0:
+  if path.SubPos(":" + sysslash) > 0:
     return path
   else:
-    return ExtractFilePath(ParamList[0]) + path
+    return ExtractFilePath(Params[0]) + path
   end
 end

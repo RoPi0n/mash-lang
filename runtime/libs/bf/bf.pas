@@ -114,7 +114,13 @@ end;
 
 procedure DRaise(pctx: pointer); stdcall;
 begin
-  raise Exception.Create('Raised external exception.');
+  //raise Exception.Create('Raised external exception.');
+  try
+    raise Exception.Create('Test');
+  except
+    on E: Exception do
+      writeln('Catched! ', E.Message);
+  end;
 end;
 
 {EXPORTS DB}

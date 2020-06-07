@@ -1,5 +1,0 @@
-uses crt
-
-proc main():
-  println(7 >> 1)
-end

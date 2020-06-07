@@ -1,0 +1,14 @@
+uses crt
+uses math.plots
+
+func    arh(fi): return fi * 2 end
+func circle(fi): return 5      end
+
+proc main():
+  plt ?= new MathPlot(MathPlot -> Polar, 40)
+
+  plt -> Draw(arh)
+  plt -> Draw(circle)
+
+  inputln()
+end

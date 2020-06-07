@@ -1,0 +1,17 @@
+/*
+ *  Frame contains raw html code
+ */
+
+class MWPageFragment(MWPageBaseObject):
+  public:
+    var code
+
+    init(name, code):
+      super(name)
+      $code ?= code
+    end
+
+    func gen(vars):
+      return $code
+    end
+end

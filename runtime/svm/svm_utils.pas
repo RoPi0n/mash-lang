@@ -48,11 +48,9 @@ begin
       if lvl - 1 > 0 then
       begin
         r := NewArr_Sub(size_arr, lvl - 1, Grabber);
-        r.m_refc := 1;
+        r.m_rcnt := 1;
         Result.ArrSet(i, r);
-      end
-      else
-        Result.ArrSet(i, nil);
+      end;
       Inc(i);
     end;
   end;
@@ -69,7 +67,7 @@ begin
   while i < lvl do
   begin
     r := TSVMMem(stk^.popv);
-    Dec(r.m_refc);
+    InterLockedDecrement(r.m_rcnt);
     size_arr[i] := r.GetW;
     Inc(i);
   end;
@@ -98,7 +96,7 @@ begin
           dec(c);
         end
        else
-        TGrabber(lst[c]).Run;
+        TGrabber(lst[c]).RunFull;
 
        inc(c);
      end;

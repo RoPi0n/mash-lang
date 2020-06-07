@@ -1,0 +1,40 @@
+/*
+ *  Initializing
+ */
+
+proc __GetNull__():
+  inline "pushn"
+end
+
+LnBreak ?= chr(13, 10)
+
+inline "pushcp __init__end__"
+inline "jp"
+inline "__init__:"
+
+sysslash ?= GetSystemSlash()
+null ?= __GetNull__()
+
+system_traceback_stack ?= []
+
+Params ?= null
+__initproc__()
+
+proc __initproc__():
+  Argc ?= 0
+  inline "peek $argc"
+  inline "pop"
+  Params ?= new[Argc]
+
+  local_i ?= 0
+  local_a ?= null
+  while local_i < Argc:
+    inline "peek $local_a"
+    inline "pop"
+    Params[local_i] ?= local_a
+    local_i++
+  end
+end
+
+inline "jr"
+inline "__init__end__:"

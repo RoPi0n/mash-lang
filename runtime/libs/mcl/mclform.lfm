@@ -1,0 +1,31 @@
+object MCLFormClass: TMCLFormClass
+  Left = 424
+  Height = 240
+  Top = 146
+  Width = 320
+  Caption = 'MCL Form'
+  OnClick = FormClick
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDblClick = FormDblClick
+  OnDestroy = FormDestroy
+  OnHide = FormHide
+  OnKeyDown = FormKeyDown
+  OnKeyPress = FormKeyPress
+  OnKeyUp = FormKeyUp
+  OnMouseDown = FormMouseDown
+  OnMouseEnter = FormMouseEnter
+  OnMouseLeave = FormMouseLeave
+  OnMouseMove = FormMouseMove
+  OnMouseUp = FormMouseUp
+  OnMouseWheel = FormMouseWheel
+  OnMouseWheelDown = FormMouseWheelDown
+  OnMouseWheelUp = FormMouseWheelUp
+  OnMouseWheelHorz = FormMouseWheelHorz
+  OnMouseWheelLeft = FormMouseWheelLeft
+  OnMouseWheelRight = FormMouseWheelRight
+  OnResize = FormResize
+  OnShow = FormShow
+  OnWindowStateChange = FormWindowStateChange
+  LCLVersion = '2.0.4.0'
+end

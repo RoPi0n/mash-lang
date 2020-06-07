@@ -1,0 +1,104 @@
+uses classes.list
+uses "parser\token.mash"
+uses "ast\blocks.mash"
+
+/*
+ * Expressions with one value and operator
+ * A++     A--     -A     ~A     ?A     @A     new A
+ */
+class MashASTE_Operation:
+  var A, Op
+
+  init(A, Op):
+    $A ?= A
+    $Op ?= Op
+  end
+end
+
+/*
+ * Expressions with L and R values
+ * L + R     L - R     L * R     L / R
+ * L \ R     L % R     L & R     L | R
+ * L ^ R     L << R    L >> R    L in R
+ * L > R     L < R
+ * L == R    L >= R    L <= R    L <> R
+ *
+ * Assignings with L and R values
+ * L ?= R     L = R      L @= R
+ * L += R     L -= R     L *= R     L /= R
+ * L \= R     L %= R     L <<= R    L >>= R
+ * L &= R     L |= R     L ^= R
+ */
+class MashASTE_OperationLR:
+  var L, R, Op
+
+  init(L, R, Op):
+    $L ?= L
+    $R ?= R
+    $Op ?= Op
+  end
+end
+
+/*
+ * Primitives
+ */
+
+// Object: var/const
+class MashASTP_SimpleObject:
+  var Obj
+
+  init(Obj):
+    $obj ?= obj
+  end
+end
+
+// SpecRect Object: [x]
+class MashASTP_SpecRectObject(MashASTP_SimpleObject):
+end
+
+// Object by ref: xx -> yy
+class MashASTP_ObjectByRef:
+  var ObjPath
+
+  init():
+    $ObjPath ?= new list()
+  end
+end
+
+// Indexed object: var[a][b]..[N]
+class MashASTP_IndexedObject:
+  var Obj, Indexes
+
+  init(Obj, Indexes):
+    $Obj ?= Obj
+    $Indexes ?= Indexes
+  end
+end
+
+// Call: f(args)
+class MashASTP_Call:
+  var Obj, Args
+
+  init(Obj, Args):
+    $Obj ?= Obj
+    $Args ?= Args
+  end
+end
+
+// Enumeration: [1, 2, 3, ..., N]
+class MashASTP_Enum:
+  var Objects
+
+  init():
+    $Objects ?= new list()
+  end
+end
+
+// Operator
+class MashASTP_Operator:
+  var Op
+
+  init(Op):
+    $Op ?= Op
+  end
+end

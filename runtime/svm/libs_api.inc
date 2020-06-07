@@ -3,35 +3,35 @@
 function NewSVMM(Grabber: TGrabber): TSVMMem;
 begin
   Result := TSVMMem.MCreate;
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Grabber.Reg(Result);
 end;
 
 function NewSVMM_F(const value; t:TSVMType; Grabber: TGrabber): TSVMMem;
 begin
   Result := TSVMMem.MCreateF(value, t);
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Grabber.Reg(Result);
 end;
 
 function NewSVMM_FS(s:string; Grabber: TGrabber): TSVMMem;
 begin
   Result := TSVMMem.MCreateFS(s);
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Grabber.Reg(Result);
 end;
 
 function NewSVMM_FW(w:cardinal; Grabber: TGrabber): TSVMMem;
 begin
   Result := TSVMMem.MCreateFW(w);
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Grabber.Reg(Result);
 end;
 
 function NewSVMM_FI(i:int64; Grabber: TGrabber): TSVMMem;
 begin
   Result := TSVMMem.MCreate;
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Result.SetV(i, svmtInt);
   Grabber.Reg(Result);
 end;
@@ -39,7 +39,7 @@ end;
 function NewSVMM_FD(d:double; Grabber: TGrabber): TSVMMem;
 begin
   Result := TSVMMem.MCreate;
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Result.SetV(d, svmtReal);
   Grabber.Reg(Result);
 end;
@@ -47,7 +47,7 @@ end;
 function NewSVMM_Arr(size:cardinal; Grabber: TGrabber): TSVMMem;
 begin
   Result := TSVMMem.MCreateArr(size);
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Grabber.Reg(Result);
 end;
 
@@ -56,7 +56,7 @@ begin
   Result := TSVMMem.MCreate;
   Result.m_val := ref;
   Result.m_type := svmtRef;
-  Result.m_refc := 0;
+  Result.m_rcnt := 0;
   Result.m_dcbp := dcbp;
   Grabber.Reg(Result);
 end;
@@ -83,15 +83,13 @@ begin
   items[i_pos] := p;
   inc(i_pos);
 
-  try
-    Inc(TSVMMem(p).m_refc);
-  finally
-    if i_pos >= size then
-     begin
-       size := size + StackBlockSize;
-       SetLength(items, size)
-     end;
-  end;
+  InterLockedIncrement(TSVMMem(p).m_rcnt);
+
+  if i_pos >= size then
+   begin
+     size := size + StackBlockSize;
+     SetLength(items, size)
+   end;
 end;
 
 function TAPIStack.peek: pointer;
@@ -101,16 +99,14 @@ end;
 
 procedure TAPIStack.pop;
 begin
-  try
-    Dec(TSVMMem(self.peek).m_refc);
-  finally
-    Dec(i_pos);
-    if size - i_pos > StackBlockSize then
-     begin
-       size := size - StackBlockSize;
-       SetLength(items, size);
-     end;
-  end;
+  InterLockedDecrement(TSVMMem(self.peek).m_rcnt);
+
+  Dec(i_pos);
+  if size - i_pos > StackBlockSize then
+   begin
+     size := size - StackBlockSize;
+     SetLength(items, size);
+   end;
 end;
 
 function TAPIStack.popv: pointer;
@@ -118,15 +114,13 @@ begin
   Dec(i_pos);
   Result := items[i_pos];
 
-  try
-    Dec(TSVMMem(Result).m_refc);
-  finally
-    if size - i_pos > StackBlockSize then
-     begin
-       size := size - StackBlockSize;
-       SetLength(items, size);
-     end;
-  end;
+  InterLockedDecrement(TSVMMem(Result).m_rcnt);
+
+  if size - i_pos > StackBlockSize then
+   begin
+     size := size - StackBlockSize;
+     SetLength(items, size);
+   end;
 end;
 
 procedure TAPIStack.swp;
@@ -145,11 +139,9 @@ begin
    c := 0;
    while c < i_pos do
     begin
-      try
-        Dec(TSVMMem(items[c]).m_refc);
-      finally
-        inc(c);
-      end;
+      InterLockedDecrement(TSVMMem(items[c]).m_rcnt);
+
+      inc(c);
     end;
 
    SetLength(items, StackBlockSize);
@@ -225,8 +217,11 @@ begin
 end;
 
 procedure __Return_Bool(pVM: PSVM; val: boolean); stdcall;
+var
+  b: integer;
 begin
-  PAPIStack(@(pVM^.Stack))^.push( NewSVMM_FI(Int64(val), pVM^.Grabber) );
+  if val then b := -1 else b := 0;
+  PAPIStack(@(pVM^.Stack))^.push( NewSVMM_FI(b, pVM^.Grabber) );
 end;
 
 procedure __Return_Ref(pVM: PSVM; val: pointer; dcbp: PDestructorCallBack); stdcall;
@@ -237,6 +232,11 @@ end;
 procedure __Return_Object(pVM: PSVM; val: pointer); stdcall;
 begin
   PAPIStack(@(pVM^.Stack))^.push(val);
+end;
+
+procedure __Return_Null(pVM: PSVM); stdcall;
+begin
+  PAPIStack(@(pVM^.Stack))^.push(pVM^.pVM_NULL);
 end;
 
 function __New_Set(pVM: PSVM): pointer; stdcall;
@@ -251,7 +251,7 @@ begin
   sz := pSet.ArrGetSize;
   pSet.ArrSetSize(sz + 1);
   pSet.ArrSet(sz, Ptr);
-  Inc(TSVMMem(Ptr).m_refc);
+  InterLockedIncrement(TSVMMem(Ptr).m_rcnt);
 end;
 
 function __New_Word(pVM: PSVM; val: longword): pointer; stdcall;
@@ -295,31 +295,32 @@ begin
   pVM^.ip := addr;
 end;
 
-exports __Next_Type     name '__Next_Type';
-exports __Next_Word     name '__Next_Word';
-exports __Next_Int      name '__Next_Int';
-exports __Next_Float    name '__Next_Float';
-exports __Next_String   name '__Next_String';
-exports __Next_Bool     name '__Next_Bool';
-exports __Next_Ref      name '__Next_Ref';
-exports __Next_Object   name '__Next_Object';
+exports __Next_Type        name '__Next_Type';
+exports __Next_Word        name '__Next_Word';
+exports __Next_Int         name '__Next_Int';
+exports __Next_Float       name '__Next_Float';
+exports __Next_String      name '__Next_String';
+exports __Next_Bool        name '__Next_Bool';
+exports __Next_Ref         name '__Next_Ref';
+exports __Next_Object      name '__Next_Object';
 
-exports __Return_Word   name '__Return_Word';
-exports __Return_Int    name '__Return_Int';
-exports __Return_Float  name '__Return_Float';
-exports __Return_String name '__Return_String';
-exports __Return_Bool   name '__Return_Bool';
-exports __Return_Ref    name '__Return_Ref';
-exports __Return_Object name '__Return_Object';
+exports __Return_Word      name '__Return_Word';
+exports __Return_Int       name '__Return_Int';
+exports __Return_Float     name '__Return_Float';
+exports __Return_String    name '__Return_String';
+exports __Return_Bool      name '__Return_Bool';
+exports __Return_Ref       name '__Return_Ref';
+exports __Return_Object    name '__Return_Object';
+exports __Return_Null      name '__Return_Null';
 
-exports __New_Set       name '__New_Set';
-exports __Push_To_Set   name '__Push_To_Set';
+exports __New_Set          name '__New_Set';
+exports __Push_To_Set      name '__Push_To_Set';
 
-exports __New_Word      name '__New_Word';
-exports __New_Int       name '__New_Int';
-exports __New_Float     name '__New_Float';
-exports __New_String    name '__New_String';
-exports __New_Bool      name '__New_Bool';
-exports __New_Ref       name '__New_Ref';
+exports __New_Word         name '__New_Word';
+exports __New_Int          name '__New_Int';
+exports __New_Float        name '__New_Float';
+exports __New_String       name '__New_String';
+exports __New_Bool         name '__New_Bool';
+exports __New_Ref          name '__New_Ref';
 
-exports __Make_CallBack name '__Make_CallBack';
+exports __Make_CallBack    name '__Make_CallBack';

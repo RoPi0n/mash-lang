@@ -6,7 +6,7 @@ unit svm_grabber;
 interface
 
 uses
-   SysUtils;
+   SysUtils, Classes;
 
 const
    GrabberStackBlockSize = 1024 * 8;
@@ -17,22 +17,26 @@ type
       items: array of pointer;
       size, i_pos: cardinal;
       procedure init;
-      procedure push(p: pointer);
-      procedure pop;
-      procedure drop;
-      procedure free;
+      procedure push(p: pointer); inline;
+      procedure pop; inline;
+      procedure drop; inline;
+      procedure free; inline;
    end;
 
    TGrabber = class
    public
       Stack: TGrabberStack;
       ChkCnt: byte;
+      LastChk: cardinal;
+      Delta: cardinal;
+      Skipped: word;
 
       constructor Create;
       destructor Destroy; override;
 
       procedure Reg(value: pointer);
-      procedure Run;
+      procedure Run(offset: word = 32);
+      procedure RunFull;
       procedure Term;
    end;
 
@@ -51,6 +55,7 @@ end;
 
 procedure TGrabberStack.push(p: pointer); inline;
 begin
+
    items[i_pos] := p;
    Inc(i_pos);
    if i_pos >= size then
@@ -90,6 +95,9 @@ constructor TGrabber.Create;
 begin
   Stack.Init;
   ChkCnt := 0;
+  LastChk := 0;
+  Delta := 0;
+  Skipped := 0;
 end;
 
 destructor TGrabber.Destroy;
@@ -100,19 +108,28 @@ end;
 
 procedure TGrabber.Reg(value: pointer);
 begin
+  if (Delta > 1024) and (Stack.i_pos > 1024*8) or (Skipped > 1024*8) then
+   begin
+     Delta := Stack.i_pos;
+     Run;
+     Delta := Delta - Stack.i_pos;
+     Skipped := 0;
+   end
+  else
+   Inc(Skipped);
+
   Stack.push(value);
 end;
 
-procedure TGrabber.Run;
+procedure TGrabber.Run(offset: word = 32);
 var
   i: integer;
   c, l: cardinal;
   r: TSVMMem;
-  p: pointer;
 begin
-  if ChkCnt < 16 then
+  if ChkCnt < 32 then
    begin
-     i := stack.i_pos div 2;
+     i := stack.i_pos * 2 div 3;
      Inc(ChkCnt);
    end
   else
@@ -121,11 +138,58 @@ begin
      ChkCnt := 0;
    end;
 
+  //i := 0;
+
+  while i < stack.i_pos - offset do
+   begin
+     r := TSVMMem(stack.items[i]);
+
+     if r.m_rcnt < 1 then
+      begin
+        stack.items[i] := stack.items[stack.i_pos - offset];
+
+        c := stack.i_pos - offset;
+        while (c < stack.i_pos - 1) and (offset > 0) do
+         begin
+           stack.items[c] := stack.items[c + 1];
+           Inc(c);
+         end;
+
+        stack.pop;
+
+        if r.m_type in [svmtArr, svmtClass] then
+         begin
+           c := 0;
+           l := Length(PMemArray(r.m_val)^);
+           while c < l do
+            begin
+              InterlockedDecrement(TSVMMem(PMemArray(r.m_val)^[c]).m_rcnt);
+
+              Inc(c);
+            end;
+         end;
+
+        FreeAndNil(r);
+        Dec(i);
+      end;
+
+     inc(i);
+   end;
+end;
+
+procedure TGrabber.RunFull;
+var
+  i: integer;
+  c, l: cardinal;
+  r: TSVMMem;
+begin
+  i := 0;
+
   while i < stack.i_pos do
    begin
      r := TSVMMem(stack.items[i]);
 
-     if r.m_refc < 1 then
+     if r.m_rcnt < 1 then
       begin
         stack.items[i] := stack.items[stack.i_pos - 1];
         stack.pop;
@@ -136,16 +200,14 @@ begin
            l := Length(PMemArray(r.m_val)^);
            while c < l do
             begin
-              p := PMemArray(r.m_val)^[c];
-              if p <> nil then
-                Dec(TSVMMem(p).m_refc);
+              InterlockedDecrement(TSVMMem(PMemArray(r.m_val)^[c]).m_rcnt);
 
               Inc(c);
             end;
          end;
 
         FreeAndNil(r);
-        dec(i);
+        Dec(i);
       end;
 
      inc(i);

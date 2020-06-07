@@ -1,0 +1,75 @@
+uses classes.streams
+uses sockets
+
+class MWAnswerBuffer:
+  public:
+    var content
+
+    init():
+      $content ?= new MemoryStream()
+    end
+
+    func size():
+      return $content -> size()
+    end
+
+    proc SendTo(conn):
+      conn -> SendStream($content)
+    end
+end
+
+class MWAnswerFile:
+  public:
+    var path
+
+    init(path):
+      $path ?= path
+    end
+
+    func size():
+      fs ?= new FileStream($path, fmOpenRead)
+      sz ?= fs -> size()
+      fs -> close()
+      return sz
+    end
+
+    func SendTo(conn):
+      buf ?= new MemoryStream()
+      fs ?= new FileStream($path, fmOpenRead)
+      conn -> SendStream(fs)
+      fs -> close()
+    end
+end
+
+class MWAnswer:
+  public:
+    var code,
+        content
+
+    init(code, content):
+      $code ?= code
+      $content ?= content
+    end
+
+    proc SendTo(conn):
+      answ ?= "HTTP/1.0 " + $code + CRLF
+      //answ += "Content-type: " + $content_type + CRLF
+      answ += "Content-length: " + $content -> Size() + CRLF
+      answ += "Connection: close" + CRLF
+      answ += "Server: Mash Web" + CRLF
+
+      conn -> SendLn(answ)
+      $content -> SendTo(conn)
+    end
+end
+
+proc mw_text(code, txt):
+  buf ?= new MWAnswerBuffer()
+  buf -> content -> write(txt)
+  answ ?= new MWAnswer(code, buf)
+  return answ
+end
+
+proc mw_file(code, path):
+  return new MWAnswer(code, new MWAnswerFile(path))
+end

@@ -1,148 +1,174 @@
-uses <math\base>
+uses math.base
 
-class Matrix:
-  private:
-    var lines
+class matrix:
+  func summ(a, b):
+    lY ?= len(a)
+    lX ?= len(a[0])
 
-  public:
-    proc create,
-         assign
-end
+    r ?= new[lY][lX]
 
-proc Matrix::Create(m):
-  lines ?= []
-  if m <> null:
-    $assign(m)
-  end
-end
-
-proc Matrix::Assign(m):
-
-end
-
-func matrix.summ(a, b):
-  lY ?= len(a)
-  lX ?= len(a[0])
-
-  r ?= new[lY][lX]
-
-  for(y ?= 0; y < lY; y++):
-    for(x ?= 0; x < lX; x++):
-      r[y][x] ?= a[y][x] + b[y][x]
-    end
-  end
-
-  return r
-end
-
-func matrix.diff(a, b):
-  lY ?= len(a)
-  lX ?= len(a[0])
-
-  r ?= new[lY][lX]
-
-  for(y ?= 0; y < lY; y++):
-    for(x ?= 0; x < lX; x++):
-      r[y][x] ?= a[y][x] - b[y][x]
-    end
-  end
-
-  return r
-end
-
-proc matrix.add(a, b):
-  lY ?= len(a)
-  lX ?= len(a[0])
-
-  for(y ?= 0; y < lY; y++):
-    for(x ?= 0; x < lX; x++):
-      a[y][x] += b[y][x]
-    end
-  end
-end
-
-proc matrix.sub(a, b):
-  lY ?= len(a)
-  lX ?= len(a[0])
-
-  for(y ?= 0; y < lY; y++):
-    for(x ?= 0; x < lX; x++):
-      a[y][x] -= b[y][x]
-    end
-  end
-end
-
-func matrix.compare(a, b):
-  lY ?= len(a)
-  lX ?= len(a[0])
-
-  if (lY == len(b)) & (lX == len(b[0])):
-    r ?= true
-    for(y ?= 0; y < lY; y++):
-      for(x ?= 0; x < lX; x++):
-        r &= a[y][x] == b[y][x]
+    y ?= 0
+    while y < lY:
+      x ?= 0
+      while x < lX:
+        r[y][x] ?= a[y][x] + b[y][x]
+        x++
       end
+
+      y++
     end
 
     return r
-
-  else:
-    return false
   end
-end
 
-func matrix.fNumMultiply(m, x):
-  lY ?= len(a)
-  lX ?= len(a[0])
 
-  r ?= new[lY][lX]
+  func diff(a, b):
+    lY ?= len(a)
+    lX ?= len(a[0])
 
-  for(y ?= 0; y < lY; y++):
-    for(x ?= 0; x < lX; x++):
-      r[y][x] ?= a[y][x] * x
+    r ?= new[lY][lX]
+
+    y ?= 0
+    while y < lY:
+      x ?= 0
+      while x < lX:
+        r[y][x] ?= a[y][x] - b[y][x]
+        x++
+      end
+
+      y++
+    end
+
+    return r
+  end
+
+
+  proc add(a, b):
+    lY ?= len(a)
+    lX ?= len(a[0])
+
+    y ?= 0
+    while y < lY:
+      x ?= 0
+      while x < lX:
+        a[y][x] += b[y][x]
+        x++
+      end
+
+      y++
     end
   end
 
-  return r
-end
+  proc sub(a, b):
+    lY ?= len(a)
+    lX ?= len(a[0])
 
-proc matrix.NumMultiply(m, x):
-  for line in m:
-    for a in line:
-      a *= x
+    y ?= 0
+    while y < lY:
+      x ?= 0
+      while x < lX:
+        a[y][x] -= b[y][x]
+        x++
+      end
+
+      y++
     end
   end
-end
 
-func matrix.Multiply(a, b):
-  s ?= 0
 
-  lines_a   ?= len(a)
-  columns_a ?= len(a[0])
-  columns_b ?= len(b[0])
+  func compare(a, b):
+    lY ?= len(a)
+    lX ?= len(a[0])
 
-  r ?= new[lines_a][columns_b]
-
-  if lines_a == columns_b:
-    for(y ?= 0; y < lines_a; y++):
-      for(x ?= 0; x < columns_b; x++):
-        for(z ?= 0; z < columns_a; z++):
-          s += a[y][z] * b[z][x]
+    if (lY == b.len()) & (lX == b[0].len()):
+      r ?= true
+      y ?= 0
+      while y < lY:
+        x ?= 0
+        while x < lX:
+          r &= a[y][x] == b[y][x]
+          x++
         end
 
-        r[y][x] ?= copy(s)
-        s = 0
+        y++
       end
+
+      return r
+
+    else:
+      return false
     end
-  else:
-    raise new Exception("matrix.Multiply() -> Invalid size of matrixes!")
   end
 
-  return r
-end
+
+  func fNumMultiply(m, k):
+    lY ?= len(m)
+    lX ?= len(m[0])
+
+    r ?= new[lY][lX]
+
+    y ?= 0
+    while y < lY:
+      x ?= 0
+      while x < lX:
+        r[y][x] ?= m[y][x] * k
+        x++
+      end
+
+      y++
+    end
+
+    return r
+  end
 
 
-func matrix.OffsetCoord(a, maxA):
+  proc NumMultiply(m, x):
+    for line in m:
+      for a in line:
+        a *= x
+      end
+    end
+  end
+
+  func Multiply(a, b):
+    l_ay ?= a.len()
+    l_by ?= b.len()
+
+    if 0 in [l_ay, l_by]:
+      return []
+    end
+
+    l_ax ?= a[0].len()
+    l_bx ?= b[0].len()
+
+    if l_ax == l_by:
+      r ?= new[l_ay][l_bx]
+      y ?= 0
+      while y < l_ay:
+        x ?= 0
+        while x < l_bx:
+          s ?= 0
+          j ?= 0
+          while j < l_ax:
+            s += a[y][j] * b[j][x]
+            j++
+          end
+          r[y][x] ?= s
+
+          x++
+        end
+
+        y++
+      end
+
+      return r
+    else:
+      raise new Exception("Matrix::Multiply() -> Invalid size of matrixes!")
+    end
+  end
+
+
+/*func matrix.OffsetCoord(a, maxA):
   r ?= copy(a)
 
   while r < 0:
@@ -214,4 +240,7 @@ func matrix.transp(m):
   end
 
   return r
+end */
+
 end
+

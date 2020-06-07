@@ -1,4 +1,6 @@
-// externals
+/*
+ *  Base math methods.
+ */
 
 import Sin    "lmath.lib" "SIN"
 import Cos    "lmath.lib" "COS"
@@ -13,137 +15,75 @@ import LogN   "lmath.lib" "LOGN"
 import LNXP1  "lmath.lib" "LNXP1"
 import Exp    "lmath.lib" "EXP"
 
-// constants
+// Constants
+const m_pi 3.14159265358979
+const m_e  2.71828182845904
 
-real m_pi          3.14159265358979
-real m_e           2.71828182845904
+// methods
 
-// some methods
+func trunc(a): a \ 1 end
 
-func trunc(a):
-  return a \ 1
-end
+func frac(a): a - a \ 1 end
 
-func frac(a):
-  return a - a \ 1
-end
+func round(a): trunc(a + 0.5) end
 
-func round(a):
-  return trunc(a + 0.5)
-end
+func ceil(a): trunc(a + 0.999999) end
 
-func ceil(a):
-  return trunc(a + 0.9999)
-end
-
-func abs(a):
-  if a > 0:
-    return a
-  else:
-    return -a
-  end
-end
+func abs(a): if a > 0: a else: -a end end
 
 func sgn(a):
-  if a == 0:
-    return 0
-  end
-
-  if a < 0:
-    return -1
-  else:
-    return 1
-  end
+  if a == 0:  return 0  end
+  if a < 0:  return -1  else:  return 1  end
 end
 
-func Log(a):
-  return LogN(m_e, a)
-end
+func Log(a):  LogN(m_e, a)  end
 
 func Power(a, n):
-  if n == 0:
-    return 1
-  else:
-    if a == 0:
-      return 0
-    else:
-      return Exp(Log(a) * n)
-    end
-  end
+  return Exp(Log(a) * n)
 end
 
-func IntPower(a, n):
-  return Round(Power(a, n))
-end
+func IntPower(a, n):  Round( Power(a, n) )  end
 
 func Sqrt(a):
-  if a >= 0:
-    return Power(a, 0.5)
-  else:
-    return null
-  end
+  return Power(a, 0.5)
 end
 
 func Factorial(a):
   r ?= 1
 
-  for(i ?= 0; i < a; i++):
+  i ?= 0
+  while i < a:
     r *= i + 1
+    i++
   end
 
   return r
 end
 
-func hypot(w, h):
-  return sqrt(w*w + h*h)
-end
+func hypot(w, h):  sqrt(w*w + h*h)  end
 
-func radians(a):
-  return a * (180 / m_pi)
-end
+func radians(a):  a * (180 / m_pi)  end
 
-func degrees(a):
-  return a * (m_pi / 180)
-end
+func degrees(a):  a * (m_pi / 180)  end
 
 // Hyperbolic functions
 
-func sinh(a):
-  return (Power(m_e, a) - Power(m_e, -a)) / 2
-end
+func sinh(a):  (Power(m_e, a) - Power(m_e, -a)) / 2  end
 
-func cosh(a):
-  return (Power(m_e, a) + Power(m_e, -a)) / 2
-end
+func cosh(a):  (Power(m_e, a) + Power(m_e, -a)) / 2  end
 
-func cosech(a):
-  return 1 / sinh(a)
-end
+func cosech(a):  1 / sinh(a)  end
 
-func sech(a):
-  return 1 / cosh(a)
-end
+func sech(a):  1 / cosh(a)  end
 
-func tgh(a):
-  return sinh(a) / cosh(a)
-end
+func tgh(a):  sinh(a) / cosh(a)  end
 
-func ctgh(a):
-  return 1 / tgh(a)
-end
+func ctgh(a):  1 / tgh(a)  end
 
-func arcsinh(a):
-  return Log(a + sqrt(a*a + 1))
-end
+func arcsinh(a):  Log(a + sqrt(a*a + 1))  end
 
-func arccosh(a):
-  return Log(a + sqrt(a*a - 1))
-end
+func arccosh(a):  Log(a + sqrt(a*a - 1))  end
 
-func arctgh(a):
-  return Log( (1 + a) / (1 - a) ) / 2
-end
+func arctgh(a):  Log( (1 + a) / (1 - a) ) / 2  end
 
-func arcctgh(a):
-  return Log( (a + 1) / (a - 1) ) / 2
-end
+func arcctgh(a):  Log( (a + 1) / (a - 1) ) / 2  end

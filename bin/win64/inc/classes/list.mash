@@ -1,139 +1,112 @@
-////////////////////////////////////////////////////////////////////////////////
-// List
-////////////////////////////////////////////////////////////////////////////////
+/*
+ *  List, ThreadList
+ */
 
-uses <algs>
-uses <sync>
-uses <classes\types>
+uses algs
+uses sync
+
 
 class List:
   protected:
-    var Items
+    var Items,
+        Size
 
   public:
-    var Size
-
-    proc Create
-
-    proc Add,
-         Insert,
-         Delete,
-         Clear,
-         ForEach
-
-    func Get,
-         IndexOf,
-         Count
-
-    proc Sort
-
-    func NextIns,
-         Find
-end
-
-
-proc List::Create():
-  $Items ?= new[0]
-  $Size ?= 0
-end
-
-
-proc List::Add(Obj):
-  SetLen($Items, $Size + 1)
-  $Items[$Size] ?= Obj
-  $Size++
-end
-
-
-proc List::Insert(Obj, Index):
-  if ($Size < Index) | (Index < 0):
-    raise "List index (" + Index + ") out of bounds."
-  else:
-    $Size++
-    SetLen($Items, $Size)
-    for(i ?= $Size - 1; i > Index; i--):
-      $Items[i] ?= $Items[i - 1]
+    init():
+      $Items ?= new[0]
+      $Size ?= 0
     end
-    $Items[Index] ?= Obj
-  end
-end
 
 
-proc List::Delete(Index):
-  if ($Size <= Index) | (Index < 0):
-    raise "List index (" + Index + ") out of bounds."
-  else:
-    $Size--
-    for(; Index < $Size; Index++):
-      $Items[Index] ?= $Items[Index + 1]
+    proc Add(Obj):
+      SetLen($Items, $Size + 1)
+      $Items[$Size] ?= Obj
+      $Size++
     end
-    SetLen($Items, $Size)
-  end
-end
 
 
-proc List::Clear():
-  SetLen($Items, 0)
-  $Size = 0
-end
+    proc Insert(Obj, Index):
+      if ($Size < Index) | (Index < 0):
+        raise new Exception("List index (" + Index + ") out of bounds.")
+      else:
+        $Size++
+        SetLen($Items, $Size)
+        i ?= $Size - 1
+        while i > Index:
+          $Items[i] ?= $Items[i - 1]
+          i--
+        end
 
-
-proc List::ForEach(method):
-  i ?= 0
-  while i < $Size:
-    vcall(method, $Items[i])
-    i++
-  end
-end
-
-
-func List::Get(Index):
-  return $Items[Index]
-end
-
-
-func List::IndexOf(Obj):
-  if typeof(Obj) in [TypeArray, TypeClass]:
-    p ?= @Obj
-    for(i ?= 0; i < $Size; i++):
-      if p == @$Items[i]:
-        return i
+        $Items[Index] ?= Obj
       end
     end
-  else:
-    for(i ?= 0; i < $Size; i++):
-      if Obj == $Items[i]:
-        return i
+
+
+    proc Delete(Index):
+      if ($Size <= Index) | (Index < 0):
+        raise new Exception("List index (" + Index + ") out of bounds.")
+      else:
+        $Size--
+        while Index < $Size:
+          $Items[Index] ?= $Items[Index + 1]
+          Index++
+        end
+        SetLen($Items, $Size)
       end
     end
-  end
 
-  return null
+
+    proc Clear():
+      SetLen($Items, 0)
+      $Size = 0
+    end
+
+
+    func Get(Index):
+      if index == null: return null end
+
+      return $Items[Index]
+    end
+
+
+    func IndexOf(Obj):
+      if typeof(Obj) in [TypeArray, TypeClass]:
+        i ?= 0
+        while i < $Size:
+          if @Obj == @($Items[i]):  return i  end
+          i++
+        end
+      else:
+        i ?= 0
+        while i < $Size:
+          if Obj == $Items[i]:  return i  end
+          i++
+        end
+      end
+
+      return null
+    end
+
+
+    func Count():  return copy($size)  end
+
+
+    proc Sort():  QuickSort($Items)  end
+
+
+    func Find(Obj):  return BinSearch($Items, Obj)  end
+
+
+    func NextIns(Obj):
+      Indx ?= BinNext($Items, Obj)
+      $Insert(Obj, Indx)
+      return Indx
+    end
 end
 
-func List::Count():
-  return copy($size)
-end
 
-proc List::Sort():
-  RadixSort($Items)
-end
 
-func List::NextIns(Obj):
-  Indx ?= BinNext($Items, Obj)
-  $Insert(Obj, Indx)
-  return Indx
-end
-
-func List::Find(Obj):
-  return BinSearch($Items, Obj)
-end
-
-////////////////////////////////////////////////////////////////////////////////
-// ThreadList
-////////////////////////////////////////////////////////////////////////////////
-
-class ThreadList(List):
+class SyncList(List):
   private:
     var Locker
 
@@ -141,90 +114,74 @@ class ThreadList(List):
     var Items, Size
 
   public:
-    proc Create, Free
+    init():
+      super()
+      $Locker ?= new CriticalSection()
+    end
 
-    proc Add, Insert, Delete, Clear, ForEach
-    func Get, IndexOf
+    proc Add(Obj):
+      $Locker -> Enter()
+      super(Obj)
+      $Locker -> Leave()
+    end
 
-    proc Sort
-    func NextIns, Find
-end
+    proc Insert(Obj, Index):
+      $Locker -> Enter()
+      super(Obj, Index)
+      $Locker -> Leave()
+    end
 
-proc ThreadList::Create():
-  List::Create$()
-  $Locker ?= new CriticalSection()
-end
+    proc Delete(Index):
+      $Locker -> Enter()
+      super(Index)
+      $Locker -> Leave()
+    end
 
-proc ThreadList::Free():
-  $Locker->Free()
-end
+    proc Clear():
+      $Locker -> Enter()
+      super()
+      $Locker -> Leave()
+    end
 
-proc ThreadList::Add(Obj):
-  $Locker->Enter()
-  List::Add$(Obj)
-  $Locker->Leave()
-end
+    func Get(Index):
+      $Locker -> Enter()
+      r ?= super(Index)
+      $Locker -> Leave()
+      return r
+    end
 
+    func IndexOf(Obj):
+      $Locker -> Enter()
+      r ?= super(Obj)
+      $Locker -> Leave()
+      return r
+    end
 
-proc ThreadList::Insert(Obj, Index):
-  $Locker->Enter()
-  List::Insert$(Obj, Index)
-  $Locker->Leave()
-end
+    proc Sort():
+      $Locker -> Enter()
+      super()
+      $Locker -> Leave()
+    end
 
+    func NextIns(Obj):
+      $Locker -> Enter()
+      r ?= super(Obj)
+      $Locker -> Leave()
+      return r
+    end
 
-proc ThreadList::Delete(Index):
-  $Locker->Enter()
-  List::Delete$(Index)
-  $Locker->Leave()
-end
+    func Find(Obj):
+      $Locker -> Enter()
+      r ?= super(Obj)
+      $Locker -> Leave()
+      return r
+    end
 
+    func Lock():
+      $Locker -> Enter()
+      r ?= new list()
+      r -> items ?= $items
+    end
 
-proc ThreadList::Clear():
-  $Locker->Enter()
-  List::Clear$()
-  $Locker->Leave()
-end
-
-
-proc ThreadList::ForEach(method):
-  $Locker->Enter()
-  List::ForEach$(method)
-  $Locker->Leave()
-end
-
-
-func ThreadList::Get(Index):
-  $Locker->Enter()
-  r ?= List::Get$(Index)
-  $Locker->Leave()
-  return r
-end
-
-
-func ThreadList::IndexOf(Obj):
-  $Locker->Enter()
-  r ?= List::IndexOf$(Obj)
-  $Locker->Leave()
-  return r
-end
-
-proc ThreadList::Sort():
-  $Locker->Enter()
-  List::Sort$()
-  $Locker->Leave()
-end
-
-func ThreadList::NextIns(Obj):
-  $Locker->Enter()
-  r ?= List::NextIns$(Obj)
-  $Locker->Leave()
-  return r
-end
-
-func ThreadList::Find(Obj):
-  $Locker->Enter()
-  r ?= List::Find$(Obj)
-  $Locker->Leave()
-  return r
+    proc UnLock():  $Locker -> Leave()  end
 end

@@ -1,12 +1,11 @@
-// Mash lang classes unit
-// Version: 1.0
+/*
+ *  Implementation of base routines of language
+ */
 
-uses <classes\types>
-
-uses <classes\points>
-uses <classes\vector>
-uses <classes\list>
-uses <classes\streams>
-uses <classes\stringlist>
-uses <classes\map>
-uses <classes\tree>
+uses classes.list
+uses classes.map
+uses classes.points
+uses classes.stringlist
+uses classes.vector
+uses classes.streams
+uses classes.tree

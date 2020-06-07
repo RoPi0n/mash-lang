@@ -1,0 +1,157 @@
+/*
+ *  Simple routines
+ */
+
+func MaxFromArray(arr):
+  if len(arr) > 0:
+    r ?= arr[0]
+    for x in arr:
+      if x > r: r = x end
+    end
+    return r
+  else: return null end
+end
+
+func MinFromArray(arr):
+  if len(arr) > 0:
+    r ?= arr[0]
+    for x in arr:
+      if x < r: r = x end
+    end
+    return r
+  else: return null end
+end
+
+func max([args]):
+  l ?= len(args)
+  if l > 0:
+    first ?= args[0]
+
+    if first is TypeArray:
+      r ?= MaxFromArray(first)
+    else:
+      r ?= first
+    end
+
+    i ?= 1
+    while i < l:
+      t ?= args[i]
+
+      if t is TypeArray:
+        _ ?= MaxFromArray(t)
+        if _ > r: r = _ end
+      else:
+        if t > r: r = t end
+      end
+      i++
+    end
+
+    return r
+  else: return null end
+end
+
+func min([args]):
+  l ?= len(args)
+  if l > 0:
+    first ?= args[0]
+
+    if first is TypeArray:
+      r ?= MinFromArray(first)
+    else:
+      r ?= first
+    end
+
+    i ?= 1
+    l ?= len(args)
+    while i < l:
+      t ?= args[i]
+
+      if t is TypeArray:
+        _ ?= MinFromArray(t)
+        if _ < r: r = _ end
+      else:
+        if t < r: r = t end
+      end
+      i++
+    end
+
+    return r
+  else: return null end
+end
+
+func append(array, [values]):
+  i ?= len(array)
+  nl ?= i + len(values)
+  SetLen(array, nl)
+
+  for v in values:
+    array[i] ?= v
+    i++
+  end
+
+  return array
+end
+
+func reverse(array):
+  l ?= len(array)
+  hl ?= l \ 2
+  i ?= 0
+
+  while i < hl:
+    _ ?= array[l - i - 1]
+    array[l - i - 1] ?= array[i]
+    array[i] ?= _
+    i++
+  end
+
+  return array
+end
+
+func indexof(array, object):
+  i ?= 0
+  for x in array:
+    if x is TypeClass:
+      if @x == @object: return i end
+    else:
+      if x == object: return i end
+    end
+    i++
+  end
+  return null
+end
+
+func insert(array, object, index):
+  l ?= array.len()
+  array.setlen(l + 1)
+  while l > index:
+    array[l] ?= array[l - 1]
+    l--
+  end
+  array[index] ?= object
+  return array
+end
+
+func delete(array, index):
+  i ?= index.copy()
+  l ?= array.len() - 1
+  while i < l:
+    array[i] ?= array[i + 1]
+    i++
+  end
+  array.setlen(i)
+  return array
+end
+
+func remove(array, object):
+  index ?= array.indexof(object)
+  if index.isNull():
+    return array
+  else:
+    return array.delete(index)
+  end
+end
+
+func clear(array):
+  array.setlen(0)
+  return array
+end

@@ -1,6 +1,6 @@
 library lmath;
 
-uses Math;
+uses Math, SysUtils;
 
 {$I '..\svm.inc'}
 
