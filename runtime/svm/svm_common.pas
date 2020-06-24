@@ -7,7 +7,8 @@ interface
 
 uses
   Classes,
-  SysUtils;
+  SysUtils,
+  syncobjs;
 
 type
   TMemory = array of pointer;
@@ -23,6 +24,7 @@ type
 var
   DbgCallBack: PDbgCallBack = nil;
   AppType: TAppType = atBin;
+  GlobalLock: TCriticalSection;
 
 procedure VMError(m: string);
 procedure CutLeftBytes(pb: PByteArr; cnt: cardinal);

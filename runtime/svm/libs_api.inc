@@ -295,6 +295,13 @@ begin
   pVM^.ip := addr;
 end;
 
+{** Env **}
+
+procedure __Get_Temp_Path(str: PString); stdcall;
+begin
+  str^ := ExtractFilePath(ParamStr(0)) + 'tmp\';
+end;
+
 exports __Next_Type        name '__Next_Type';
 exports __Next_Word        name '__Next_Word';
 exports __Next_Int         name '__Next_Int';
@@ -324,3 +331,5 @@ exports __New_Bool         name '__New_Bool';
 exports __New_Ref          name '__New_Ref';
 
 exports __Make_CallBack    name '__Make_CallBack';
+
+exports __Get_Temp_Path    name '__Get_Temp_Path';

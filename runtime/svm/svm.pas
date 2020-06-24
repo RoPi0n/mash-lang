@@ -22,7 +22,7 @@ uses
   {$ifdef Windows}
    windows,
   {$endif}
-  SysUtils, Classes,
+  SysUtils, Classes, syncobjs,
   svm_mem,
   svm_common,
   svm_utils,
@@ -60,13 +60,14 @@ begin
    begin
      writeln('MASH!');
      writeln('Stack-based virtual machine.');
-     writeln('Version: 1.9.4');
+     writeln('Version: 0.2');
      writeln('Using: ',ExtractFileName(ParamStr(0)),' <svmexe file> [args]');
 	 halt;
    end;
   {$EndIf}
 
   GrabbersStorage := TThreadList.Create;
+  GlobalLock := TCriticalSection.Create;
   InitThreads;
 
   new(vm.bytes);
@@ -102,6 +103,7 @@ begin
   GlobalTerm;
   FreeThreads;
   FreeAndNil(GrabbersStorage);
+  FreeAndNil(GlobalLock);
 
   {$IfDef WindowsSEH}
     SVM_FreeVEH;

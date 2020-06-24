@@ -1,7 +1,7 @@
 procedure SVM_Init; stdcall;
 begin
   GrabbersStorage := TThreadList.Create;
-
+  GlobalLock := TCriticalSection.Create;
   {$IfDef WindowsSEH}
     SVM_InitVEH;
   {$EndIf}
@@ -15,6 +15,7 @@ begin
   GlobalTerm;
   FreeThreads;
   FreeAndNil(GrabbersStorage);
+  FreeAndNil(GlobalLock);
 
   {$IfDef WindowsSEH}
     SVM_FreeVEH;

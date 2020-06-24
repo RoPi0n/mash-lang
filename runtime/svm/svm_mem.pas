@@ -26,6 +26,7 @@ type
     m_type: TSVMType;
     m_rcnt: integer;
     m_dcbp: PDestructorCallBack;
+    t_created: cardinal;
 
     constructor MCreate;
     constructor MCreateF(const value; t:TSVMType);
@@ -169,6 +170,7 @@ begin
   m_type := svmtNull;
   m_rcnt := 0;
   m_dcbp := nil;
+  t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateF(const value; t:TSVMType);
@@ -178,6 +180,7 @@ begin
   m_rcnt := 0;
   m_dcbp := nil;
   SetV(value, t);
+  t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateFS(s:string);
@@ -186,7 +189,8 @@ begin
   m_type := svmtStr;
   m_rcnt := 0;
   m_dcbp := nil;
-  SetS(S);
+  SetS(S);                  
+  t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateFW(w:LongWord);
@@ -195,7 +199,8 @@ begin
   m_type := svmtWord;
   m_rcnt := 0;
   m_dcbp := nil;
-  SetW(w);
+  SetW(w);                  
+  t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateArr(size:LongWord = 0);
@@ -214,6 +219,8 @@ begin
      PMemArray(m_val)^[c] := VM_NULL;
      inc(c);
    end;
+
+  t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateRef(ref: Pointer);

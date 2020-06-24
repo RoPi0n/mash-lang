@@ -146,6 +146,8 @@ var
   c, ml: cardinal;
   m: TSVMMem;
 begin
+  GlobalLock.Enter;
+
   FreeOnTerminate := True;
   new(vm);
   vm^.isMainThread := False;
@@ -182,6 +184,8 @@ begin
   m.m_rcnt := 1;
   vm^.stack.push(m);
 
+  GlobalLock.Release;
+
   inherited Create(True);
 end;
 
@@ -196,6 +200,8 @@ var
   c, ml: cardinal;
   m: TSVMMem;
 begin
+  GlobalLock.Enter;
+
   ml := Length(vm^.local_mem^);
   c := 0;
   while c < ml do
@@ -210,13 +216,15 @@ begin
   vm^.rstack.free;
   SetLength(vm^.try_blocks.trblocks, 0);
 
-  vm^.grabber.RunFull;
+  vm^.grabber.RunFull(True);
   GrabbersStorage.Add(vm^.grabber);
   //InterlockedIncrement(GrabbersInStorage);
 
   SetLength(vm^.local_mem^, 0);
   Dispose(vm^.local_mem);
   Dispose(vm);
+
+  GlobalLock.Release;
 
   inherited Destroy;
 end;

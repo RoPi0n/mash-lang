@@ -6,7 +6,7 @@ unit svm_grabber;
 interface
 
 uses
-   SysUtils, Classes;
+   SysUtils, Classes, svm_common;
 
 const
    GrabberStackBlockSize = 1024 * 8;
@@ -36,7 +36,7 @@ type
 
       procedure Reg(value: pointer);
       procedure Run(offset: word = 32);
-      procedure RunFull;
+      procedure RunFull(GlobalLocked: boolean = false);
       procedure Term;
    end;
 
@@ -124,9 +124,11 @@ end;
 procedure TGrabber.Run(offset: word = 32);
 var
   i: integer;
-  c, l: cardinal;
+  c, l, tm: cardinal;
   r: TSVMMem;
 begin
+  tm := GetTickCount;
+
   if ChkCnt < 32 then
    begin
      i := stack.i_pos * 2 div 3;
@@ -144,7 +146,7 @@ begin
    begin
      r := TSVMMem(stack.items[i]);
 
-     if r.m_rcnt < 1 then
+     if (r.m_rcnt < 1) and (tm - r.t_created > 10) then
       begin
         stack.items[i] := stack.items[stack.i_pos - offset];
 
@@ -177,19 +179,24 @@ begin
    end;
 end;
 
-procedure TGrabber.RunFull;
+procedure TGrabber.RunFull(GlobalLocked: boolean = false);
 var
   i: integer;
-  c, l: cardinal;
+  c, l, tm: cardinal;
   r: TSVMMem;
 begin
+  tm := GetTickCount;
+
+  if not GlobalLocked then
+   GlobalLock.Acquire;
+
   i := 0;
 
   while i < stack.i_pos do
    begin
      r := TSVMMem(stack.items[i]);
 
-     if r.m_rcnt < 1 then
+     if (r.m_rcnt < 1) and (tm - r.t_created > 10) then
       begin
         stack.items[i] := stack.items[stack.i_pos - 1];
         stack.pop;
@@ -212,6 +219,9 @@ begin
 
      inc(i);
    end;
+
+  if not GlobalLocked then
+   GlobalLock.Release;
 end;
 
 procedure TGrabber.Term;

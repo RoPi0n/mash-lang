@@ -80,6 +80,7 @@ var
   lst: TList;
   c, l: cardinal;
 begin
+  svm_common.GlobalLock.Enter;
   try
     lst := GrabbersStorage.LockList;
     c := 0;
@@ -103,6 +104,7 @@ begin
   finally
     GrabbersStorage.UnlockList;
   end;
+  svm_common.GlobalLock.Release;
 end;
 
 procedure GlobalTerm;
