@@ -26,7 +26,7 @@ type
     m_type: TSVMType;
     m_rcnt: integer;
     m_dcbp: PDestructorCallBack;
-    t_created: cardinal;
+    //t_created: cardinal;
 
     constructor MCreate;
     constructor MCreateF(const value; t:TSVMType);
@@ -170,7 +170,7 @@ begin
   m_type := svmtNull;
   m_rcnt := 0;
   m_dcbp := nil;
-  t_created := GetTickCount;
+  //t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateF(const value; t:TSVMType);
@@ -180,7 +180,7 @@ begin
   m_rcnt := 0;
   m_dcbp := nil;
   SetV(value, t);
-  t_created := GetTickCount;
+  //t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateFS(s:string);
@@ -190,7 +190,7 @@ begin
   m_rcnt := 0;
   m_dcbp := nil;
   SetS(S);                  
-  t_created := GetTickCount;
+  //t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateFW(w:LongWord);
@@ -200,7 +200,7 @@ begin
   m_rcnt := 0;
   m_dcbp := nil;
   SetW(w);                  
-  t_created := GetTickCount;
+  //t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateArr(size:LongWord = 0);
@@ -220,7 +220,7 @@ begin
      inc(c);
    end;
 
-  t_created := GetTickCount;
+  //t_created := GetTickCount;
 end;
 
 constructor TSVMMem.MCreateRef(ref: Pointer);
@@ -442,7 +442,7 @@ begin
   Result := '';
   case m_type of
     svmtWord: begin
-                if (PLongWord(m_val)^ >= 0) and (PLongWord(m_val)^ <= 255) then
+                if {(PLongWord(m_val)^ >= 0) and} (PLongWord(m_val)^ <= 255) then
                  Result := Chr(PLongWord(m_val)^)
                 else
                  Result := IntToStr(PLongWord(m_val)^);

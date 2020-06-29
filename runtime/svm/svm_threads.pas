@@ -43,6 +43,8 @@ type
 
   procedure RefCounterInc(m: TSVMMem); inline;
   procedure RefCounterDec(m: TSVMMem); inline;
+
+  procedure ThreadDestructor(pThr: pointer); stdcall;
 implementation
 
 procedure InitThreads;
@@ -163,6 +165,7 @@ begin
   //fill mem map
   vm^.mem := svm_memory;
   new(vm^.local_mem);
+  vm^.grabber := TGrabber.Create;
 
   ml := Length(svm_memory^);
   SetLength(vm^.local_mem^, ml);
@@ -170,16 +173,14 @@ begin
   while c < ml do
   begin
     vm^.local_mem^[c] := svm_local_memory^[c];
-    RefCounterInc(TSVMMem(vm^.local_mem^[c]));
+    InterlockedIncrement(TSVMMem(vm^.local_mem^[c]).m_rcnt);
 
     Inc(c);
   end;
 
-  RefCounterInc(TSVMMem(arg));
-  InterlockedDecrement(TSVMMem(arg).m_rcnt);
   vm^.stack.push(arg);
+
   vm^.ip := method;
-  vm^.grabber := TGrabber.Create;
   m := NewSVMM_Ref(self, vm^.grabber);
   m.m_rcnt := 1;
   vm^.stack.push(m);
@@ -198,7 +199,6 @@ end;
 destructor TSVMThread.Destroy;
 var
   c, ml: cardinal;
-  m: TSVMMem;
 begin
   GlobalLock.Enter;
 
@@ -206,8 +206,7 @@ begin
   c := 0;
   while c < ml do
   begin
-    m := TSVMMem(vm^.local_mem^[c]);
-    RefCounterDec(m);
+    InterlockedDecrement(TSVMMem(vm^.local_mem^[c]).m_rcnt);
 
     Inc(c);
   end;
@@ -227,6 +226,12 @@ begin
   GlobalLock.Release;
 
   inherited Destroy;
+end;
+
+procedure ThreadDestructor(pThr: pointer); stdcall;
+begin
+  if TSVMThread(pThr).Suspended then
+   TSVMThread(pThr).Terminate;
 end;
 
 end.

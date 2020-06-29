@@ -146,7 +146,7 @@ begin
    begin
      r := TSVMMem(stack.items[i]);
 
-     if (r.m_rcnt < 1) and (tm - r.t_created > 10) then
+     if (r.m_rcnt < 1) {and (tm - r.t_created > 10)} then
       begin
         stack.items[i] := stack.items[stack.i_pos - offset];
 
@@ -196,7 +196,7 @@ begin
    begin
      r := TSVMMem(stack.items[i]);
 
-     if (r.m_rcnt < 1) and (tm - r.t_created > 10) then
+     if (r.m_rcnt < 1) {and (tm - r.t_created > 10)} then
       begin
         stack.items[i] := stack.items[stack.i_pos - 1];
         stack.pop;

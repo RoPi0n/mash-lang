@@ -840,14 +840,14 @@ begin
 
             p := self.stack.popv;
             // don't touch ref cnt because new thread will have it in stack.
-            InterlockedDecrement(TSVMMem(p).m_rcnt);
-            // 05.03.2020 - wtf? Return decrement...
+            //InterlockedDecrement(TSVMMem(p).m_rcnt);
 
 
             p2 := NewSVMM_Ref(TSVMThread.Create(self.bytes,
               self.consts, self.extern_methods, self.mem, self.local_mem, r.GetW, p),
               self.grabber);
             TSVMMem(p2).m_rcnt := 1;
+            TSVMMem(p2).m_dcbp := PDestructorCallBack(@ThreadDestructor);
 
             self.stack.push(p2);
             Inc(self.ip);
