@@ -70,7 +70,7 @@ interface
     TSVM_Init = procedure; stdcall;
     TSVM_Free = procedure; stdcall;
 
-    TSVM_CreateVM = function(CustomArgs: boolean = false):Pointer; stdcall;
+    TSVM_CreateVM = function(CustomArgs: boolean):Pointer; stdcall;
     TSVM_FreeVM = procedure(SVM:Pointer); stdcall;
 
     TSVM_RegAPI = procedure(SVM:Pointer; ExtFunc:Pointer); stdcall;
