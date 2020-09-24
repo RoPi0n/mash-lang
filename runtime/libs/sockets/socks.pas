@@ -2,9 +2,8 @@ library Socks;
 
 uses SysUtils,
      Classes,
-     blcksock;
-
-{$I '..\svm.inc'}
+     blcksock,
+     svm in '..\svm.pas';
 
 type
   TMashSocket = class
@@ -133,7 +132,7 @@ var
   port: cardinal;
 begin
   sock := TMashSocket(__Next_Ref(pctx));
-  host := __Next_String(pctx);
+  host := __Next_StringA(pctx);
   port := __Next_Word(pctx);
   sock.Connect(host, port);
   try
@@ -151,7 +150,7 @@ var
   port: cardinal;
 begin
   sock := TMashSocket(__Next_Ref(pctx));
-  host := __Next_String(pctx);
+  host := __Next_StringA(pctx);
   port := __Next_Word(pctx);
   sock.Bind(host, port);
   try
@@ -214,7 +213,7 @@ var
   str: string;
 begin
   sock := TMashSocket(__Next_Ref(pctx));
-  str := __Next_String(pctx);
+  str := __Next_StringA(pctx);
   sock.SendString(str);
   try
     sock.sock.ExceptCheck;
@@ -271,7 +270,7 @@ begin
   s := sock.ReceiveString(tm);
   try
     sock.sock.ExceptCheck;
-    __Return_String(pctx, s);
+    __Return_StringA(pctx, s);
   except
     __Return_Null(pctx);
   end;
