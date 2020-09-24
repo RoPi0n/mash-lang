@@ -2,9 +2,10 @@ library DGraph;
 
 {$mode objfpc}{$H+}
 
-uses SysUtils, Graph;
-
-{$I '..\svm.inc'}
+uses
+  SysUtils,
+  Graph,
+  svm in '..\svm.pas';
 
 {FUNCTIONS}
 procedure _ARC(pctx: Pointer); stdcall;
@@ -125,7 +126,7 @@ end;
 
 procedure _GetDriverName(pctx: Pointer); stdcall;
 begin
- __Return_String(pctx, GetDriverName);
+ __Return_StringA(pctx, GetDriverName);
 end;
 
 procedure _GetFillPattern(pctx: Pointer); stdcall;
@@ -186,7 +187,7 @@ end;
 
 procedure _GetModeName(pctx: Pointer); stdcall;
 begin
- __Return_String(pctx, GetModeName(__Next_Int(pctx)));
+ __Return_StringA(pctx, GetModeName(__Next_Int(pctx)));
 end;
 
 procedure _GetModeRange(pctx: Pointer); stdcall;
@@ -241,7 +242,7 @@ end;
 
 procedure _GraphErrorMsg(pctx: Pointer); stdcall;
 begin
- __Return_String(pctx, GraphErrorMsg(__Next_Int(pctx)));
+ __Return_StringA(pctx, GraphErrorMsg(__Next_Int(pctx)));
 end;
 
 procedure _GraphResult(pctx: Pointer); stdcall;
@@ -254,17 +255,17 @@ var a,b:smallint;
 begin
  a:=__Next_Int(pctx);
  b:=__Next_Int(pctx);
- InitGraph(a,b,__Next_String(pctx));
+ InitGraph(a,b,__Next_StringA(pctx));
 end;
 
 procedure _InstallUserDriver(pctx: Pointer); stdcall;
 begin
- __Return_Int(pctx, InstallUserDriver(__Next_String(pctx),nil));
+ __Return_Int(pctx, InstallUserDriver(__Next_StringA(pctx),nil));
 end;
 
 procedure _InstallUserFont(pctx: Pointer); stdcall;
 begin
- __Return_Int(pctx, InstallUserFont(__Next_String(pctx)));
+ __Return_Int(pctx, InstallUserFont(__Next_StringA(pctx)));
 end;
 
 procedure _LineRel(pctx: Pointer); stdcall;
@@ -289,7 +290,7 @@ end;
 
 procedure _OutText(pctx: Pointer); stdcall;
 begin
- OutText(__Next_String(pctx));
+ OutText(__Next_StringA(pctx));
 end;
 
 procedure _PieSlice(pctx: Pointer); stdcall;
@@ -390,12 +391,12 @@ end;
 
 procedure _TextHeight(pctx: Pointer); stdcall;
 begin
- __Return_Word(pctx, TextHeight(__Next_String(pctx)));
+ __Return_Word(pctx, TextHeight(__Next_StringA(pctx)));
 end;
 
 procedure _TextWidth(pctx: Pointer); stdcall;
 begin
- __Return_Word(pctx, TextHeight(__Next_String(pctx)));
+ __Return_Word(pctx, TextHeight(__Next_StringA(pctx)));
 end;
 
 {EXPORTS DB}
