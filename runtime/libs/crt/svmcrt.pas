@@ -2,9 +2,8 @@ library svmcrt;
 {$mode objfpc}{$H+}
 
 uses
-  crt;
-
-{$I '..\svm.inc'}
+  crt,
+  svm in '..\svm.pas';
 
 procedure _CursorBig(pctx: pointer); stdcall;
 begin
