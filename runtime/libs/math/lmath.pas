@@ -1,8 +1,9 @@
 library lmath;
 
-uses Math, SysUtils;
-
-{$I '..\svm.inc'}
+uses
+  Math,
+  SysUtils,
+  svm in '..\svm.pas';
 
 procedure FSin(pctx: pointer); stdcall;
 begin
