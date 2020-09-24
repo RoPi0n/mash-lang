@@ -3,9 +3,8 @@ library bf;
 {$mode objfpc}{$H+}
 {$define FPC_USE_WIN64_SEH}
 uses
-  SysUtils;
-
-{$I '..\svm.inc'}
+  SysUtils,
+  svm in '..\svm.pas';
 
 procedure DHalt(pctx: pointer); stdcall;
 begin
