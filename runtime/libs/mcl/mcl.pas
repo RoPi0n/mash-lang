@@ -1,9 +1,8 @@
 library mcl;
 
 uses
-  SysUtils, Forms, Interfaces, mclform, classes, graphics;
-
-{$I '..\svm.inc'}
+  SysUtils, Forms, Interfaces, mclform, classes, graphics,
+  svm in '..\svm.pas';
 
 // Application
 
@@ -62,7 +61,7 @@ end;
 
 procedure _mcl_Form_Get_Caption(pctx: pointer); stdcall;
 begin
-  __Return_String(pctx, TMCLFormClass(__Next_Ref(pctx)).Caption);
+  __Return_StringA(pctx, TMCLFormClass(__Next_Ref(pctx)).Caption);
 end;
 
 {** Setters **}
@@ -89,7 +88,7 @@ end;
 
 procedure _mcl_Form_Set_Caption(pctx: pointer); stdcall;
 begin
-  TMCLFormClass(__Next_Ref(pctx)).Caption := __Next_String(pctx);
+  TMCLFormClass(__Next_Ref(pctx)).Caption := __Next_StringA(pctx);
 end;
 
 {** Actions **}
@@ -135,7 +134,7 @@ begin
      i := Args.Count - 1;
      while i >= 0 do
       begin
-        __Return_Word(pctx, LongWord(Args[i]));
+        __Return_Word(pctx, LongWord(UIntPtr(Args[i])));
 
         Dec(i);
       end;
