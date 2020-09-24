@@ -2,28 +2,28 @@ library files;
 
 {$mode objfpc}{$H+}
 
-uses SysUtils;
-
-{$I '..\svm.inc'}
+uses
+  SysUtils,
+  svm in '..\svm.pas';
 
 procedure _FileExists(pctx: pointer); stdcall;
 begin
-  __Return_Bool(pctx, FileExists(__Next_String(pctx)) );
+  __Return_Bool(pctx, FileExists(__Next_StringA(pctx)) );
 end;
 
 procedure _DirExists(pctx: pointer); stdcall;
 begin
-  __Return_Bool(pctx, DirectoryExists(__Next_String(pctx)) );
+  __Return_Bool(pctx, DirectoryExists(__Next_StringA(pctx)) );
 end;
 
 procedure _CreateDir(pctx: pointer); stdcall;
 begin
-  ForceDirectories(__Next_String(pctx));
+  ForceDirectories(__Next_StringA(pctx));
 end;
 
 procedure _DeleteFile(pctx: pointer); stdcall;
 begin
-  DeleteFile(__Next_String(pctx));
+  DeleteFile(__Next_StringA(pctx));
 end;
 
 function DelDir(dir: string; all: boolean): boolean;
@@ -55,7 +55,7 @@ end;
 
 procedure _DeleteDir(pctx: pointer); stdcall;
 begin
-  __Return_Bool(pctx, DelDir(__Next_String(pctx), true) );
+  __Return_Bool(pctx, DelDir(__Next_StringA(pctx), true) );
 end;
 
 function ScanDir(dir: string; recursive: boolean): string;
@@ -90,12 +90,12 @@ end;
 
 procedure _ScanDir(pctx: pointer); stdcall;
 begin
-  __Return_String(pctx, ScanDir(__Next_String(pctx), true));
+  __Return_StringA(pctx, ScanDir(__Next_StringA(pctx), true));
 end;
 
 procedure _ScanDirFirst(pctx: pointer); stdcall;
 begin
-  __Return_String(pctx, ScanDir(__Next_String(pctx), false));
+  __Return_StringA(pctx, ScanDir(__Next_StringA(pctx), false));
 end;
 
 {EXPORTS DB}
