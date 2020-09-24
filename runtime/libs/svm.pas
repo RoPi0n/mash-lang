@@ -112,49 +112,6 @@ interface
     T__New_Ref = function(pVM: Pointer; val: pointer; dcbp: Pointer): pointer; stdcall;
 
 
-    PSVM_Init = ^TSVM_Init;
-    PSVM_Free = ^TSVM_Free;
-
-    PSVM_CreateVM = ^TSVM_CreateVM;
-    PSVM_FreeVM = ^TSVM_FreeVM;
-
-    PSVM_RegAPI = ^TSVM_RegAPI;
-    PSVM_SetDbgCallBack = ^TSVM_SetDbgCallBack;
-    PSVM_Run = ^TSVM_Run;
-    PSVM_LoadExeFromFile = ^TSVM_LoadExeFromFile;
-    PSVM_LoadExeFromMem = ^TSVM_LoadExeFromMem;
-    PSVM_CheckErr = ^TSVM_CheckErr;
-    PSVM_Continue = ^TSVM_Continue;
-
-    P__Next_Type = ^T__Next_Type;
-    P__Next_Word = ^T__Next_Word;
-    P__Next_Int = ^T__Next_Int;
-    P__Next_Float = ^T__Next_Float;
-    P__Next_String = ^T__Next_String;
-    P__Next_Bool = ^T__Next_Bool;
-    P__Next_Ref = ^T__Next_Ref;
-    P__Next_Object = ^T__Next_Object;
-
-    P__Return_Word = ^T__Return_Word;
-    P__Return_Int = ^T__Return_Int;
-    P__Return_Float = ^T__Return_Float;
-    P__Return_String = ^T__Return_String;
-    P__Return_Bool = ^T__Return_Bool;
-    P__Return_Ref = ^T__Return_Ref;
-    P__Return_Object = ^T__Return_Object;
-    P__Return_Null = ^T__Return_Null;
-
-    P__Make_CallBack = ^T__Make_CallBack;
-
-    P__New_Set = ^T__New_Set;
-    P__Push_To_Set = ^T__Push_To_Set;
-    P__New_Word = ^T__New_Word;
-    P__New_Int = ^T__New_Int;
-    P__New_Float = ^T__New_Float;
-    P__New_String = ^T__New_String;
-    P__New_Bool = ^T__New_Bool;
-    P__New_Ref = ^T__New_Ref;
-
 
   var
     __svmlib: THandle;
@@ -232,48 +189,48 @@ end;
 initialization
   __svmlib := LoadLibrary(svmlib);
 
-  @SVM_Init := PSVM_Init(GetProcAddress(__svmlib, '_SVM_INIT'));
-  @SVM_Free := PSVM_Free(GetProcAddress(__svmlib, '_SVM_FREE'));
+  SVM_Init := TSVM_Init(GetProcAddress(__svmlib, '_SVM_INIT'));
+  SVM_Free := TSVM_Free(GetProcAddress(__svmlib, '_SVM_FREE'));
 
-  @SVM_CreateVM := PSVM_CreateVM(GetProcAddress(__svmlib, '_SVM_CREATE_VM'));
-  @SVM_FreeVM := PSVM_FreeVM(GetProcAddress(__svmlib, '_SVM_FREE_VM'));
+  SVM_CreateVM := TSVM_CreateVM(GetProcAddress(__svmlib, '_SVM_CREATE_VM'));
+  SVM_FreeVM := TSVM_FreeVM(GetProcAddress(__svmlib, '_SVM_FREE_VM'));
 
-  @SVM_RegAPI := PSVM_RegAPI(GetProcAddress(__svmlib, '_SVM_REGAPI'));
-  @SVM_SetDbgCallBack := PSVM_SetDbgCallBack(GetProcAddress(__svmlib, '_SVM_DEBUGCALLBACK'));
-  @SVM_Run := PSVM_Run(GetProcAddress(__svmlib, '_SVM_RUN'));
-  @SVM_LoadExeFromFile := PSVM_LoadExeFromFile(GetProcAddress(__svmlib, '_SVM_LOADEXEFROMFILE'));
-  @SVM_LoadExeFromMem := PSVM_LoadExeFromMem(GetProcAddress(__svmlib, '_SVM_LOADEXEFROMMEM'));
-  @SVM_CheckErr := PSVM_CheckErr(GetProcAddress(__svmlib, '_SVM_CHECKERR'));
-  @SVM_Continue := PSVM_Continue(GetProcAddress(__svmlib, '_SVM_CONTINUE'));
+  SVM_RegAPI := TSVM_RegAPI(GetProcAddress(__svmlib, '_SVM_REGAPI'));
+  SVM_SetDbgCallBack := TSVM_SetDbgCallBack(GetProcAddress(__svmlib, '_SVM_DEBUGCALLBACK'));
+  SVM_Run := TSVM_Run(GetProcAddress(__svmlib, '_SVM_RUN'));
+  SVM_LoadExeFromFile := TSVM_LoadExeFromFile(GetProcAddress(__svmlib, '_SVM_LOADEXEFROMFILE'));
+  SVM_LoadExeFromMem := TSVM_LoadExeFromMem(GetProcAddress(__svmlib, '_SVM_LOADEXEFROMMEM'));
+  SVM_CheckErr := TSVM_CheckErr(GetProcAddress(__svmlib, '_SVM_CHECKERR'));
+  SVM_Continue := TSVM_Continue(GetProcAddress(__svmlib, '_SVM_CONTINUE'));
 
-  @__Next_Type := P__Next_Type(GetProcAddress(__svmlib, '__Next_Type'));
-  @__Next_Word := P__Next_Word(GetProcAddress(__svmlib, '__Next_Word'));
-  @__Next_Int := P__Next_Int(GetProcAddress(__svmlib, '__Next_Int'));
-  @__Next_Float := P__Next_Float(GetProcAddress(__svmlib, '__Next_Float'));
-  @__Next_String := P__Next_String(GetProcAddress(__svmlib, '__Next_String'));
-  @__Next_Bool := P__Next_Bool(GetProcAddress(__svmlib, '__Next_Bool'));
-  @__Next_Ref := P__Next_Ref(GetProcAddress(__svmlib, '__Next_Ref'));
-  @__Next_Object := P__Next_Object(GetProcAddress(__svmlib, '__Next_Object'));
+  __Next_Type := T__Next_Type(GetProcAddress(__svmlib, '__Next_Type'));
+  __Next_Word := T__Next_Word(GetProcAddress(__svmlib, '__Next_Word'));
+  __Next_Int := T__Next_Int(GetProcAddress(__svmlib, '__Next_Int'));
+  __Next_Float := T__Next_Float(GetProcAddress(__svmlib, '__Next_Float'));
+  __Next_String := T__Next_String(GetProcAddress(__svmlib, '__Next_String'));
+  __Next_Bool := T__Next_Bool(GetProcAddress(__svmlib, '__Next_Bool'));
+  __Next_Ref := T__Next_Ref(GetProcAddress(__svmlib, '__Next_Ref'));
+  __Next_Object := T__Next_Object(GetProcAddress(__svmlib, '__Next_Object'));
 
-  @__Return_Word := P__Return_Word(GetProcAddress(__svmlib, '__Return_Word'));
-  @__Return_Int := P__Return_Int(GetProcAddress(__svmlib, '__Return_Int'));
-  @__Return_Float := P__Return_Float(GetProcAddress(__svmlib, '__Return_Float'));
-  @__Return_String := P__Return_String(GetProcAddress(__svmlib, '__Return_String'));
-  @__Return_Bool := P__Return_Bool(GetProcAddress(__svmlib, '__Return_Bool'));
-  @__Return_Ref := P__Return_Ref(GetProcAddress(__svmlib, '__Return_Ref'));
-  @__Return_Object := P__Return_Object(GetProcAddress(__svmlib, '__Return_Object'));
-  @__Return_Null := P__Return_Null(GetProcAddress(__svmlib, '__Return_Null'));
+  __Return_Word := T__Return_Word(GetProcAddress(__svmlib, '__Return_Word'));
+  __Return_Int := T__Return_Int(GetProcAddress(__svmlib, '__Return_Int'));
+  __Return_Float := T__Return_Float(GetProcAddress(__svmlib, '__Return_Float'));
+  __Return_String := T__Return_String(GetProcAddress(__svmlib, '__Return_String'));
+  __Return_Bool := T__Return_Bool(GetProcAddress(__svmlib, '__Return_Bool'));
+  __Return_Ref := T__Return_Ref(GetProcAddress(__svmlib, '__Return_Ref'));
+  __Return_Object := T__Return_Object(GetProcAddress(__svmlib, '__Return_Object'));
+  __Return_Null := T__Return_Null(GetProcAddress(__svmlib, '__Return_Null'));
 
-  @__Make_CallBack := P__Make_CallBack(GetProcAddress(__svmlib, '__Make_CallBack'));
+  __Make_CallBack := T__Make_CallBack(GetProcAddress(__svmlib, '__Make_CallBack'));
 
-  @__New_Set := P__New_Set(GetProcAddress(__svmlib, '__New_Set'));
-  @__Push_To_Set := P__Push_To_Set(GetProcAddress(__svmlib, '__Push_To_Set'));
-  @__New_Word := P__New_Word(GetProcAddress(__svmlib, '__New_Word'));
-  @__New_Int := P__New_Int(GetProcAddress(__svmlib, '__New_Int'));
-  @__New_Float := P__New_Float(GetProcAddress(__svmlib, '__New_Float'));
-  @__New_String := P__New_String(GetProcAddress(__svmlib, '__New_String'));
-  @__New_Bool := P__New_Bool(GetProcAddress(__svmlib, '__New_Bool'));
-  @__New_Ref := P__New_Ref(GetProcAddress(__svmlib, '__New_Ref'));
+  __New_Set := T__New_Set(GetProcAddress(__svmlib, '__New_Set'));
+  __Push_To_Set := T__Push_To_Set(GetProcAddress(__svmlib, '__Push_To_Set'));
+  __New_Word := T__New_Word(GetProcAddress(__svmlib, '__New_Word'));
+  __New_Int := T__New_Int(GetProcAddress(__svmlib, '__New_Int'));
+  __New_Float := T__New_Float(GetProcAddress(__svmlib, '__New_Float'));
+  __New_String := T__New_String(GetProcAddress(__svmlib, '__New_String'));
+  __New_Bool := T__New_Bool(GetProcAddress(__svmlib, '__New_Bool'));
+  __New_Ref := T__New_Ref(GetProcAddress(__svmlib, '__New_Ref'));
 
 finalization
   FreeLibrary(__svmlib);
