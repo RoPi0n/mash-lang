@@ -1,8 +1,9 @@
 library Streams;
 
-uses SysUtils, Classes;
-
-{$I '..\svm.inc'}
+uses
+  SysUtils,
+  Classes,
+  svm in '..\svm.pas';
 
 {STREAM}
 
@@ -178,7 +179,7 @@ begin
   Len := __Next_Word(pctx);
   SetLength(S, Len);
   Dest.Read(S[1], Len);
-  __Return_String(pctx, S);
+  __Return_StringA(pctx, S);
 end;
 
 procedure _Stream_CopyBuffer(pctx: pointer); stdcall;
@@ -264,7 +265,7 @@ var
   fp: string;
 begin
   try
-    fp := __Next_String(pctx);
+    fp := __Next_StringA(pctx);
 
     if not (Pos(':', fp) > 0) then
       fp := ExtractFilePath(ParamStr(1)) + fp;
@@ -281,7 +282,7 @@ var
   fp: string;
 begin
   try
-    fp := __Next_String(pctx);
+    fp := __Next_StringA(pctx);
 
     if not (Pos(':', fp) > 0) then
       fp := ExtractFilePath(ParamStr(1)) + fp;
@@ -310,7 +311,7 @@ var
   fp: string;
 begin
   try
-    fp := __Next_String(pctx);
+    fp := __Next_StringA(pctx);
 
     if not (Pos(':', fp) > 0) then
       fp := ExtractFilePath(ParamStr(1)) + fp;
