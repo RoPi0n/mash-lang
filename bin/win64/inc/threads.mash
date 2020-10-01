@@ -142,6 +142,7 @@ class TThreadCall(TThread):
     end
 
     th ?= $GlobalThis
+    $GlobalThis ?= null
     $Method
     inline "push $th"
     inline "peek global.this"
